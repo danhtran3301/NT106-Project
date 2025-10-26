@@ -6,4 +6,4 @@
 	- 24521654	Nguyễn Thị Trang Thi  
 	- 22520200	Trần Ngọc Danh  
 
-Repo này phục vụ cho việc lưu trữ bài tập, mỗi bài tập là một project riêng, nằm chung trong một solution.
+Repo này phục vụ cho việc lưu trữ đồ án môn học.
