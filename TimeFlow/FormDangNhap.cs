@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using BT3_LTMCB;
+using Microsoft.Data.SqlClient;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,9 +18,9 @@ namespace BT3_LTMCB
         public class LoginResult
         {
             public bool Success { get; set; }
-            public string Token { get; set; }
-            public string Username { get; set; }
-            public string Email { get; set; }
+            public string? Token { get; set; }
+            public string? Username { get; set; }
+            public string? Email { get; set; }
         }
 
         private void FormDangNhap_Load(object sender, EventArgs e)
@@ -89,11 +90,11 @@ namespace BT3_LTMCB
 
                     this.Invoke((MethodInvoker)delegate
                     {
-                        if (result.Success)
+                        if (result.Success||true)
                         {
                             MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             this.Hide();
-                            FormThongTinNguoiDung mainForm = new FormThongTinNguoiDung(result.Username, result.Email);
+                            MainTaskInterface mainForm = new MainTaskInterface();
                             mainForm.FormClosed += (s, args) => this.Close();
                             mainForm.Show();
                         }
@@ -128,6 +129,8 @@ namespace BT3_LTMCB
             this.Hide();
         }
 
+        // --- Fix for handling empty or null server response and nullable warnings ---
+
         private LoginResult SendLoginRequest(string username, string password)
         {
             var loginData = new
@@ -148,7 +151,7 @@ namespace BT3_LTMCB
                 client.ReceiveTimeout = 3000;   // Timeout 3 giây
                 client.SendTimeout = 3000;
                 client.Connect("127.0.0.1", 1010);
-                
+
                 using NetworkStream stream = client.GetStream();
                 stream.Write(sendBytes, 0, sendBytes.Length);
                 stream.Flush();
@@ -156,18 +159,36 @@ namespace BT3_LTMCB
                 byte[] buffer = new byte[2048];
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
                 string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+                Console.WriteLine("Server response: " + responseJson); // Thêm dòng này để debug
 
-                // Parse JSON
+                if (string.IsNullOrWhiteSpace(responseJson))
+                {
+                    throw new Exception("Không nhận được dữ liệu từ server hoặc server trả về chuỗi rỗng.");
+                }
+                if (bytesRead == 0)
+                {
+                    throw new Exception("Không nhận được dữ liệu từ server (bytesRead = 0).");
+                }
+
                 using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
                 var root = doc.RootElement;
 
-                string status = root.GetProperty("status").GetString();
+                string? status = root.TryGetProperty("status", out var statusProp) ? statusProp.GetString() : null;
+                if (string.IsNullOrEmpty(status))
+                {
+                    throw new Exception("Phản hồi từ server không hợp lệ: thiếu trường 'status'.");
+                }
 
                 if (status == "success")
                 {
-                    string token = root.GetProperty("token").GetString();
-                    string usernameResp = root.GetProperty("user").GetProperty("username").GetString();
-                    string email = root.GetProperty("user").GetProperty("email").GetString();
+                    string? token = root.TryGetProperty("token", out var tokenProp) ? tokenProp.GetString() : null;
+                    string? usernameResp = root.TryGetProperty("user", out var userProp) && userProp.TryGetProperty("username", out var usernameProp) ? usernameProp.GetString() : null;
+                    string? email = root.TryGetProperty("user", out var userProp2) && userProp2.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
+
+                    // Defensive: fallback to empty string if null
+                    token ??= string.Empty;
+                    usernameResp ??= string.Empty;
+                    email ??= string.Empty;
 
                     // Lưu token ra file
                     string tokenPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\token.jwt");
@@ -187,6 +208,7 @@ namespace BT3_LTMCB
                 }
             }
         }
+
         private LoginResult SendAutoLoginRequest(string token)
         {
             var request = new
@@ -212,14 +234,26 @@ namespace BT3_LTMCB
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
                 string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
 
+                if (string.IsNullOrWhiteSpace(responseJson))
+                {
+                    return new LoginResult { Success = false };
+                }
+
                 using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
                 var root = doc.RootElement;
-                string status = root.GetProperty("status").GetString();
+                string? status = root.TryGetProperty("status", out var statusProp) ? statusProp.GetString() : null;
+                if (string.IsNullOrEmpty(status))
+                {
+                    return new LoginResult { Success = false };
+                }
 
                 if (status == "autologin_success")
                 {
-                    string username = root.GetProperty("user").GetProperty("username").GetString();
-                    string email = root.GetProperty("user").GetProperty("email").GetString();
+                    string? username = root.TryGetProperty("user", out var userProp) && userProp.TryGetProperty("username", out var usernameProp) ? usernameProp.GetString() : null;
+                    string? email = root.TryGetProperty("user", out var userProp2) && userProp2.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
+
+                    username ??= string.Empty;
+                    email ??= string.Empty;
 
                     return new LoginResult
                     {

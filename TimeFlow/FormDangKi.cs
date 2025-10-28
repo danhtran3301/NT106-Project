@@ -99,6 +99,7 @@ namespace BT3_LTMCB
 
                     this.Invoke((MethodInvoker)delegate
                     {
+
                         if (response == "registered")
                         {
                             MessageBox.Show("Đăng ký thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);

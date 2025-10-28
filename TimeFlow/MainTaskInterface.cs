@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace WeeklyCalendarDemo
+namespace BT3_LTMCB
 {
-    public partial class Form1 : Form
+    public class MainTaskInterface : Form
     {
         private Panel scrollPanel;
         private TableLayoutPanel calendarGrid;
@@ -27,9 +27,8 @@ namespace WeeklyCalendarDemo
             public Color TaskColor { get; set; }
         }
 
-        public Form1()
+        public MainTaskInterface()
         {
-            InitializeComponent();
             this.WindowState = FormWindowState.Maximized;
 
             InitializeCalendarGrid();

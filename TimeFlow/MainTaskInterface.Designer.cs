@@ -1,7 +1,8 @@
-﻿namespace WeeklyCalendarDemo
+﻿using System.Windows.Forms;
+
+namespace WeeklyCalendarDemo
 {
-    // "partial" nghĩa là lớp Form1 này được chia làm 2 file (file logic và file design)
-    partial class Form1
+    partial class MainTaskInterface : Form
     {
         /// <summary>
         /// Required designer variable.
@@ -31,12 +32,12 @@
         {
             this.SuspendLayout();
             // 
-            // Form1
+            // MainTaskInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1200, 800);
-            this.Name = "Form1";
+            this.Name = "MainTaskInterface";
             this.Text = "MainTaskInterface";
             this.ResumeLayout(false);
 
