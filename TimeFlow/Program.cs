@@ -1,6 +1,9 @@
+using System;
+using System.Windows.Forms;
 using BT3_LTMCB;
+using Exercise3; // Ensure this is present and correct
 
-namespace Exercise3
+namespace BT3_LTMCB
 {
     internal static class Program
     {
@@ -12,8 +15,9 @@ namespace Exercise3
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new FormMenuTCP());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new ChatForm());
         }
     }
 }
