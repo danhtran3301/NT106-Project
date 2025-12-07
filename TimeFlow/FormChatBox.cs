@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D; // Thư viện vẽ đồ họa
 using System.Windows.Forms;
 
-namespace BT3_LTMCB
+namespace TimeFlow.Authentication
 {
     public partial class ChatForm : Form
     {

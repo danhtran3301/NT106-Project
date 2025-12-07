@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace BT3_LTMCB
+namespace TimeFlow.Authentication
 {
     partial class ChatForm
     {

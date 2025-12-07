@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace BT3_LTMCB
+namespace TimeFlow.Authentication
 {
     public partial class FormThongTinNguoiDung : Form
     {

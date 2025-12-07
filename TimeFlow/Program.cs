@@ -1,12 +1,10 @@
 using System;
 using System.Windows.Forms;
-using BT3_LTMCB;
-using Exercise3; // Ensure this is present and correct
-using TimeFlow;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using TimeFlow.Authentication;
 
-namespace BT3_LTMCB
+namespace TimeFlow
 {
     internal static class Program
     {

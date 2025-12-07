@@ -82,9 +82,9 @@ namespace TimeFlow
         {
 
         }
+    }
 
-      
-public class RoundButton : Button
+    public class RoundButton : Button
     {
         public int BorderRadius { get; set; } = 20; // Độ bo tròn
 
@@ -122,5 +122,4 @@ public class RoundButton : Button
             return path;
         }
     }
-}
 }
