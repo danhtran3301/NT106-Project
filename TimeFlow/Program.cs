@@ -20,7 +20,7 @@ namespace Exercise3
             CultureInfo culture = new CultureInfo("vi-VN");
             Thread.CurrentThread.CurrentCulture = culture;
             Thread.CurrentThread.CurrentUICulture = culture;
-            Application.Run(new TaskList());
+            Application.Run(new FormSettings());
         }
     }
 }
