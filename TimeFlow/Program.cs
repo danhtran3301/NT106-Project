@@ -1,6 +1,10 @@
-using BT3_LTMCB;
+using System;
+using System.Windows.Forms;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using TimeFlow.Authentication;
 
-namespace Exercise3
+namespace TimeFlow
 {
     internal static class Program
     {
@@ -12,8 +16,9 @@ namespace Exercise3
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new FormMenuTCP());
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new ChatForm());
         }
     }
 }

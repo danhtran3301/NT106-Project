@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace Exercise3
+namespace TimeFlow.Server
 {
     public partial class FormTCPServer : Form
     {

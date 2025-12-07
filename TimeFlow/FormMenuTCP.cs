@@ -1,4 +1,4 @@
-﻿using BT3_LTMCB;
+﻿using TimeFlow.Authentication;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Exercise3
+namespace TimeFlow.Server
 {
     public partial class FormMenuTCP : Form
     {

@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DOANNT106
+namespace TimeFlow
 {
     public partial class GiaoDien : Form
     {
@@ -82,9 +82,9 @@ namespace DOANNT106
         {
 
         }
+    }
 
-      
-public class RoundButton : Button
+    public class RoundButton : Button
     {
         public int BorderRadius { get; set; } = 20; // Độ bo tròn
 
@@ -122,5 +122,4 @@ public class RoundButton : Button
             return path;
         }
     }
-}
 }
