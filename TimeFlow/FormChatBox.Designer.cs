@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace BT3_LTMCB
@@ -6,22 +7,16 @@ namespace BT3_LTMCB
     partial class ChatForm
     {
         private System.ComponentModel.IContainer components = null;
-        private SplitContainer splitContainerMain;
 
-        // Left Side Controls
-        private Panel pnlLeftHeader;
-        private Label lblLeftTitle;
-        private Button btnBack;
-        private FlowLayoutPanel flowLeftGroups;
+        private TableLayoutPanel tableLayoutMain;
+        private Panel pnlLeftHeader, pnlRightHeader, pnlChatContainer, pnlInput;
+        private Button btnBack, btnClose, btnAddFile, btnSend;
+        private Label lblHeaderTitle, lblChatTitle;
+        private FlowLayoutPanel flowSidebar, flowChatMessages;
 
-        // Right Side Controls
-        private Panel pnlRightHeader;
-        private Label lblRightTitle;
-        private Panel pnlInputArea;
+        // Control nhập liệu mới
+        private Panel pnlInputBackground; // Panel dùng để vẽ viền bo tròn
         private TextBox txtMessage;
-        private Button btnSend;
-        private Button btnAddFile;
-        private FlowLayoutPanel flowChatMessages; // Nơi chứa tin nhắn
 
         protected override void Dispose(bool disposing)
         {
@@ -34,131 +29,96 @@ namespace BT3_LTMCB
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 600);
-            this.Text = "Group Chat Dashboard";
+            this.Text = "Chat Application";
+            this.StartPosition = FormStartPosition.CenterScreen;
 
-            // 1. Split Container
-            this.splitContainerMain = new SplitContainer();
-            this.splitContainerMain.Dock = DockStyle.Fill;
-            this.splitContainerMain.SplitterDistance = 200; // Sidebar width
-            this.splitContainerMain.FixedPanel = FixedPanel.Panel1;
-            this.splitContainerMain.IsSplitterFixed = true;
+            // 1. Trả về Form chuẩn của Windows (Có thanh tiêu đề, nút tắt/mở chuẩn)
+            this.FormBorderStyle = FormBorderStyle.Sizable;
 
-            // --- LEFT SIDEBAR ---
-            // Header
-            this.pnlLeftHeader = new Panel();
-            this.pnlLeftHeader.Dock = DockStyle.Top;
-            this.pnlLeftHeader.Height = 60;
-            this.pnlLeftHeader.BackColor = ColorTranslator.FromHtml("#9ae6b4"); // Màu xanh lá nhạt
+            // --- Main Layout ---
+            this.tableLayoutMain = new TableLayoutPanel();
+            this.tableLayoutMain.Dock = DockStyle.Fill;
+            this.tableLayoutMain.ColumnCount = 2;
+            this.tableLayoutMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F)); // Sidebar nhỏ hơn chút cho đẹp
+            this.tableLayoutMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+            this.tableLayoutMain.RowCount = 2;
+            this.tableLayoutMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 60F));
+            this.tableLayoutMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            this.btnBack = new Button();
-            this.btnBack.Text = "←";
-            this.btnBack.FlatStyle = FlatStyle.Flat;
+            // --- Header Trái ---
+            this.pnlLeftHeader = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(144, 238, 144), Padding = new Padding(5) };
+            this.btnBack = new Button { Text = "←", Dock = DockStyle.Left, Width = 40, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 12, FontStyle.Bold), BackColor = Color.Transparent };
             this.btnBack.FlatAppearance.BorderSize = 0;
-            this.btnBack.Font = new Font("Segoe UI", 14, FontStyle.Bold);
-            this.btnBack.Location = new Point(10, 15);
-            this.btnBack.Size = new Size(40, 30);
+            this.btnBack.Click += new EventHandler(this.btnBack_Click);
+            this.lblHeaderTitle = new Label { Text = "Group", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 12, FontStyle.Bold), Padding = new Padding(10, 0, 0, 0) };
+            this.pnlLeftHeader.Controls.AddRange(new Control[] { this.lblHeaderTitle, this.btnBack });
 
-            this.lblLeftTitle = new Label();
-            this.lblLeftTitle.Text = "Group";
-            this.lblLeftTitle.Font = new Font("Segoe UI", 12, FontStyle.Regular);
-            this.lblLeftTitle.Location = new Point(60, 20);
-            this.lblLeftTitle.AutoSize = true;
+            // --- Header Phải ---
+            this.pnlRightHeader = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, Padding = new Padding(5) };
+            this.btnClose = new Button { Text = "X", Dock = DockStyle.Right, Width = 40, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 10, FontStyle.Bold) };
+            this.btnClose.Click += new EventHandler(this.btnClose_Click);
+            this.lblChatTitle = new Label { Text = "Group 1", Dock = DockStyle.Left, Width = 200, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+            this.pnlRightHeader.Controls.AddRange(new Control[] { this.lblChatTitle, this.btnClose });
 
-            this.pnlLeftHeader.Controls.Add(this.btnBack);
-            this.pnlLeftHeader.Controls.Add(this.lblLeftTitle);
+            // --- Sidebar List ---
+            this.flowSidebar = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, FlowDirection = FlowDirection.TopDown, WrapContents = false, BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
 
-            // Group List
-            this.flowLeftGroups = new FlowLayoutPanel();
-            this.flowLeftGroups.Dock = DockStyle.Fill;
-            this.flowLeftGroups.AutoScroll = true;
-            this.flowLeftGroups.BackColor = Color.White;
-            this.flowLeftGroups.FlowDirection = FlowDirection.TopDown;
-            this.flowLeftGroups.WrapContents = false;
+            // --- Chat Container ---
+            this.pnlChatContainer = new Panel { Dock = DockStyle.Fill, BackColor = Color.WhiteSmoke };
 
-            // --- RIGHT CHAT AREA ---
-            // Header
-            this.pnlRightHeader = new Panel();
-            this.pnlRightHeader.Dock = DockStyle.Top;
-            this.pnlRightHeader.Height = 60;
-            this.pnlRightHeader.BackColor = Color.White;
-            this.pnlRightHeader.Padding = new Padding(20, 0, 20, 0);
-            // Kẻ đường line dưới header
-            this.pnlRightHeader.Paint += (s, e) => {
-                e.Graphics.DrawLine(Pens.LightGray, 0, pnlRightHeader.Height - 1, pnlRightHeader.Width, pnlRightHeader.Height - 1);
-            };
-
-            this.lblRightTitle = new Label();
-            this.lblRightTitle.Text = "Group 1"; // Mock title
-            this.lblRightTitle.BackColor = Color.White;
-            this.lblRightTitle.BorderStyle = BorderStyle.FixedSingle;
-            this.lblRightTitle.Padding = new Padding(10, 5, 10, 5);
-            this.lblRightTitle.AutoSize = true;
-            this.lblRightTitle.Location = new Point(60, 15);
-
-            this.pnlRightHeader.Controls.Add(this.lblRightTitle);
-
-            // Input Area
-            this.pnlInputArea = new Panel();
-            this.pnlInputArea.Dock = DockStyle.Bottom;
-            this.pnlInputArea.Height = 60;
-            this.pnlInputArea.BackColor = Color.White;
-            this.pnlInputArea.Padding = new Padding(10);
-            this.pnlInputArea.Paint += (s, e) => {
-                e.Graphics.DrawLine(Pens.LightGray, 0, 0, pnlInputArea.Width, 0);
-            };
-
-            this.btnAddFile = new Button();
-            this.btnAddFile.Text = "+";
-            this.btnAddFile.Font = new Font("Segoe UI", 16);
-            this.btnAddFile.FlatStyle = FlatStyle.Flat;
-            this.btnAddFile.FlatAppearance.BorderSize = 0;
-            this.btnAddFile.Size = new Size(40, 40);
-            this.btnAddFile.Dock = DockStyle.Left;
-
-            this.btnSend = new Button();
-            this.btnSend.Text = "➤";
-            this.btnSend.FlatStyle = FlatStyle.Flat;
-            this.btnSend.Dock = DockStyle.Right;
-            this.btnSend.Size = new Size(50, 40);
-
-            this.txtMessage = new TextBox();
-            this.txtMessage.BorderStyle = BorderStyle.None;
-            this.txtMessage.Font = new Font("Segoe UI", 11);
-            this.txtMessage.Multiline = true;
-            this.txtMessage.Dock = DockStyle.Fill;
-            this.txtMessage.Text = "Type message...";
-
-            // Container cho Textbox để tạo border
-            Panel txtContainer = new Panel();
-            txtContainer.BorderStyle = BorderStyle.FixedSingle;
-            txtContainer.Padding = new Padding(5);
-            txtContainer.Dock = DockStyle.Fill;
-            txtContainer.Controls.Add(txtMessage);
-
-            this.pnlInputArea.Controls.Add(txtContainer);
-            this.pnlInputArea.Controls.Add(this.btnAddFile);
-            this.pnlInputArea.Controls.Add(this.btnSend);
-
-            // Chat Messages Area
+            // Khu vực tin nhắn (FlowLayoutPanel)
             this.flowChatMessages = new FlowLayoutPanel();
             this.flowChatMessages.Dock = DockStyle.Fill;
             this.flowChatMessages.AutoScroll = true;
-            this.flowChatMessages.BackColor = Color.White; // Nền trắng
-            this.flowChatMessages.FlowDirection = FlowDirection.TopDown;
+            this.flowChatMessages.FlowDirection = FlowDirection.TopDown; // Xếp dọc
             this.flowChatMessages.WrapContents = false;
             this.flowChatMessages.Padding = new Padding(20);
-            this.flowChatMessages.SizeChanged += (s, e) => {
-                foreach (Control c in flowChatMessages.Controls) c.Width = flowChatMessages.ClientSize.Width - 40;
-            };
 
-            // Layout Assembly
-            this.splitContainerMain.Panel1.Controls.Add(this.flowLeftGroups);
-            this.splitContainerMain.Panel1.Controls.Add(this.pnlLeftHeader);
-            this.splitContainerMain.Panel2.Controls.Add(this.flowChatMessages);
-            this.splitContainerMain.Panel2.Controls.Add(this.pnlInputArea);
-            this.splitContainerMain.Panel2.Controls.Add(this.pnlRightHeader);
+            // --- Input Area (Đã chỉnh sửa để bo tròn) ---
+            this.pnlInput = new Panel { Dock = DockStyle.Bottom, Height = 70, BackColor = Color.White, Padding = new Padding(10) };
 
-            this.Controls.Add(this.splitContainerMain);
+            this.btnAddFile = new Button { Text = "+", Dock = DockStyle.Left, Width = 40, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 16, FontStyle.Bold), Cursor = Cursors.Hand };
+            this.btnAddFile.FlatAppearance.BorderSize = 0;
+            this.btnAddFile.Click += new EventHandler(this.btnAddFile_Click);
+
+            this.btnSend = new Button { Text = "➤", Dock = DockStyle.Right, Width = 50, FlatStyle = FlatStyle.Flat, Font = new Font("Arial", 14), ForeColor = Color.DodgerBlue, Cursor = Cursors.Hand, BackColor = Color.White };
+            this.btnSend.FlatAppearance.BorderSize = 0;
+            this.btnSend.Click += new EventHandler(this.btnSend_Click);
+
+            // Wrapper bo tròn cho Textbox
+            this.pnlInputBackground = new Panel();
+            this.pnlInputBackground.Dock = DockStyle.Fill;
+            this.pnlInputBackground.Padding = new Padding(15, 10, 15, 10); // Padding để text không sát viền
+            this.pnlInputBackground.BackColor = Color.Transparent; // Để vẽ lại trong Logic
+
+            this.txtMessage = new TextBox();
+            this.txtMessage.Dock = DockStyle.Fill;
+            this.txtMessage.BorderStyle = BorderStyle.None; // Bỏ viền gốc vuông vức
+            this.txtMessage.Font = new Font("Segoe UI", 11);
+            this.txtMessage.Multiline = true;
+            this.txtMessage.BackColor = Color.FromArgb(240, 240, 240); // Màu nền trùng màu vẽ panel
+
+            this.pnlInputBackground.Controls.Add(this.txtMessage);
+
+            this.pnlInput.Controls.Add(this.pnlInputBackground);
+            this.pnlInput.Controls.Add(this.btnSend);
+            this.pnlInput.Controls.Add(this.btnAddFile);
+
+            this.pnlChatContainer.Controls.Add(this.flowChatMessages);
+            this.pnlChatContainer.Controls.Add(this.pnlInput);
+
+            // Add to Layout
+            this.tableLayoutMain.Controls.Add(this.pnlLeftHeader, 0, 0);
+            this.tableLayoutMain.Controls.Add(this.pnlRightHeader, 1, 0);
+            this.tableLayoutMain.Controls.Add(this.flowSidebar, 0, 1);
+            this.tableLayoutMain.Controls.Add(this.pnlChatContainer, 1, 1);
+
+            this.Controls.Add(this.tableLayoutMain);
+
+            // Hook sự kiện vẽ cho input
+            this.pnlInputBackground.Paint += new PaintEventHandler(this.pnlInputBackground_Paint);
+
+            GenerateDummyData();
         }
     }
 }

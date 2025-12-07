@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Drawing.Drawing2D; // Thư viện vẽ đồ họa
 using System.Windows.Forms;
 
 namespace BT3_LTMCB
@@ -10,183 +10,220 @@ namespace BT3_LTMCB
         public ChatForm()
         {
             InitializeComponent();
-            LoadMockData();
         }
 
-        private void LoadMockData()
+        // Tạo dữ liệu giả lập
+        private void GenerateDummyData()
         {
-            // 1. Tạo danh sách nhóm bên trái
-            for (int i = 0; i < 8; i++)
+            // Sidebar: Tạo danh sách Group chat
+            for (int i = 1; i <= 8; i++)
             {
-                AddGroupItem("Group Chat", i == 0); // Chọn item đầu tiên
+                Button btn = new Button();
+                btn.Text = $"   Group {i}";
+                btn.Size = new Size(flowSidebar.Width - 5, 60); // Trừ 5px để không hiện scroll ngang
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderSize = 0;
+                btn.TextAlign = ContentAlignment.MiddleLeft;
+                // Tạo icon tròn giả avatar
+                btn.Image = CreateCircle(Color.FromArgb(200, 162, 255), 35);
+                btn.TextImageRelation = TextImageRelation.ImageBeforeText;
+
+                // Highlight item đầu tiên
+                btn.BackColor = (i == 1) ? Color.FromArgb(230, 240, 255) : Color.White;
+                btn.Padding = new Padding(10, 0, 0, 0);
+
+                // Sự kiện click chuyển group
+                btn.Click += (s, e) => { lblChatTitle.Text = ((Button)s).Text.Trim(); };
+
+                flowSidebar.Controls.Add(btn);
             }
 
-            // 2. Tạo tin nhắn giả lập (Màu sắc lấy từ file React)
-            // #8eeed8 (Teal), #a78bfa (Purple), #fbbf24 (Orange)
-            AddMessage("Message Line 1\nMessage Line 2", false, ColorTranslator.FromHtml("#8eeed8"));
-            AddMessage("Hello there!", true, ColorTranslator.FromHtml("#a78bfa"));
-            AddMessage("Warning info line 1\nLine 2\nLine 3", false, ColorTranslator.FromHtml("#fbbf24"));
-            AddMessage("I understand.", true, ColorTranslator.FromHtml("#a78bfa"));
+            // Chat: Tạo tin nhắn mẫu
+            AddMessageBubble("Xin chào! Đây là giao diện bong bóng chat đã sửa lỗi.", false);
+            AddMessageBubble("Tuyệt vời, các góc nhọn và đường viền đã liền mạch.", true);
+            AddMessageBubble("Thử một tin nhắn dài hơn để xem khả năng xuống dòng tự động của bong bóng chat có hoạt động tốt hay không nhé.", false);
         }
 
-        // Tạo item trong Sidebar
-        private void AddGroupItem(string name, bool isSelected)
+        // --- Các sự kiện Click ---
+        private void btnClose_Click(object sender, EventArgs e) => this.Close();
+        private void btnBack_Click(object sender, EventArgs e) => MessageBox.Show("Chức năng Quay lại");
+
+        private void btnAddFile_Click(object sender, EventArgs e)
         {
-            Panel pnlItem = new Panel();
-            pnlItem.Size = new Size(180, 60);
-            pnlItem.BackColor = isSelected ? Color.AliceBlue : Color.White;
-            pnlItem.Cursor = Cursors.Hand;
-            pnlItem.Click += (s, e) => { pnlItem.BackColor = Color.AliceBlue; };
-
-            // Avatar tròn
-            Panel pnlAvatar = new Panel();
-            pnlAvatar.Size = new Size(40, 40);
-            pnlAvatar.Location = new Point(10, 10);
-            GraphicsPath gp = new GraphicsPath();
-            gp.AddEllipse(0, 0, 40, 40);
-            pnlAvatar.Region = new Region(gp);
-            pnlAvatar.BackColor = ColorTranslator.FromHtml("#d8b4fe"); // Tím nhạt
-
-            Label lblName = new Label();
-            lblName.Text = name;
-            lblName.Location = new Point(60, 20);
-            lblName.AutoSize = true;
-            lblName.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-
-            pnlItem.Controls.Add(pnlAvatar);
-            pnlItem.Controls.Add(lblName);
-            flowLeftGroups.Controls.Add(pnlItem);
+            OpenFileDialog ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() == DialogResult.OK)
+                AddMessageBubble($"[File] {System.IO.Path.GetFileName(ofd.FileName)}", true);
         }
 
-        // Tạo bong bóng chat
-        // Thay thế phương thức AddMessage cũ
-        private void AddMessage(string text, bool isSentByMe, Color bgColor)
+        private void btnSend_Click(object sender, EventArgs e)
         {
-            // 1. Tính toán kích thước text để resize bong bóng
-            Size constrains = new Size(400, 5000); // Max width 400
-            Size textSize = TextRenderer.MeasureText(text, new Font("Segoe UI", 10), constrains, TextFormatFlags.WordBreak);
+            if (!string.IsNullOrWhiteSpace(txtMessage.Text))
+            {
+                AddMessageBubble(txtMessage.Text, true);
+                txtMessage.Clear();
+            }
+        }
 
-            // Chiều cao bong bóng = chiều cao text + padding trên dưới
-            int bubbleHeight = textSize.Height + 30;
-            int bubbleWidth = Math.Max(textSize.Width + 40, 150); // Min width 150
+        // --- Sự kiện vẽ trang trí cho ô nhập liệu (Bo tròn) ---
+        private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
+        {
+            Panel pnl = sender as Panel;
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // 2. Container cho dòng chat
+            Rectangle rect = new Rectangle(0, 0, pnl.Width - 1, pnl.Height - 1);
+            int radius = 20; // Độ bo góc
+
+            using (GraphicsPath path = GetRoundedRectPath(rect, radius))
+            using (Pen pen = new Pen(Color.LightGray, 1))
+            using (Brush brush = new SolidBrush(Color.FromArgb(240, 240, 240)))
+            {
+                g.FillPath(brush, path);
+                g.DrawPath(pen, path);
+            }
+        }
+
+        // --- HÀM 1: Tạo Bubble Chat (Logic chính) ---
+        private void AddMessageBubble(string message, bool isMe)
+        {
+            // 1. Tạo Panel dòng (Row) chứa tin nhắn
             Panel pnlRow = new Panel();
-            pnlRow.Height = bubbleHeight + 10; // Thêm margin bottom
-            pnlRow.Width = flowChatMessages.ClientSize.Width - 30; // Trừ scrollbar
-            pnlRow.Padding = new Padding(0);
-            pnlRow.Margin = new Padding(0, 0, 0, 10);
+            pnlRow.Width = flowChatMessages.ClientSize.Width - 25; // Trừ thanh cuộn
             pnlRow.BackColor = Color.Transparent;
+            // Padding để đẩy tin nhắn sang trái/phải
+            pnlRow.Padding = new Padding(isMe ? 100 : 10, 5, isMe ? 10 : 100, 5);
 
-            // 3. Bong bóng chat
-            BubblePanel bubble = new BubblePanel();
-            bubble.Text = text;
-            bubble.Font = new Font("Segoe UI", 10);
-            bubble.BubbleColor = bgColor;
-            bubble.IsSender = isSentByMe;
-            bubble.Size = new Size(bubbleWidth, bubbleHeight);
+            // 2. Tạo Panel bong bóng
+            Panel pnlBubble = new Panel();
+            pnlBubble.BackColor = Color.Transparent;
 
-            // 4. Định vị
-            if (isSentByMe)
+            // 3. Tạo Label nội dung
+            Label lblContent = new Label();
+            lblContent.Text = message;
+            lblContent.AutoSize = true;
+            lblContent.MaximumSize = new Size(pnlRow.Width - 140, 0); // Giới hạn chiều rộng để xuống dòng
+            lblContent.Font = new Font("Segoe UI", 11);
+            lblContent.ForeColor = isMe ? Color.White : Color.Black;
+            lblContent.BackColor = Color.Transparent;
+
+            // Canh chỉnh vị trí text để tránh đè lên cái đuôi nhọn
+            int tailGap = 12;
+            lblContent.Location = new Point(isMe ? 12 : 12 + tailGap, 12);
+
+            pnlBubble.Controls.Add(lblContent);
+
+            // 4. Tính toán kích thước bong bóng theo text
+            Size textSize = lblContent.GetPreferredSize(new Size(pnlRow.Width - 140, 0));
+            pnlBubble.Size = new Size(textSize.Width + 30 + tailGap, textSize.Height + 25);
+
+            // 5. Gán sự kiện vẽ hình dáng (Quan trọng)
+            pnlBubble.Paint += (s, e) =>
             {
-                bubble.Location = new Point(pnlRow.Width - bubble.Width - 5, 0);
-                bubble.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            }
-            else
-            {
-                bubble.Location = new Point(5, 0);
-                bubble.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            }
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
-            pnlRow.Controls.Add(bubble);
+                // Màu sắc: Tím (Mình) - Xám (Bạn)
+                Color color = isMe ? Color.FromArgb(160, 130, 255) : Color.FromArgb(225, 225, 225);
+
+                using (var brush = new SolidBrush(color))
+                {
+                    // Gọi hàm vẽ hình dáng đã sửa lỗi
+                    var path = DrawSmoothBubble(pnlBubble.ClientRectangle, 12, isMe);
+                    g.FillPath(brush, path);
+                }
+            };
+
+            // 6. Thêm vào giao diện
+            pnlRow.Height = pnlBubble.Height + 10;
+            if (isMe) pnlBubble.Dock = DockStyle.Right;
+            else pnlBubble.Dock = DockStyle.Left;
+
+            pnlRow.Controls.Add(pnlBubble);
             flowChatMessages.Controls.Add(pnlRow);
             flowChatMessages.ScrollControlIntoView(pnlRow);
         }
-    }
 
-    // Class vẽ bong bóng chat tùy chỉnh
-    // Thêm vào cuối file ChatForm.cs hoặc file logic
-
-public class BubblePanel : Panel
-    {
-        public Color BubbleColor { get; set; } = Color.LightGray;
-        public bool IsSender { get; set; } = false;
-
-        public BubblePanel()
-        {
-            this.DoubleBuffered = true;
-            this.ResizeRedraw = true;
-            this.BackColor = Color.Transparent; // Quan trọng để nền trong suốt
-            this.Padding = new Padding(15, 10, 15, 10); // Căn lề cho text không chạm viền
-
-            // Tối ưu render
-            this.SetStyle(ControlStyles.UserPaint |
-                          ControlStyles.AllPaintingInWmPaint |
-                          ControlStyles.OptimizedDoubleBuffer |
-                          ControlStyles.SupportsTransparentBackColor, true);
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-            // 1. Tạo hình dáng bo tròn
-            var path = GetBubblePath(this.ClientRectangle);
-
-            // 2. Cắt control theo hình dáng này (Loại bỏ góc đen)
-            this.Region = new Region(path);
-
-            // 3. Vẽ màu nền
-            using (SolidBrush brush = new SolidBrush(BubbleColor))
-            {
-                e.Graphics.FillPath(brush, path);
-            }
-
-            // 4. Vẽ Text (Vẽ đè lên nền)
-            TextRenderer.DrawText(e.Graphics, this.Text, this.Font,
-                new Rectangle(Padding.Left, Padding.Top, Width - Padding.Horizontal, Height - Padding.Vertical),
-                Color.Black,
-                TextFormatFlags.WordBreak | TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
-
-            // (Tùy chọn) Vẽ đường line trang trí mờ nhạt nếu muốn giống mẫu
-            // Chỉ vẽ khi không có text hoặc text ngắn để không che chữ
-            if (string.IsNullOrWhiteSpace(this.Text) || this.Text.Length < 5)
-            {
-                using (Pen linePen = new Pen(Color.FromArgb(50, 255, 255, 255), 3))
-                {
-                    e.Graphics.DrawLine(linePen, 20, Height - 15, Width - 40, Height - 15);
-                }
-            }
-        }
-
-        private GraphicsPath GetBubblePath(Rectangle rect)
+        // --- HÀM 2: Vẽ hình dáng Bubble (Đã fix lỗi hở nét) ---
+        private GraphicsPath DrawSmoothBubble(Rectangle r, int radius, bool isMe)
         {
             GraphicsPath path = new GraphicsPath();
-            int radius = 15;
-            rect.Width -= 1; rect.Height -= 1; // Trừ 1 pixel để tránh bị cắt viền
+            int d = radius * 2;
+            int tailSize = 10;
 
-            if (IsSender)
+            // Thu nhỏ vùng vẽ 1px để không bị răng cưa ở mép
+            r.Width -= 1;
+            r.Height -= 1;
+
+            if (isMe) // Bubble bên Phải (Của mình)
             {
-                // Góc nhọn bên phải dưới
-                path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
-                path.AddArc(rect.Right - radius, rect.Y, radius, radius, 270, 90);
-                path.AddLine(rect.Right, rect.Bottom - radius, rect.Right, rect.Bottom); // Đường thẳng xuống góc
-                path.AddLine(rect.Right, rect.Bottom, rect.Right - radius, rect.Bottom); // Đường ngang sang trái
-                path.AddArc(rect.X, rect.Bottom - radius, radius, radius, 90, 90);
+                int bodyWidth = r.Width - tailSize; // Thân ko bao gồm đuôi
+
+                path.AddArc(r.X, r.Y, d, d, 180, 90); // Góc trên trái
+                path.AddArc(r.X + bodyWidth - d, r.Y, d, d, 270, 90); // Góc trên phải
+
+                // Cạnh phải đi xuống
+                path.AddLine(r.X + bodyWidth, r.Y + radius, r.X + bodyWidth, r.Bottom - radius - tailSize);
+
+                // Vẽ đuôi nhọn
+                path.AddLine(r.X + bodyWidth, r.Bottom - radius - tailSize, r.Right, r.Bottom);
+                path.AddLine(r.Right, r.Bottom, r.X + bodyWidth - radius, r.Bottom);
+
+                // Góc dưới trái
+                path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
             }
-            else
+            else // Bubble bên Trái (Của người khác) - Đã fix lỗi
             {
-                // Góc nhọn bên trái dưới
-                path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
-                path.AddArc(rect.Right - radius, rect.Y, radius, radius, 270, 90);
-                path.AddArc(rect.Right - radius, rect.Bottom - radius, radius, radius, 0, 90);
-                path.AddLine(rect.X + radius, rect.Bottom, rect.X, rect.Bottom); // Đường ngang về góc trái
-                path.AddLine(rect.X, rect.Bottom, rect.X, rect.Bottom - radius); // Đường lên
+                int startX = r.X + tailSize; // Điểm bắt đầu thân (chừa chỗ cho đuôi)
+
+                path.AddArc(startX, r.Y, d, d, 180, 90); // Góc trên trái
+                path.AddArc(r.Right - d, r.Y, d, d, 270, 90); // Góc trên phải
+                path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90); // Góc dưới phải
+
+                // Đáy thân
+                path.AddLine(r.Right - radius, r.Bottom, startX + radius, r.Bottom);
+
+                // Vẽ đuôi nhọn bên trái
+                path.AddLine(startX + radius, r.Bottom, r.X, r.Bottom);
+                path.AddLine(r.X, r.Bottom, startX, r.Bottom - radius - tailSize);
             }
+
+            path.CloseFigure(); // Khép kín hình để tô màu không bị lỗi
+            return path;
+        }
+
+        // Helper: Vẽ hình chữ nhật bo tròn (cho ô Input)
+        private GraphicsPath GetRoundedRectPath(Rectangle bounds, int radius)
+        {
+            int diameter = radius * 2;
+            Size size = new Size(diameter, diameter);
+            Rectangle arc = new Rectangle(bounds.Location, size);
+            GraphicsPath path = new GraphicsPath();
+
+            if (radius == 0) { path.AddRectangle(bounds); return path; }
+
+            path.AddArc(arc, 180, 90);
+            arc.X = bounds.Right - diameter;
+            path.AddArc(arc, 270, 90);
+            arc.Y = bounds.Bottom - diameter;
+            path.AddArc(arc, 0, 90);
+            arc.X = bounds.Left;
+            path.AddArc(arc, 90, 90);
             path.CloseFigure();
             return path;
         }
+
+        // Helper: Tạo ảnh tròn (Avatar)
+        private Bitmap CreateCircle(Color c, int s)
+        {
+            Bitmap b = new Bitmap(s, s);
+            using (Graphics g = Graphics.FromImage(b))
+            {
+                g.Clear(Color.Transparent);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (Brush br = new SolidBrush(c)) g.FillEllipse(br, 0, 0, s - 1, s - 1);
+            }
+            return b;
+        }
     }
 }
-
