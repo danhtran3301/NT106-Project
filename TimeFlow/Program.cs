@@ -1,4 +1,6 @@
 using BT3_LTMCB;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Exercise3
 {
@@ -14,6 +16,10 @@ namespace Exercise3
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new FormMenuTCP());
+            CultureInfo culture = new CultureInfo("vi-VN");
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+            Application.Run(new FormTaskDetail());
         }
     }
 }
