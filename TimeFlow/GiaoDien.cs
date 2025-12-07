@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TimeFlow
+namespace DOANNT106
 {
     public partial class GiaoDien : Form
     {
