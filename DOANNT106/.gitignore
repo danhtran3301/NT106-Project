@@ -1,8 +1,15 @@
-﻿.vs/
-bin/
-obj/
+﻿# Ignore Visual Studio temporary files
+.vs/
 *.user
 *.suo
-.vs/
+*.userosscache
+*.sln.docstates
 
-/.vs
+# Build results
+bin/
+obj/
+Debug/
+Release/
+
+# Others
+*.vsidx
