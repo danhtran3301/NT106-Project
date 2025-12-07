@@ -59,35 +59,5 @@ namespace TimeFlow.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap Gemini_Generated_Image_n6ivcgn6ivcgn6iv {
-            get {
-                object obj = ResourceManager.GetObject("Gemini_Generated_Image_n6ivcgn6ivcgn6iv", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap user_icon_simple_design_free_vector {
-            get {
-                object obj = ResourceManager.GetObject("user-icon-simple-design-free-vector", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Bitmap.
-        /// </summary>
-        internal static System.Drawing.Bitmap user_icon_simple_design_free_vector1 {
-            get {
-                object obj = ResourceManager.GetObject("user-icon-simple-design-free-vector1", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
     }
 }

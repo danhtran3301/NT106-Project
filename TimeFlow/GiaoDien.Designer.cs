@@ -1,4 +1,4 @@
-﻿namespace TimeFlow
+﻿namespace DOANNT106
 {
     partial class GiaoDien
     {
