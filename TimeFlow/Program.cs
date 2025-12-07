@@ -1,4 +1,5 @@
 using BT3_LTMCB;
+using TimeFlow;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -15,10 +16,11 @@ namespace Exercise3
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            Application.SetCompatibleTextRenderingDefault(false);
             CultureInfo culture = new CultureInfo("vi-VN");
             Thread.CurrentThread.CurrentCulture = culture;
             Thread.CurrentThread.CurrentUICulture = culture;
-            Application.Run(new FormTaskDetail());
+            Application.Run(new TaskList());
         }
     }
 }
