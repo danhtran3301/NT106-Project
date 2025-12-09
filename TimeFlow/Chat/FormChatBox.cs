@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D; // Thư viện vẽ đồ họa
 using System.Windows.Forms;
 
-namespace TimeFlow.Authentication
+namespace TimeFlow.Chat
 {
     public partial class ChatForm : Form
     {
@@ -46,7 +46,12 @@ namespace TimeFlow.Authentication
 
         // --- Các sự kiện Click ---
         private void btnClose_Click(object sender, EventArgs e) => this.Close();
-        private void btnBack_Click(object sender, EventArgs e) => MessageBox.Show("Chức năng Quay lại");
+        
+        // Quay lại FormGiaoDien - đơn giản chỉ cần close form này
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            this.Close(); // FormGiaoDien sẽ tự động show lại nhờ event handler trong FormGiaoDien
+        }
 
         private void btnAddFile_Click(object sender, EventArgs e)
         {

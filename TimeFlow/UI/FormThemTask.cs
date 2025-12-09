@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TimeFlow
+namespace TimeFlow.UI
 {
     public partial class FormThemTask : Form
     {

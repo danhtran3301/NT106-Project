@@ -2,7 +2,7 @@ using System;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using TimeFlow.Authentication;
+using TimeFlow.UI;
 
 namespace TimeFlow
 {
@@ -18,8 +18,14 @@ namespace TimeFlow
             // see https://aka.ms/applicationconfiguration.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new ChatForm());
+            
+            // Ch?y FormGiaoDien làm main dashboard
             Application.Run(new FormTaskDetail());
+            
+            // Other entry points (comment out):
+            // Application.Run(new ChatForm());           // Chat interface
+            // Application.Run(new FormDangNhap());       // Login
+            // Application.Run(new FormMenuTCP());        // TCP Menu
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace TimeFlow
 {
-    partial class GiaoDien
+    partial class FormGiaoDien
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GiaoDien));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormGiaoDien));
             panel1 = new Panel();
             panel3 = new Panel();
             label13 = new Label();

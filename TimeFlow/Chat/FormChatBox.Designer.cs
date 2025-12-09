@@ -2,7 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace TimeFlow.Authentication
+namespace TimeFlow.Chat
 {
     partial class ChatForm
     {
