@@ -26,9 +26,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Tasks\FormTaskDetail.resx">
-      <Generator></Generator>
-    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

@@ -95,7 +95,7 @@ namespace TimeFlow
                 Width = 40,
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 18, 0, 0)
+                Margin = new Padding(0,18,0,0)
             };
             arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại trang trước..."); };
             leftFlow.Controls.Add(arrowButton);
@@ -135,7 +135,7 @@ namespace TimeFlow
                 Width = 40,
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 18, 0, 0)
+                Margin = new Padding(0,18,0,0)
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             rightFlow.Controls.Add(closeButton);
