@@ -48,7 +48,7 @@ namespace TimeFlow
                 if (_borderRadius != value)
                 {
                     _borderRadius = value;
-                    UpdateRegion();
+                    UpdateRegion(); 
                 }
             }
         }
@@ -126,7 +126,7 @@ namespace TimeFlow
                 Rectangle rect = new Rectangle(0, 0, this.Width, this.Height);
                 GraphicsPath path = GetRoundedRect(rect, _borderRadius);
                 this.Region = new Region(path);
-                this.Invalidate();
+                this.Invalidate(); 
             }
         }
 
@@ -199,7 +199,7 @@ namespace TimeFlow
             {
                 _isMouseDown = true;
                 this.BackColor = ColorPalette.Gray300;
-                this.Invalidate();
+                this.Invalidate(); 
             }
         }
 
@@ -218,7 +218,7 @@ namespace TimeFlow
                 {
                     this.BackColor = _originalBackColor;
                 }
-                this.Invalidate();
+                this.Invalidate(); 
             }
         }
 
@@ -228,7 +228,7 @@ namespace TimeFlow
             if (!_isMouseDown)
             {
                 this.BackColor = _hoverColor;
-                this.Invalidate();
+                this.Invalidate(); 
             }
         }
 
@@ -236,7 +236,7 @@ namespace TimeFlow
         {
             base.OnMouseLeave(e);
             this.BackColor = _originalBackColor;
-            this.Invalidate();
+            this.Invalidate(); 
         }
     }
 
@@ -289,58 +289,6 @@ namespace TimeFlow
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
             this.UpdateStyles();
-            
-            // Override click handlers cho navigation buttons
-            OverrideNavigationButtons();
-        }
-
-        /// <summary>
-        /// Override các button navigation để implement single-window pattern
-        /// </summary>
-        private void OverrideNavigationButtons()
-        {
-            // Tìm arrowButton và closeButton trong controls
-            var arrowButton = FindControlByText("←");
-            var closeButton = FindControlByText("✕");
-
-            if (arrowButton != null)
-            {
-                // Remove old handler và add new
-                arrowButton.Click -= null;
-                arrowButton.Click += (s, e) => { this.Close(); }; // Close để quay về FormGiaoDien
-            }
-
-            if (closeButton != null)
-            {
-                closeButton.Click -= null;
-                closeButton.Click += (s, e) => { this.Close(); };
-            }
-        }
-
-        /// <summary>
-        /// Helper để tìm control theo text
-        /// </summary>
-        private Control FindControlByText(string text)
-        {
-            foreach (Control ctrl in this.Controls)
-            {
-                var found = FindControlByTextRecursive(ctrl, text);
-                if (found != null) return found;
-            }
-            return null;
-        }
-
-        private Control FindControlByTextRecursive(Control parent, string text)
-        {
-            if (parent.Text == text) return parent;
-
-            foreach (Control child in parent.Controls)
-            {
-                if (child.Text == text) return child;
-                var found = FindControlByTextRecursive(child, text);
-                if (found != null) return found;
-            }
-            return null;
         }
 
         private CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor)
@@ -370,7 +318,7 @@ namespace TimeFlow
             {
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                AutoSize = false,
+                AutoSize = false, 
                 Width = 800,
                 Margin = new Padding(0, 0, 0, 16),
                 Padding = new Padding(0, 0, 0, 8),
