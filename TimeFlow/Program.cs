@@ -1,9 +1,10 @@
-using BT3_LTMCB;
-using TimeFlow;
+using System;
+using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using TimeFlow.UI;
 
-namespace Exercise3
+namespace TimeFlow
 {
     internal static class Program
     {
@@ -15,11 +16,8 @@ namespace Exercise3
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.SetCompatibleTextRenderingDefault(false);
-            CultureInfo culture = new CultureInfo("vi-VN");
-            Thread.CurrentThread.CurrentCulture = culture;
-            Thread.CurrentThread.CurrentUICulture = culture;
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);      
             Application.Run(new FormTaskList());
         }
     }

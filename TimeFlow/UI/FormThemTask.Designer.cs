@@ -1,4 +1,4 @@
-﻿namespace TimeFlow
+namespace TimeFlow.UI
 {
     partial class FormThemTask
     {
@@ -51,7 +51,7 @@
             label1.Name = "label1";
             label1.Size = new Size(145, 25);
             label1.TabIndex = 0;
-            label1.Text = "Thêm nhiệm vụ";
+            label1.Text = "Th�m nhi?m v?";
             // 
             // labelTaskName
             // 
@@ -61,7 +61,7 @@
             labelTaskName.Name = "labelTaskName";
             labelTaskName.Size = new Size(96, 20);
             labelTaskName.TabIndex = 1;
-            labelTaskName.Text = "Tên nhiệm vụ";
+            labelTaskName.Text = "T�n nhi?m v?";
             // 
             // labelTaskDate
             // 
@@ -71,7 +71,7 @@
             labelTaskDate.Name = "labelTaskDate";
             labelTaskDate.Size = new Size(101, 20);
             labelTaskDate.TabIndex = 2;
-            labelTaskDate.Text = "Ngày đến hạn";
+            labelTaskDate.Text = "Ng�y ??n h?n";
             // 
             // labelTaskTime
             // 
@@ -81,7 +81,7 @@
             labelTaskTime.Name = "labelTaskTime";
             labelTaskTime.Size = new Size(71, 20);
             labelTaskTime.TabIndex = 3;
-            labelTaskTime.Text = "Thời gian";
+            labelTaskTime.Text = "Th?i gian";
             // 
             // labelTaskFrequency
             // 
@@ -91,7 +91,7 @@
             labelTaskFrequency.Name = "labelTaskFrequency";
             labelTaskFrequency.Size = new Size(64, 20);
             labelTaskFrequency.TabIndex = 4;
-            labelTaskFrequency.Text = "Tần suất";
+            labelTaskFrequency.Text = "T?n su?t";
             // 
             // labelTaskCategory
             // 
@@ -101,7 +101,7 @@
             labelTaskCategory.Name = "labelTaskCategory";
             labelTaskCategory.Size = new Size(62, 20);
             labelTaskCategory.TabIndex = 5;
-            labelTaskCategory.Text = "Thể loại";
+            labelTaskCategory.Text = "Th? lo?i";
             // 
             // labelTaskDescription
             // 
@@ -111,7 +111,7 @@
             labelTaskDescription.Name = "labelTaskDescription";
             labelTaskDescription.Size = new Size(48, 20);
             labelTaskDescription.TabIndex = 6;
-            labelTaskDescription.Text = "Mô tả";
+            labelTaskDescription.Text = "M� t?";
             // 
             // textBox1
             // 
@@ -182,7 +182,7 @@
             Controls.Add(labelTaskName);
             Controls.Add(label1);
             Name = "FormThemTask";
-            Text = "Thêm nhiệm vụ";
+            Text = "Th�m nhi?m v?";
             ResumeLayout(false);
             PerformLayout();
         }

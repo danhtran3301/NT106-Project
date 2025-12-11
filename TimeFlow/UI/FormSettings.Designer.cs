@@ -1,6 +1,7 @@
 ﻿using System.Drawing.Drawing2D;
+using TimeFlow.UI.Components;
 
-namespace TimeFlow
+namespace TimeFlow.UI
 {
     partial class FormSettings
     {
@@ -214,26 +215,6 @@ namespace TimeFlow
             this.Controls.Add(sidebarPanel);
             this.Controls.Add(headerPanel);
 
-        }
-
-        public static class AppColors
-        {
-            public static Color Gray50 = ColorTranslator.FromHtml("#F9FAFB");
-            public static Color Gray100 = ColorTranslator.FromHtml("#F3F4F6");
-            public static Color Gray200 = ColorTranslator.FromHtml("#E5E7EB");
-            public static Color Gray300 = ColorTranslator.FromHtml("#D1D5DB");
-            public static Color Gray400 = ColorTranslator.FromHtml("#9CA3AF");
-            public static Color Gray500 = ColorTranslator.FromHtml("#6B7280");
-            public static Color Gray700 = ColorTranslator.FromHtml("#374151");
-            public static Color Gray800 = ColorTranslator.FromHtml("#1F2937");
-            public static Color Gray900 = ColorTranslator.FromHtml("#111827");
-            public static Color Blue50 = ColorTranslator.FromHtml("#EFF6FF");
-            public static Color Blue500 = ColorTranslator.FromHtml("#3B82F6");
-            public static Color Blue600 = ColorTranslator.FromHtml("#2563EB");
-            public static Color Red50 = ColorTranslator.FromHtml("#FEF2F2");
-            public static Color Red200 = ColorTranslator.FromHtml("#FECACA");
-            public static Color Red600 = ColorTranslator.FromHtml("#DC2626");
-            public static Color White = Color.White;
         }
 
         // Helper to create the white cards with customizable height

@@ -1,4 +1,4 @@
-﻿namespace BT3_LTMCB
+﻿namespace TimeFlow.Authentication
 {
     partial class FormThongTinNguoiDung
     {

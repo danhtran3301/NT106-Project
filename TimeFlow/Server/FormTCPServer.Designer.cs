@@ -1,4 +1,4 @@
-﻿namespace Exercise3
+﻿namespace TimeFlow.Server
 {
     partial class FormTCPServer
     {

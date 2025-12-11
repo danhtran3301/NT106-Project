@@ -5,7 +5,7 @@ using System.Text;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
-namespace BT3_LTMCB
+namespace TimeFlow.Authentication
 {
     public partial class FormDangNhap : Form
     {

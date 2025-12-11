@@ -8,8 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeFlow.UI.Components;
 
-namespace TimeFlow
+namespace TimeFlow.UI
 {
     public partial class FormSettings : Form
     {
@@ -24,7 +25,5 @@ namespace TimeFlow
 
             InitializeComponent();
         }
-
-
     }
 }
