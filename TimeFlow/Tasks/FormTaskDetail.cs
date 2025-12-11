@@ -189,8 +189,20 @@ namespace TimeFlow
         public override Color BackColor
         {
             get => base.BackColor;
-            set { base.BackColor = value; _originalBackColor = value; }
+            set
+            {
+                base.BackColor = value;
+
+                try
+                {
+                    if (!_isMouseDown && !this.ClientRectangle.Contains(this.PointToClient(Cursor.Position)))
+                        _originalBackColor = value;
+                }
+                catch { }
+            }
         }
+
+
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
@@ -206,21 +218,30 @@ namespace TimeFlow
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
+
             if (e.Button == MouseButtons.Left)
             {
                 _isMouseDown = false;
 
-                if (this.ClientRectangle.Contains(this.PointToClient(Cursor.Position)))
+                Point pos;
+                try
                 {
+                    pos = this.PointToClient(Cursor.Position);
+                }
+                catch
+                {
+                    return;
+                }
+
+                if (this.ClientRectangle.Contains(pos))
                     this.BackColor = _hoverColor;
-                }
                 else
-                {
                     this.BackColor = _originalBackColor;
-                }
-                this.Invalidate(); 
+
+                this.Invalidate();
             }
         }
+
 
         protected override void OnMouseEnter(EventArgs e)
         {
@@ -322,7 +343,7 @@ namespace TimeFlow
                 Width = 800,
                 Margin = new Padding(0, 0, 0, 16),
                 Padding = new Padding(0, 0, 0, 8),
-                BackColor = Color.Transparent,
+                BackColor = ColorPalette.Gray50,
                 BorderStyle = BorderStyle.FixedSingle
             };
             comment.AutoSize = true;
