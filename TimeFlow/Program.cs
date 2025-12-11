@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TimeFlow.UI;
+using TimeFlow.Tasks;
 
 namespace TimeFlow
 {
@@ -18,7 +19,7 @@ namespace TimeFlow
             // see https://aka.ms/applicationconfiguration.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);      
-            Application.Run(new TimeFlow.Tasks.FormTaskList());
+            Application.Run(new FormGiaoDien());
         }
     }
 }

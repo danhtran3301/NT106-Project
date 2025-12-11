@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using TimeFlow.UI.Components;
 
-namespace TimeFlow
+namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
     {
-
         private void InitializeComponent()
         {
             SetupLayout();
@@ -16,7 +16,7 @@ namespace TimeFlow
         private void SetupLayout()
         {
             this.Text = "Task Details";
-            this.BackColor = ColorPalette.Gray100;
+            this.BackColor = AppColors.Gray100;
             this.WindowState = FormWindowState.Maximized;
             this.Padding = new Padding(0);
             this.MinimumSize = new Size(800, 600);
@@ -84,13 +84,13 @@ namespace TimeFlow
                 Height = 60
             };
 
-            CustomButton arrowButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "←",
                 Font = new Font("Segoe UI Emoji", 16F),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -105,7 +105,7 @@ namespace TimeFlow
             {
                 Text = "Task Details",
                 Font = FontHeaderTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -124,13 +124,13 @@ namespace TimeFlow
                 Margin = new Padding(0)
             };
 
-            CustomButton closeButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "✕",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -140,13 +140,13 @@ namespace TimeFlow
             closeButton.Click += (sender, e) => { this.Close(); };
             rightFlow.Controls.Add(closeButton);
 
-            CustomButton optionsButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "...",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -161,7 +161,7 @@ namespace TimeFlow
             {
                 Dock = DockStyle.Bottom,
                 Height = 1,
-                BackColor = ColorPalette.Gray200
+                BackColor = AppColors.Gray200
             };
 
             Panel headerContainer = new Panel { Dock = DockStyle.Top, Height = 81, BackColor = Color.Transparent };
@@ -186,7 +186,6 @@ namespace TimeFlow
                 Margin = new Padding(0, 0, 1, 0)
             };
 
-
             int buttonWidth = 200;
             int buttonHeight = 50;
 
@@ -208,34 +207,30 @@ namespace TimeFlow
             {
                 Text = "ACCOUNT",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = ColorPalette.Gray700,
+                ForeColor = AppColors.Gray700,
                 AutoSize = true
             });
             menuPanel.Controls.Add(accountHeader);
 
-            menuPanel.Controls.Add(CreateMenuButton("Your Task", ColorPalette.Blue500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight));
 
-            menuPanel.Controls.Add(CreateMenuButton("Group", ColorPalette.Green500, Color.White, buttonWidth, buttonHeight));
-
-            menuPanel.Controls.Add(CreateMenuButton("New task", ColorPalette.Orange500, Color.White, buttonWidth, buttonHeight));
-
-            Color submitColor = ColorPalette.Purple500;
-
+            Color submitColor = AppColors.Purple500;
             menuPanel.Controls.Add(CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight,
                 Color.FromArgb(200, submitColor)));
-
 
             MonthCalendar monthCalendar = new MonthCalendar
             {
                 BackColor = Color.White,
-                ForeColor = ColorPalette.Gray700,
+                ForeColor = AppColors.Gray700,
                 Font = FontRegular,
                 SelectionStart = new DateTime(2025, 11, 16),
                 SelectionEnd = new DateTime(2025, 11, 16),
                 ShowTodayCircle = false,
                 TitleBackColor = Color.White,
-                TitleForeColor = ColorPalette.Gray800,
-                TrailingForeColor = ColorPalette.Gray300,
+                TitleForeColor = AppColors.Gray800,
+                TrailingForeColor = AppColors.Gray300,
                 CalendarDimensions = new Size(1, 1)
             };
 
@@ -271,7 +266,6 @@ namespace TimeFlow
             };
             scrollContainer.Controls.Add(contentPanel);
 
-
             int centerContentWidth = 800;
 
             TableLayoutPanel headerLayout = new TableLayoutPanel
@@ -295,16 +289,16 @@ namespace TimeFlow
             {
                 Text = "Design a new dashboard for the mobile app",
                 Font = FontTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Anchor = AnchorStyles.Left
             };
             headerLayout.Controls.Add(title, 0, 0);
 
-            CustomPanel status = new CustomPanel
+            ModernPanel status = new ModernPanel
             {
                 Text = "In Progress",
-                BackColor = ColorPalette.Blue500,
+                BackColor = AppColors.Blue500,
                 ForeColor = Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
@@ -322,19 +316,18 @@ namespace TimeFlow
             {
                 Text = "The current dashboard design is outdated and doesn't provide a good user experience. We need to create a new design that is modern, intuitive, and visually appealing. The new design should include a clear information hierarchy, data visualizations, and easy navigation.",
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray600,
+                ForeColor = AppColors.Gray600,
                 MaximumSize = new Size(centerContentWidth, 0),
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 20)
             };
             contentPanel.Controls.Add(description);
 
-
             Label keyReqTitle = new Label
             {
                 Text = "Key requirements:",
                 Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 8)
             };
@@ -354,7 +347,7 @@ namespace TimeFlow
                 {
                     Text = "• " + req,
                     Font = FontRegular,
-                    ForeColor = ColorPalette.Gray600,
+                    ForeColor = AppColors.Gray600,
                     AutoSize = true,
                     Margin = new Padding(0, 0, 0, 4)
                 };
@@ -365,7 +358,7 @@ namespace TimeFlow
             {
                 Text = "Comments",
                 Font = FontTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 30, 0, 16)
             };
@@ -379,12 +372,12 @@ namespace TimeFlow
             };
             contentPanel.Controls.Add(newCommentBox);
 
-            CustomButton postButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton postButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "Post",
-                BackColor = ColorPalette.Blue500,
+                BackColor = AppColors.Blue500,
                 ForeColor = Color.White,
-                HoverColor = ColorPalette.Blue600,
+                HoverColor = AppColors.Blue600,
                 BorderRadius = 6,
                 Width = 100,
                 Height = 40,
@@ -397,7 +390,6 @@ namespace TimeFlow
             contentPanel.Controls.Add(CreateComment("Diana", "Can we make sure the dark mode colors are consistent with the web version?", "3 hours ago"));
             contentPanel.Controls.Add(CreateComment("Charlie", "Great progress! I've attached the latest wireframes.", "1 hour ago"));
 
-
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentPanel.Controls.Add(spacer);
             return scrollContainer;
@@ -409,7 +401,7 @@ namespace TimeFlow
             int sidebarPadding = 24;
             int contentWidth = sidebarWidth - (sidebarPadding * 2);
 
-            CustomPanel mainSidebarPanel = new CustomPanel
+            ModernPanel mainSidebarPanel = new ModernPanel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
@@ -429,12 +421,11 @@ namespace TimeFlow
             };
             mainSidebarPanel.Controls.Add(contentFlow);
 
-
             Label detailsTitle = new Label
             {
                 Text = "Details",
                 Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 16)
             };
@@ -461,7 +452,7 @@ namespace TimeFlow
                 {
                     Text = label,
                     Font = FontRegular,
-                    ForeColor = ColorPalette.Gray500,
+                    ForeColor = AppColors.Gray500,
                     Dock = DockStyle.Fill,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Margin = new Padding(0, 10, 0, 10)
@@ -474,7 +465,6 @@ namespace TimeFlow
                 detailsContainer.Controls.Add(control, 1, row);
             };
 
-
             FlowLayoutPanel assigneesValue = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.LeftToRight,
@@ -484,8 +474,8 @@ namespace TimeFlow
             };
 
             assigneesValue.Controls.Add(new Label { Text = "🧑‍💻", Font = new Font("Segoe UI Emoji", 10F), AutoSize = true, Margin = new Padding(0, 0, 4, 0) });
-            assigneesValue.Controls.Add(new Label { Text = "Alice, Bob", Font = FontRegular, ForeColor = ColorPalette.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
-            assigneesValue.Controls.Add(new Label { Text = "(+2)", Font = FontRegular, ForeColor = ColorPalette.Gray500, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            assigneesValue.Controls.Add(new Label { Text = "Alice, Bob", Font = FontRegular, ForeColor = AppColors.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            assigneesValue.Controls.Add(new Label { Text = "(+2)", Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
 
             AddDetailRowToTable("Assignees", assigneesValue, 0);
 
@@ -493,7 +483,7 @@ namespace TimeFlow
             {
                 Text = "Dec 15, 2025",
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -505,10 +495,10 @@ namespace TimeFlow
                 AutoSize = true,
                 Margin = new Padding(0)
             };
-            CustomPanel priority = new CustomPanel
+            ModernPanel priority = new ModernPanel
             {
                 Text = "High",
-                BackColor = ColorPalette.Red600,
+                BackColor = AppColors.Red600,
                 ForeColor = Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
@@ -527,16 +517,16 @@ namespace TimeFlow
                 Margin = new Padding(0)
             };
 
-            CustomPanel progressPanel = new CustomPanel
+            ModernPanel progressPanel = new ModernPanel
             {
-                BackColor = ColorPalette.Gray200,
+                BackColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Height = 8,
                 Width = 150
             };
-            CustomPanel progressBar = new CustomPanel
+            ModernPanel progressBar = new ModernPanel
             {
-                BackColor = ColorPalette.Blue500,
+                BackColor = AppColors.Blue500,
                 BorderRadius = 4,
                 Height = 8,
                 Width = (int)(150 * 0.75)
@@ -547,7 +537,7 @@ namespace TimeFlow
             {
                 Text = "75%",
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 Margin = new Padding(8, -5, 0, 0),
                 TextAlign = ContentAlignment.MiddleLeft,
                 AutoSize = true
@@ -558,12 +548,11 @@ namespace TimeFlow
 
             contentFlow.Controls.Add(detailsContainer);
 
-
             Label activityTitle = new Label
             {
                 Text = "Activity",
                 Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 30, 0, 24)
             };

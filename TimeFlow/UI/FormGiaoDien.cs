@@ -12,7 +12,7 @@ using TimeFlow.Authentication;
 using TimeFlow.Server;
 using TimeFlow.Chat;
 using TimeFlow.UI;
-// using TimeFlow.Tasks; // Tạm comment vì TaskList chưa có
+using TimeFlow.Tasks;
 
 namespace TimeFlow
 {
@@ -123,13 +123,10 @@ namespace TimeFlow
             }
         }
 
-        // Your Task - Tạm thời thông báo
+        // Your Task - Mở FormTaskList
         private void Button1_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Task List đang được phát triển!", "Thông báo", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            // TODO: Uncomment khi TaskList sẵn sàng
-            // NavigateToForm<TaskList>();
+            NavigateToForm<FormTaskList>();
         }
 
         // Group - Mở Chat với single-window pattern
