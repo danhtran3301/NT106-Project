@@ -250,15 +250,27 @@ namespace TimeFlow
 
         private Control CreateCenterContent()
         {
-            FlowLayoutPanel contentPanel = new FlowLayoutPanel
+            Panel scrollContainer = new Panel
             {
                 Dock = DockStyle.Fill,
+                AutoScroll = true,                
+                BackColor = Color.White,
+                Padding = new Padding(0),
+                Margin = new Padding(0)
+            };
+
+            FlowLayoutPanel contentPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = false,
+                AutoSize =true,
                 Padding = new Padding(32, 130, 32, 24),
                 BackColor = Color.White,
             };
+            scrollContainer.Controls.Add(contentPanel);
+
 
             int centerContentWidth = 800;
 
@@ -388,8 +400,7 @@ namespace TimeFlow
 
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentPanel.Controls.Add(spacer);
-
-            return contentPanel;
+            return scrollContainer;
         }
 
         private Control CreateRightSidebar()
