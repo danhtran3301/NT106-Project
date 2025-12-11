@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using TimeFlow.UI.Components;
+using TimeFlow.Models;
 
 namespace TimeFlow.Tasks
 {
@@ -13,13 +14,23 @@ namespace TimeFlow.Tasks
         private readonly Font FontHeaderTitle = new Font("Segoe UI", 12F, FontStyle.Bold);
         private readonly Color HeaderIconColor = AppColors.Gray600;
 
+        private TaskModel _currentTask;
+
+        // Constructor mặc định (fallback)
         public FormTaskDetail()
         {
+            // Sử dụng task đầu tiên làm demo nếu không pass task
             InitializeComponent();
             this.SetStyle(ControlStyles.DoubleBuffer |
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
             this.UpdateStyles();
+        }
+
+        // Constructor nhận task data
+        public FormTaskDetail(TaskModel task) : this()
+        {
+            _currentTask = task ?? throw new ArgumentNullException(nameof(task));
         }
 
         private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor)
