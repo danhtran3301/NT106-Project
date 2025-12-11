@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 using TimeFlow.UI.Components;
+using TimeFlow.Models;
+using TimeFlow.Services;
 
 namespace TimeFlow.Tasks
 {
@@ -301,20 +304,9 @@ namespace TimeFlow.Tasks
                 BackColor = AppColors.Gray100,
             };
 
-            var tasks = new[]
-            {
-                new { Name = "Design a new dashboard for the mobile app", Assignees = 3, DueDate = "Dec 15, 2025", Status = "In Progress", StatusColor = AppColors.Blue500, Priority = "High", PriorityColor = AppColors.Red500 },
-                new { Name = "Database Schema (CSDL) Deadline", Assignees = 1, DueDate = "Nov 01, 2025", Status = "Pending", StatusColor = AppColors.Yellow500, Priority = "Medium", PriorityColor = AppColors.Orange500 },
-                new { Name = "Philosophy Theory Preparation", Assignees = 2, DueDate = "Dec 21, 2025", Status = "Completed", StatusColor = AppColors.Green500, Priority = "Low", PriorityColor = AppColors.Green500 },
-                new { Name = "Submit Q4 Report", Assignees = 1, DueDate = "Nov 30, 2025", Status = "Pending", StatusColor = AppColors.Yellow500, Priority = "High", PriorityColor = AppColors.Red500 },
-                new { Name = "Team Building Event Planning", Assignees = 4, DueDate = "Dec 05, 2025", Status = "In Progress", StatusColor = AppColors.Blue500, Priority = "Medium", PriorityColor = AppColors.Orange500 },
-                new { Name = "Task 6: Review design docs", Assignees = 1, DueDate = "Dec 10, 2025", Status = "In Progress", StatusColor = AppColors.Blue500, Priority = "Medium", PriorityColor = AppColors.Orange500 },
-                new { Name = "Task 7: Prepare presentation slides", Assignees = 2, DueDate = "Dec 12, 2025", Status = "Pending", StatusColor = AppColors.Yellow500, Priority = "Low", PriorityColor = AppColors.Green500 },
-                new { Name = "Task 8: Final API integration", Assignees = 3, DueDate = "Dec 18, 2025", Status = "In Progress", StatusColor = AppColors.Blue500, Priority = "High", PriorityColor = AppColors.Red500 },
-                new { Name = "Task 9: Database backup", Assignees = 1, DueDate = "Dec 25, 2025", Status = "Completed", StatusColor = AppColors.Green500, Priority = "Low", PriorityColor = AppColors.Green500 },
-                new { Name = "Task 10: Holiday Planning", Assignees = 4, DueDate = "Jan 01, 2026", Status = "Pending", StatusColor = AppColors.Yellow500, Priority = "Medium", PriorityColor = AppColors.Orange500 },
-            };
-            int activeTaskCount = tasks.Length;
+            // Lấy tasks từ TaskManager thay vì hardcode
+            var tasks = TaskManager.GetAllTasks();
+            int activeTaskCount = tasks.Count(t => t.Status != TaskState.Completed);
 
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
@@ -399,9 +391,22 @@ namespace TimeFlow.Tasks
             AddHeaderLabel("PRIORITY", 3);
             contentPanel.Controls.Add(columnHeader);
 
+            // Tạo task items từ dữ liệu thật
             foreach (var task in tasks)
             {
-                Control taskItem = CreateTaskListItem(task.Name, task.Assignees, task.DueDate, task.Status, task.StatusColor, task.Priority, task.PriorityColor);
+                Color statusColor = GetStatusColor(task.Status);
+                Color priorityColor = GetPriorityColor(task.Priority);
+
+                Control taskItem = CreateTaskListItem(
+                    task.Id,
+                    task.Name, 
+                    task.AssigneeCount, 
+                    task.DueDateText, 
+                    task.StatusText, 
+                    statusColor, 
+                    task.PriorityText, 
+                    priorityColor
+                );
 
                 taskItem.Anchor = AnchorStyles.Left | AnchorStyles.Right;
                 taskItem.SizeChanged += (sender, e) => {
@@ -416,7 +421,7 @@ namespace TimeFlow.Tasks
             return contentPanel;
         }
 
-        private Control CreateTaskListItem(string name, int assignees, string dueDate, string status, Color statusColor, string priority, Color priorityColor)
+        private Control CreateTaskListItem(int taskId, string name, int assignees, string dueDate, string status, Color statusColor, string priority, Color priorityColor)
         {
             ModernPanel taskItemPanel = new ModernPanel
             {
@@ -429,6 +434,9 @@ namespace TimeFlow.Tasks
                 Margin = new Padding(0, 0, 0, 12),
                 Cursor = Cursors.Hand,
             };
+
+            // Thêm click event để mở FormTaskDetail
+            taskItemPanel.Click += (sender, e) => OpenTaskDetail(taskId);
 
             TableLayoutPanel taskLayout = new TableLayoutPanel
             {
@@ -447,6 +455,9 @@ namespace TimeFlow.Tasks
                 BackColor = Color.Transparent,
             };
 
+            // Forward click events từ children controls
+            taskLayout.Click += (sender, e) => OpenTaskDetail(taskId);
+
             FlowLayoutPanel nameFlow = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.TopDown,
@@ -455,26 +466,76 @@ namespace TimeFlow.Tasks
                 Padding = new Padding(0),
                 Margin = new Padding(0)
             };
-            nameFlow.Controls.Add(new Label { Text = name, Font = FontBold, ForeColor = AppColors.Gray800, AutoSize = true, MaximumSize = new Size(350, 0) });
-            nameFlow.Controls.Add(new Label { Text = $"{assignees} assignees", Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true, Margin = new Padding(0, 4, 0, 0) });
+            nameFlow.Click += (sender, e) => OpenTaskDetail(taskId);
+
+            Label nameLabel = new Label { Text = name, Font = FontBold, ForeColor = AppColors.Gray800, AutoSize = true, MaximumSize = new Size(350, 0) };
+            nameLabel.Click += (sender, e) => OpenTaskDetail(taskId);
+            nameFlow.Controls.Add(nameLabel);
+
+            Label assigneeLabel = new Label { Text = $"{assignees} assignees", Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true, Margin = new Padding(0, 4, 0, 0) };
+            assigneeLabel.Click += (sender, e) => OpenTaskDetail(taskId);
+            nameFlow.Controls.Add(assigneeLabel);
+
             taskLayout.Controls.Add(nameFlow, 0, 0);
 
-            taskLayout.Controls.Add(new Label { Text = dueDate, Font = FontRegular, ForeColor = AppColors.Gray700, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 1, 0);
+            Label dueDateLabel = new Label { Text = dueDate, Font = FontRegular, ForeColor = AppColors.Gray700, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft };
+            dueDateLabel.Click += (sender, e) => OpenTaskDetail(taskId);
+            taskLayout.Controls.Add(dueDateLabel, 1, 0);
 
             Panel statusWrapper = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) };
+            statusWrapper.Click += (sender, e) => OpenTaskDetail(taskId);
             ModernPanel statusTag = CreateTag(status, statusColor);
+            statusTag.Click += (sender, e) => OpenTaskDetail(taskId);
             statusWrapper.Controls.Add(statusTag);
             statusTag.Anchor = AnchorStyles.None;
             taskLayout.Controls.Add(statusWrapper, 2, 0);
 
             Panel priorityWrapper = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) };
+            priorityWrapper.Click += (sender, e) => OpenTaskDetail(taskId);
             ModernPanel priorityTag = CreateTag(priority, priorityColor);
+            priorityTag.Click += (sender, e) => OpenTaskDetail(taskId);
             priorityWrapper.Controls.Add(priorityTag);
             priorityTag.Anchor = AnchorStyles.None;
             taskLayout.Controls.Add(priorityWrapper, 3, 0);
 
             taskItemPanel.Controls.Add(taskLayout);
             return taskItemPanel;
+        }
+
+        private void OpenTaskDetail(int taskId)
+        {
+            var task = TaskManager.GetTaskById(taskId);
+            if (task != null)
+            {
+                FormTaskDetail detailForm = new FormTaskDetail(task);
+                detailForm.FormClosed += (s, e) => this.Show();
+                this.Hide();
+                detailForm.Show();
+            }
+        }
+
+        private Color GetStatusColor(TaskState status)
+        {
+            return status switch
+            {
+                TaskState.Pending => AppColors.Yellow500,
+                TaskState.InProgress => AppColors.Blue500,
+                TaskState.Completed => AppColors.Green500,
+                TaskState.Cancelled => AppColors.Gray400,
+                _ => AppColors.Gray400
+            };
+        }
+
+        private Color GetPriorityColor(TaskPriorityLevel priority)
+        {
+            return priority switch
+            {
+                TaskPriorityLevel.Low => AppColors.Green500,
+                TaskPriorityLevel.Medium => AppColors.Orange500,
+                TaskPriorityLevel.High => AppColors.Red500,
+                TaskPriorityLevel.Critical => AppColors.Red700,
+                _ => AppColors.Gray400
+            };
         }
 
         private ModernPanel CreateTag(string text, Color backColor)

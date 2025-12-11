@@ -10,9 +10,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeFlow.Authentication;
 using TimeFlow.Server;
-using TimeFlow.Chat;
 using TimeFlow.UI;
 using TimeFlow.Tasks;
+using TimeFlow.Models;
+using TimeFlow.Services;
 
 namespace TimeFlow
 {
@@ -36,6 +37,9 @@ namespace TimeFlow
             
             // Gán sự kiện cho label username (User Info)
             label1.Click += Label1_Click;
+
+            // Populate timeline với tasks
+            PopulateTimeline();
         }
 
         /// <summary>
@@ -120,6 +124,167 @@ namespace TimeFlow
                 MessageBox.Show($"Không thể mở User Info: {ex.Message}", 
                     "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Show();
+            }
+        }
+
+        /// <summary>
+        /// Populate timeline calendar với tasks từ TaskManager
+        /// </summary>
+        private void PopulateTimeline()
+        {
+            try
+            {
+                // Lấy tất cả tasks
+                var allTasks = TaskManager.GetAllTasks();
+                
+                // Lấy ngày đầu tuần hiện tại (Monday)
+                DateTime today = DateTime.Today;
+                int daysUntilMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
+                DateTime startOfWeek = today.AddDays(-daysUntilMonday);
+
+                // Clear existing controls (except header row)
+                for (int row = 1; row < tableLayoutPanel2.RowCount; row++)
+                {
+                    for (int col = 0; col < 7; col++)
+                    {
+                        var existingControl = tableLayoutPanel2.GetControlFromPosition(col, row);
+                        if (existingControl != null)
+                        {
+                            tableLayoutPanel2.Controls.Remove(existingControl);
+                            existingControl.Dispose();
+                        }
+                    }
+                }
+
+                // Populate timeline với tasks
+                foreach (var task in allTasks)
+                {
+                    // Tính toán vị trí trong tuần
+                    int daysFromStart = (task.DueDate.Date - startOfWeek).Days;
+                    
+                    // Chỉ hiển thị tasks trong tuần hiện tại
+                    if (daysFromStart >= 0 && daysFromStart < 7)
+                    {
+                        int column = daysFromStart;
+                        int row = GetAvailableRow(column);
+
+                        if (row > 0 && row < tableLayoutPanel2.RowCount)
+                        {
+                            Panel taskPanel = CreateTaskPanel(task);
+                            tableLayoutPanel2.Controls.Add(taskPanel, column, row);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi load timeline: {ex.Message}", "Lỗi", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        /// <summary>
+        /// Tìm row trống trong column để add task
+        /// </summary>
+        private int GetAvailableRow(int column)
+        {
+            for (int row = 1; row < tableLayoutPanel2.RowCount; row++)
+            {
+                var control = tableLayoutPanel2.GetControlFromPosition(column, row);
+                if (control == null)
+                {
+                    return row;
+                }
+            }
+            return -1; // Không còn row trống
+        }
+
+        /// <summary>
+        /// Tạo panel hiển thị task trong timeline
+        /// </summary>
+        private Panel CreateTaskPanel(TaskModel task)
+        {
+            Panel panel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(2),
+                Cursor = Cursors.Hand,
+                Padding = new Padding(4)
+            };
+
+            // Màu theo priority
+            Color backColor = task.Priority switch
+            {
+                TaskPriorityLevel.Critical => UI.Components.AppColors.Red700,
+                TaskPriorityLevel.High => UI.Components.AppColors.Red500,
+                TaskPriorityLevel.Medium => UI.Components.AppColors.Orange500,
+                TaskPriorityLevel.Low => UI.Components.AppColors.Green500,
+                _ => UI.Components.AppColors.Gray300
+            };
+
+            panel.BackColor = backColor;
+
+            // Label hiển thị tên task
+            Label lblTaskName = new Label
+            {
+                Text = task.Name.Length > 30 ? task.Name.Substring(0, 27) + "..." : task.Name,
+                Dock = DockStyle.Top,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.White,
+                AutoSize = false,
+                Height = 35,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            // Label hiển thị status
+            Label lblStatus = new Label
+            {
+                Text = task.StatusText,
+                Dock = DockStyle.Bottom,
+                Font = new Font("Segoe UI", 7F, FontStyle.Regular),
+                ForeColor = Color.White,
+                AutoSize = false,
+                Height = 15,
+                TextAlign = ContentAlignment.BottomLeft
+            };
+
+            panel.Controls.Add(lblTaskName);
+            panel.Controls.Add(lblStatus);
+
+            // Click event để mở FormTaskDetail
+            panel.Click += (sender, e) => OpenTaskDetailFromTimeline(task.Id);
+            lblTaskName.Click += (sender, e) => OpenTaskDetailFromTimeline(task.Id);
+            lblStatus.Click += (sender, e) => OpenTaskDetailFromTimeline(task.Id);
+
+            // Hover effect
+            panel.MouseEnter += (s, e) => {
+                panel.BackColor = ControlPaint.Light(backColor, 0.2f);
+            };
+            panel.MouseLeave += (s, e) => {
+                panel.BackColor = backColor;
+            };
+
+            return panel;
+        }
+
+        /// <summary>
+        /// Mở FormTaskDetail từ timeline
+        /// </summary>
+        private void OpenTaskDetailFromTimeline(int taskId)
+        {
+            var task = TaskManager.GetTaskById(taskId);
+            if (task != null)
+            {
+                // Không dùng singleton cho task detail vì mỗi task khác nhau
+                FormTaskDetail detailForm = new FormTaskDetail(task);
+                detailForm.FormClosed += (s, e) => {
+                    this.Show();
+                    this.Activate();
+                    // Refresh timeline sau khi đóng detail
+                    PopulateTimeline();
+                };
+                this.Hide();
+                detailForm.Show();
             }
         }
 
