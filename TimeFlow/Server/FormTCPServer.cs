@@ -1,6 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
-using System.Collections.Generic; // Cần thiết cho Dictionary
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
+using TimeFlow.Data.Repositories;
+using TimeFlow.Models;
 
 namespace TimeFlow.Server
 {
@@ -18,27 +20,55 @@ namespace TimeFlow.Server
             InitializeComponent();
         }
 
-        // --- CÁC BIẾN TOÀN CỤC ---
+        // --- CAC BIEN TOAN CUC ---
         private TcpListener tcpListener;
         private Thread serverThread;
 
-        // Chuỗi kết nối Database
-        private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
+        // Repositories
+        private readonly UserRepository _userRepo = new UserRepository();
+        private readonly ActivityLogRepository _activityLogRepo = new ActivityLogRepository();
 
-        // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
+        // DANH SACH USER ONLINE: Map tu Username -> Socket Client
         private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
-        private static object _lock = new object(); // Khóa an toàn cho luồng
+        private static object _lock = new object();
 
-        // --- CÁC CLASS DỮ LIỆU (DTO) ---
+        // --- CAC CLASS DU LIEU (DTO) ---
         public class LoginRequest { public string username { get; set; } public string password { get; set; } }
         public class RegisterRequest { public string username { get; set; } public string password { get; set; } public string email { get; set; } }
 
-        // --- SỰ KIỆN UI ---
+        // --- SU KIEN UI ---
         private void buttonListen_Click(object sender, EventArgs e)
         {
             if (!int.TryParse(textBoxPortNumber.Text, out int port) || port < 1 || port > 65535)
             {
                 MessageBox.Show("Port không hợp lệ."); return;
+            }
+
+            // Test database connection truoc khi start server
+            try
+            {
+                AppendLog("Testing database connection...");
+                var testDb = new Data.DatabaseHelper();
+                if (testDb.TestConnection())
+                {
+                    AppendLog("✓ Database connection successful!");
+                    AppendLog($"Connection string: {testDb.GetConnectionString()}");
+                    
+                    // Test query de kiem tra table Users ton tai
+                    var testQuery = "SELECT COUNT(*) FROM Users";
+                    var count = testDb.ExecuteScalar(testQuery, null);
+                    AppendLog($"✓ Users table exists with {count} users");
+                }
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"✗ Database connection failed: {ex.Message}");
+                if (ex.InnerException != null)
+                    AppendLog($"  Inner error: {ex.InnerException.Message}");
+                
+                MessageBox.Show($"Database connection failed:\n{ex.Message}\n\nPlease check:\n1. SQL Server is running\n2. Database 'TimeFlowDB' exists\n3. Run TimeFlowDB_Schema.sql and TestData.sql", 
+                    "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
 
             serverThread = new Thread(() => StartServer(port));
@@ -47,7 +77,7 @@ namespace TimeFlow.Server
             AppendLog($"Server đang chạy tại cổng {port}...");
         }
 
-        // --- LOGIC SERVER CHÍNH ---
+        // --- LOGIC SERVER CHINH ---
         private void StartServer(int port)
         {
             try
@@ -57,10 +87,8 @@ namespace TimeFlow.Server
 
                 while (true)
                 {
-                    // Chấp nhận kết nối mới
                     TcpClient client = tcpListener.AcceptTcpClient();
 
-                    // Tạo luồng riêng để phục vụ client này (Chat + Auth)
                     Thread clientThread = new Thread(() => HandleClient(client));
                     clientThread.IsBackground = true;
                     clientThread.Start();
@@ -72,76 +100,42 @@ namespace TimeFlow.Server
             }
         }
 
-        // --- HÀM XỬ LÝ CLIENT ---
+        // --- HAM XU LY CLIENT ---
         private void HandleClient(TcpClient client)
         {
             NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[4096];
-            string currentUsername = null; // Định danh user của kết nối này
+            string currentUsername = null;
 
             try
             {
-                // Vòng lặp giữ kết nối (Persistent Connection)
                 while (client.Connected)
                 {
                     int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                    if (bytesRead == 0) break; // Client ngắt kết nối
+                    if (bytesRead == 0) break;
 
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-                    // Phân tích JSON
                     using JsonDocument doc = JsonDocument.Parse(message);
                     JsonElement root = doc.RootElement;
                     string type = root.GetProperty("type").GetString();
 
-                    // --- XỬ LÝ CÁC LOẠI GÓI TIN ---
+                    // --- XU LY CAC LOAI GOI TIN ---
 
                     if (type == "login")
                     {
                         var data = root.GetProperty("data").Deserialize<LoginRequest>();
-                        if (ValidateLogin(data.username, data.password))
+                        var user = ValidateLogin(data.username, data.password);
+                        
+                        if (user != null)
                         {
-                            currentUsername = data.username;
-                            string email = GetEmailByUsername(currentUsername);
+                            currentUsername = user.Username;
                             string token = CreateJwtToken(currentUsername);
 
-                            // Lưu vào danh sách Online
-                            lock (_lock)
-                            {
-                                if (_onlineClients.ContainsKey(currentUsername))
-                                    _onlineClients[currentUsername].Close(); // Kick phiên cũ
-                                _onlineClients[currentUsername] = client;
-                            }
+                            // Cap nhat last login
+                            _userRepo.UpdateLastLogin(user.UserId);
 
-                            string res = JsonSerializer.Serialize(new
-                            {
-                                status = "success",
-                                token = token,
-                                user = new { username = currentUsername, email = email }
-                            });
-                            SendResponse(client, res);
-                            AppendLog($"User '{currentUsername}' đã đăng nhập.");
-                        }
-                        else
-                        {
-                            SendResponse(client, JsonSerializer.Serialize(new { status = "fail" }));
-                        }
-                    }
-                    else if (type == "register")
-                    {
-                        var data = root.GetProperty("data").Deserialize<RegisterRequest>();
-                        bool success = RegisterNewUser(data.username, data.password, data.email);
-                        SendResponse(client, success ? "registered" : "exists");
-                    }
-                    else if (type == "autologin") // Tính năng cũ đã được khôi phục
-                    {
-                        string token = root.GetProperty("token").GetString();
-                        if (IsJwtTokenValid(token, out string username))
-                        {
-                            currentUsername = username;
-                            string email = GetEmailByUsername(username);
-
-                            // Cập nhật trạng thái Online
+                            // Luu vao danh sach Online
                             lock (_lock)
                             {
                                 if (_onlineClients.ContainsKey(currentUsername))
@@ -151,21 +145,81 @@ namespace TimeFlow.Server
 
                             string res = JsonSerializer.Serialize(new
                             {
-                                status = "autologin_success",
-                                user = new { username = username, email = email }
+                                status = "success",
+                                token = token,
+                                user = new { 
+                                    userId = user.UserId,
+                                    username = user.Username, 
+                                    email = user.Email,
+                                    fullName = user.FullName
+                                }
                             });
                             SendResponse(client, res);
-                            AppendLog($"User '{username}' Re-login thành công.");
+                            AppendLog($"User '{currentUsername}' đã đăng nhập.");
+
+                            // Log activity
+                            _activityLogRepo.LogActivity(user.UserId, null, "Login", "User logged in");
+                        }
+                        else
+                        {
+                            SendResponse(client, JsonSerializer.Serialize(new { status = "fail" }));
+                        }
+                    }
+                    else if (type == "register")
+                    {
+                        var data = root.GetProperty("data").Deserialize<RegisterRequest>();
+                        var result = RegisterNewUser(data.username, data.password, data.email);
+                        SendResponse(client, result ? "registered" : "exists");
+                    }
+                    else if (type == "autologin")
+                    {
+                        string token = root.GetProperty("token").GetString();
+                        if (IsJwtTokenValid(token, out string username))
+                        {
+                            var user = _userRepo.GetByUsername(username);
+                            if (user != null && user.IsActive)
+                            {
+                                currentUsername = username;
+
+                                // Cap nhat last login
+                                _userRepo.UpdateLastLogin(user.UserId);
+
+                                lock (_lock)
+                                {
+                                    if (_onlineClients.ContainsKey(currentUsername))
+                                        _onlineClients[currentUsername].Close();
+                                    _onlineClients[currentUsername] = client;
+                                }
+
+                                string res = JsonSerializer.Serialize(new
+                                {
+                                    status = "autologin_success",
+                                    user = new { 
+                                        userId = user.UserId,
+                                        username = user.Username, 
+                                        email = user.Email,
+                                        fullName = user.FullName
+                                    }
+                                });
+                                SendResponse(client, res);
+                                AppendLog($"User '{username}' Re-login thành công.");
+
+                                // Log activity
+                                _activityLogRepo.LogActivity(user.UserId, null, "AutoLogin", "User auto-logged in");
+                            }
+                            else
+                            {
+                                SendResponse(client, JsonSerializer.Serialize(new { status = "autologin_fail" }));
+                            }
                         }
                         else
                         {
                             SendResponse(client, JsonSerializer.Serialize(new { status = "autologin_fail" }));
                         }
                     }
-                    else if (type == "chat") // TÍNH NĂNG CHAT MỚI
+                    else if (type == "chat")
                     {
-                        // JSON mẫu: { "type": "chat", "receiver": "UserB", "content": "Hello" }
-                        if (!string.IsNullOrEmpty(currentUsername)) // Chỉ cho phép chat nếu đã Login
+                        if (!string.IsNullOrEmpty(currentUsername))
                         {
                             string receiver = root.GetProperty("receiver").GetString();
                             string content = root.GetProperty("content").GetString();
@@ -180,7 +234,6 @@ namespace TimeFlow.Server
             }
             finally
             {
-                // Dọn dẹp khi User thoát
                 if (!string.IsNullOrEmpty(currentUsername))
                 {
                     lock (_lock)
@@ -191,17 +244,23 @@ namespace TimeFlow.Server
                         }
                     }
                     AppendLog($"User '{currentUsername}' đã Offline.");
+
+                    // Log logout
+                    var user = _userRepo.GetByUsername(currentUsername);
+                    if (user != null)
+                    {
+                        _activityLogRepo.LogActivity(user.UserId, null, "Logout", "User logged out");
+                    }
                 }
                 client.Close();
             }
         }
 
-        // --- HÀM ĐIỀU HƯỚNG TIN NHẮN (ROUTING) ---
+        // --- HAM DIEU HUONG TIN NHAN (ROUTING) ---
         private void RouteMessage(string sender, string receiver, string content)
         {
             TcpClient receiverClient = null;
 
-            // 1. Tìm socket người nhận
             lock (_lock)
             {
                 if (_onlineClients.ContainsKey(receiver))
@@ -210,14 +269,13 @@ namespace TimeFlow.Server
                 }
             }
 
-            // 2. Gửi tin nếu Online
             if (receiverClient != null && receiverClient.Connected)
             {
                 try
                 {
                     var msgObj = new
                     {
-                        type = "receive_message", // Client cần bắt type này
+                        type = "receive_message",
                         sender = sender,
                         content = content,
                         timestamp = DateTime.Now.ToString("HH:mm")
@@ -233,7 +291,7 @@ namespace TimeFlow.Server
             }
             else
             {
-                // TODO: Lưu vào Database bảng 'Messages' nếu user Offline
+                // TODO: Luu vao Database bang 'Messages' neu user Offline
                 AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Cần lưu DB.");
             }
         }
@@ -252,7 +310,7 @@ namespace TimeFlow.Server
                 richTextBoxMessage.AppendText($"[{DateTime.Now:HH:mm:ss}] {message}\n");
         }
 
-        // --- KHU VỰC CÁC HÀM HELPER & DATABASE ---
+        // --- KHU VUC CAC HAM HELPER & DATABASE ---
 
         private string HashPassword(string password)
         {
@@ -265,60 +323,88 @@ namespace TimeFlow.Server
             }
         }
 
-        private bool ValidateLogin(string username, string password)
+        // REFACTORED: Dung UserRepository thay vi raw SQL
+        private User? ValidateLogin(string username, string password)
         {
             try
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username = @u AND Password = @p";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                return (int)cmd.ExecuteScalar() > 0;
+                AppendLog($"[DEBUG] Attempting login for user: {username}");
+                AppendLog($"[DEBUG] Plain password received: {password}");
+                
+                string hashedPassword = HashPassword(password);
+                AppendLog($"[DEBUG] Password hash computed: {hashedPassword}");
+                
+                var user = _userRepo.ValidateLogin(username, hashedPassword);
+                
+                if (user != null)
+                {
+                    AppendLog($"[DEBUG] User found: {user.Username} (ID: {user.UserId})");
+                }
+                else
+                {
+                    AppendLog($"[DEBUG] User not found or password incorrect");
+                }
+                
+                return user;
             }
-            catch (Exception ex) { AppendLog("DB Error: " + ex.Message); return false; }
+            catch (Data.DatabaseException ex)
+            {
+                AppendLog($"DB Error: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    AppendLog($"Inner Error: {ex.InnerException.Message}");
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"Unexpected Error: {ex.Message}");
+                AppendLog($"Stack Trace: {ex.StackTrace}");
+                return null;
+            }
         }
 
+        // REFACTORED: Dung UserRepository thay vi raw SQL
         private bool RegisterNewUser(string username, string password, string email)
         {
             try
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string check = "SELECT COUNT(*) FROM Users WHERE Username = @u OR Email = @e";
-                using SqlCommand cmdCheck = new SqlCommand(check, conn);
-                cmdCheck.Parameters.AddWithValue("@u", username);
-                cmdCheck.Parameters.AddWithValue("@e", email);
-                if ((int)cmdCheck.ExecuteScalar() > 0) return false;
+                // Kiem tra username hoac email da ton tai chua
+                if (_userRepo.UsernameOrEmailExists(username, email))
+                {
+                    return false;
+                }
 
-                string query = "INSERT INTO Users (Username, Password, Email) VALUES (@u, @p, @e)";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                cmd.Parameters.AddWithValue("@e", email);
-                return cmd.ExecuteNonQuery() > 0;
+                // Tao user moi
+                var newUser = new User
+                {
+                    Username = username,
+                    Email = email,
+                    PasswordHash = HashPassword(password),
+                    IsActive = true
+                };
+
+                int userId = _userRepo.Create(newUser);
+                
+                if (userId > 0)
+                {
+                    // Log activity
+                    _activityLogRepo.LogActivity(userId, null, "Register", "New user registered");
+                    AppendLog($"User '{username}' đã đăng ký thành công.");
+                    return true;
+                }
+                
+                return false;
             }
-            catch { return false; }
-        }
-
-        private string GetEmailByUsername(string username)
-        {
-            try
+            catch (Exception ex)
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string query = "SELECT Email FROM Users WHERE Username = @u";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                object result = cmd.ExecuteScalar();
-                return result != null ? result.ToString() : "";
+                AppendLog("Register Error: " + ex.Message);
+                return false;
             }
-            catch { return ""; }
         }
 
-        // --- KHU VỰC JWT (TOKEN) ---
-        private string _secretKey = "your_super_secret_key_change_this_to_something_long"; // Key dùng chung
+        // --- KHU VUC JWT (TOKEN) ---
+        private string _secretKey = "your_super_secret_key_change_this_to_something_long";
 
         private string CreateJwtToken(string username)
         {
