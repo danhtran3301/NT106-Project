@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeFlow.Authentication;
 using TimeFlow.Server;
-using TimeFlow.Chat;
+using TimeFlow;
 using TimeFlow.UI;
 // using TimeFlow.Tasks; // Tạm comment vì TaskList chưa có
 

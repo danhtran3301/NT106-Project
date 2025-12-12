@@ -23,8 +23,7 @@ namespace TimeFlow.Server
         private Thread serverThread;
 
         // Chuỗi kết nối Database
-        private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
-
+        private string connectionString = "Server=localhost,1433;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;";
         // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private static object _lock = new object(); // Khóa an toàn cho luồng
@@ -258,26 +257,68 @@ namespace TimeFlow.Server
         {
             using (SHA256 sha256 = SHA256.Create())
             {
+                // Chuyển password nhập vào thành byte
                 byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                // Chuyển byte thành chuỗi Hex (viết thường)
                 StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes) sb.Append(b.ToString("x2"));
+                foreach (byte b in bytes)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
                 return sb.ToString();
             }
         }
 
         private bool ValidateLogin(string username, string password)
         {
+            // 1. In ra thông tin đầu vào
+            string inputHash = HashPassword(password);
+            AppendLog($"[DEBUG] Đang check login: User={username}");
+            AppendLog($"[DEBUG] Hash từ Client: {inputHash}");
+
             try
             {
                 using SqlConnection conn = new SqlConnection(connectionString);
                 conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username = @u AND Password = @p";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                return (int)cmd.ExecuteScalar() > 0;
+                AppendLog("[DEBUG] Kết nối Database: Thành công!");
+
+                // 2. Kiểm tra xem User có tồn tại không trước
+                string queryUser = "SELECT PasswordHash FROM Users WHERE Username = @u";
+                using SqlCommand cmdUser = new SqlCommand(queryUser, conn);
+                cmdUser.Parameters.AddWithValue("@u", username);
+
+                object result = cmdUser.ExecuteScalar();
+
+                if (result == null)
+                {
+                    AppendLog($"[LỖI] Không tìm thấy user '{username}' trong bảng Users.");
+                    return false;
+                }
+
+                string dbHash = result.ToString();
+                AppendLog($"[DEBUG] Hash trong DB:   {dbHash}");
+
+                // 3. So sánh trực tiếp
+                if (inputHash == dbHash)
+                {
+                    AppendLog("[SUCCESS] Mật khẩu khớp! Đăng nhập thành công.");
+                    return true;
+                }
+                else
+                {
+                    AppendLog("[LỖI] Mật khẩu KHÔNG khớp.");
+                    // So sánh độ dài để xem có bị thừa khoảng trắng không
+                    AppendLog($"Độ dài Client: {inputHash.Length} - Độ dài DB: {dbHash.Length}");
+                    return false;
+                }
             }
-            catch (Exception ex) { AppendLog("DB Error: " + ex.Message); return false; }
+            catch (Exception ex)
+            {
+                // QUAN TRỌNG: Đây là chỗ nó in ra lỗi SQL (VD: sai tên cột, sai user db...)
+                AppendLog($"[EXCEPTION] Lỗi nghiêm trọng khi Login: {ex.Message}");
+                return false;
+            }
         }
 
         private bool RegisterNewUser(string username, string password, string email)
@@ -286,20 +327,32 @@ namespace TimeFlow.Server
             {
                 using SqlConnection conn = new SqlConnection(connectionString);
                 conn.Open();
+
+                // 1. Kiểm tra tồn tại
                 string check = "SELECT COUNT(*) FROM Users WHERE Username = @u OR Email = @e";
                 using SqlCommand cmdCheck = new SqlCommand(check, conn);
                 cmdCheck.Parameters.AddWithValue("@u", username);
                 cmdCheck.Parameters.AddWithValue("@e", email);
-                if ((int)cmdCheck.ExecuteScalar() > 0) return false;
 
-                string query = "INSERT INTO Users (Username, Password, Email) VALUES (@u, @p, @e)";
+                int count = Convert.ToInt32(cmdCheck.ExecuteScalar());
+                if (count > 0) return false;
+
+                // 2. Thêm mới
+                // SỬA: Đổi 'Password' thành 'PasswordHash'
+                string query = "INSERT INTO Users (Username, PasswordHash, Email, CreatedAt, IsActive) VALUES (@u, @p, @e, GETDATE(), 1)";
+
                 using SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@u", username);
                 cmd.Parameters.AddWithValue("@p", HashPassword(password));
                 cmd.Parameters.AddWithValue("@e", email);
+
                 return cmd.ExecuteNonQuery() > 0;
             }
-            catch { return false; }
+            catch (Exception ex)
+            {
+                AppendLog("Lỗi Register DB: " + ex.Message);
+                return false;
+            }
         }
 
         private string GetEmailByUsername(string username)
