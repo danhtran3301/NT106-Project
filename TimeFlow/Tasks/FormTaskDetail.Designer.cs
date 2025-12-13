@@ -4,7 +4,9 @@ using System.Windows.Forms;
 using System.Linq;
 using TimeFlow.UI.Components;
 using TimeFlow.Models;
-
+using TimeFlow.UI;
+using TimeFlow.Services;
+using TimeFlow.Tasks;
 namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
@@ -161,10 +163,25 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 16, 0, 0)
             };
+            /*rightFlow.Controls.Add(optionsButton);
+            headerPanel.Controls.Add(rightFlow, 2, 0);*/
+            ContextMenuStrip contextMenu = new ContextMenuStrip();
+            ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
+            ToolStripMenuItem deleteItem = new ToolStripMenuItem("Xóa Task (Delete)");
+            ToolStripMenuItem statusMenu = new ToolStripMenuItem("Thay đổi Trạng thái (Status)");
+            contextMenu.Items.Add(editItem);
+            contextMenu.Items.Add(deleteItem);
+            contextMenu.Items.Add(new ToolStripSeparator()); 
+            contextMenu.Items.Add(statusMenu);
+            optionsButton.Click += (sender, e) =>
+            {
+                contextMenu.Show(optionsButton, new Point(optionsButton.Width - contextMenu.Width, optionsButton.Height));
+            };
+            //editItem.Click += EditItem_Click;
+            deleteItem.Click += DeleteItem_Click;
+            CreateStatusSubMenu(statusMenu);
+
             rightFlow.Controls.Add(optionsButton);
-
-            headerPanel.Controls.Add(rightFlow, 2, 0);
-
             Panel separator = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -218,16 +235,22 @@ namespace TimeFlow.Tasks
                 ForeColor = AppColors.Gray700,
                 AutoSize = true
             });
-            menuPanel.Controls.Add(accountHeader);
+            var btnYourTask = CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight);
+            btnYourTask.Click += BtnYourTask_Click; 
+            menuPanel.Controls.Add(btnYourTask);
 
-            menuPanel.Controls.Add(CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight));
-            menuPanel.Controls.Add(CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight));
-            menuPanel.Controls.Add(CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight));
+           /* var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
+            btnGroup.Click += BtnGroup_Click; 
+            menuPanel.Controls.Add(btnGroup);*/
+
+            var btnNewTask = CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight);
+            btnNewTask.Click += BtnNewTask_Click; 
+            menuPanel.Controls.Add(btnNewTask);
 
             Color submitColor = AppColors.Purple500;
-            menuPanel.Controls.Add(CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight,
-                Color.FromArgb(200, submitColor)));
-
+            var btnSubmitTask = CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight, Color.FromArgb(200, submitColor));
+            btnSubmitTask.Click += BtnSubmitTask_Click; 
+            menuPanel.Controls.Add(btnSubmitTask);
             MonthCalendar monthCalendar = new MonthCalendar
             {
                 BackColor = Color.White,
