@@ -1,7 +1,6 @@
 ﻿version: '3.8'
 
 services:
-  # 1. SQL Server Database (Chạy là chạy luôn, không check gì cả)
   timeflow-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: timeflow-database
@@ -17,7 +16,6 @@ services:
       - timeflow-network
     restart: unless-stopped
 
-  # 2. Database Initialization (Ngủ 30s rồi mới làm việc)
   timeflow-db-init:
     image: mcr.microsoft.com/mssql-tools
     container_name: timeflow-db-init
@@ -39,7 +37,6 @@ services:
       "
     restart: "no"
 
-  # 3. TimeFlow Server
   timeflow-server:
     build:
       context: .
