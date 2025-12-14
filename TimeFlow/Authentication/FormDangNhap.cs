@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
+using TimeFlow.UI;
 
 namespace TimeFlow.Authentication
 {
@@ -42,7 +43,7 @@ namespace TimeFlow.Authentication
                             {
                                 MessageBox.Show("Tự động đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                 this.Hide();
-                                FormThongTinNguoiDung mainForm = new FormThongTinNguoiDung(result.Username, result.Email);
+                                FormGiaoDien mainForm = new FormGiaoDien();
                                 mainForm.FormClosed += (s, args) => this.Close();
                                 mainForm.Show();
                             }
@@ -93,7 +94,7 @@ namespace TimeFlow.Authentication
                         {
                             MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             this.Hide();
-                            FormThongTinNguoiDung mainForm = new FormThongTinNguoiDung(result.Username, result.Email);
+                            FormGiaoDien mainForm = new FormGiaoDien();
                             mainForm.FormClosed += (s, args) => this.Close();
                             mainForm.Show();
                         }

@@ -47,7 +47,7 @@ namespace TimeFlow
         {
             try
             {
-                _client = new TcpClient("127.0.0.1", 8080); // Đổi PORT cho khớp server
+                _client = new TcpClient("127.0.0.1", 1010); // Đổi PORT cho khớp server
                 _stream = _client.GetStream();
                 _myUsername = user;
                 _isConnected = true;
