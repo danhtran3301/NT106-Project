@@ -399,14 +399,12 @@ namespace TimeFlow.Tasks
                 {
                     Services.TaskManager.AddComment(_currentTask.Id, "Current User", newCommentBox.TextBoxText);
                     newCommentBox.TextBoxText = "Add a comment...";
-                    // Refresh to show new comment
                     this.Controls.Clear();
                     InitializeComponent();
                 }
             };
             contentPanel.Controls.Add(postButton);
 
-            // Display existing comments from task data
             foreach (var comment in _currentTask.Comments.OrderByDescending(c => c.CreatedDate))
             {
                 contentPanel.Controls.Add(CreateComment(comment.Username, comment.Content, comment.TimeAgo));
@@ -598,7 +596,7 @@ namespace TimeFlow.Tasks
 
             int activityLogWidth = contentWidth;
 
-            // Display activities from task data
+     
             foreach (var activity in _currentTask.Activities.OrderByDescending(a => a.CreatedDate))
             {
                 contentFlow.Controls.Add(CreateActivityLog(activity.Description, activity.TimeAgo, activityLogWidth));
