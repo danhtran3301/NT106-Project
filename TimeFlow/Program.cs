@@ -20,7 +20,7 @@ namespace TimeFlow
             // see https://aka.ms/applicationconfiguration.
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);      
-            Application.Run(new FormMenuTCP());
+            Application.Run(new FormTaskDetail());
         }
     }
 }

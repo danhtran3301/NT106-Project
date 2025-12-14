@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using TimeFlow.UI.Components;
 using TimeFlow.Models;
+using TimeFlow.UI;
+using System.Linq; 
+using TimeFlow.Services;
+using TimeFlow.UI.Components;
 
 namespace TimeFlow.Tasks
 {
@@ -16,10 +19,8 @@ namespace TimeFlow.Tasks
 
         private TaskModel _currentTask;
 
-        // Constructor mặc định (fallback)
         public FormTaskDetail()
         {
-            // Sử dụng task đầu tiên làm demo nếu không pass task
             InitializeComponent();
             this.SetStyle(ControlStyles.DoubleBuffer |
                           ControlStyles.UserPaint |
@@ -61,7 +62,7 @@ namespace TimeFlow.Tasks
             {
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
-                AutoSize = false, 
+                AutoSize = false,
                 Width = 800,
                 Margin = new Padding(0, 0, 0, 16),
                 Padding = new Padding(0, 0, 0, 8),
@@ -93,7 +94,135 @@ namespace TimeFlow.Tasks
 
             return comment;
         }
+        private void ShowExistingForm<T>() where T : Form, new()
+        {
+            System.Windows.Forms.Form existingForm = System.Windows.Forms.Application.OpenForms.OfType<T>().FirstOrDefault();
+            if (existingForm != null)
+            {
+                existingForm.Show();
+                existingForm.BringToFront();
+            }
+            else
+            {
+                T newForm = new T();
+                newForm.Show();
+            }
+            this.Close();
+        }
 
+        private void CloseAndNavigateToTaskList(object sender, EventArgs e)
+        {
+            ShowExistingForm<FormTaskList>();
+        }
+        private void LoadTaskDetail(int taskId)
+        {
+            var updatedTask = Services.TaskManager.GetTaskById(taskId);
+            if (updatedTask != null)
+            {
+                _currentTask = updatedTask;
+                this.Controls.Clear();
+                InitializeComponent();
+            }
+            else
+            {
+                MessageBox.Show("Task này không còn tồn tại.", "Thông báo");
+                ShowExistingForm<FormTaskList>();
+            }
+        }
+        private void BtnYourTask_Click(object sender, EventArgs e)
+        {
+            CloseAndNavigateToTaskList(sender, e);
+        }
+
+        private void BtnNewTask_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                FormThemTask newTaskForm = new FormThemTask();
+                newTaskForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi mở Form Tạo Task: {ex.Message}", "Lỗi");
+            }
+        }
+
+        private void BtnSubmitTask_Click(object sender, EventArgs e)
+        {
+            if (_currentTask == null) return;
+            if (_currentTask.Progress < 100)
+            {
+                MessageBox.Show("Vui lòng hoàn thành 100% tiến độ trước khi nộp Task.", "Cảnh báo");
+                return;
+            }
+
+            _currentTask.Status = TaskState.Completed;
+            if (Services.TaskManager.UpdateTask(_currentTask))
+            {
+                LoadTaskDetail(_currentTask.Id);
+                MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
+            }
+        }
+        private void EditItem_Click(object sender, EventArgs e)
+        {
+            if (_currentTask == null) return;
+            try
+            {
+                FormThemTask editForm = new FormThemTask(_currentTask.Id);
+                if (editForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    LoadTaskDetail(_currentTask.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi mở form chỉnh sửa: {ex.Message}", "Lỗi");
+            }
+        }
+
+        // Hàm Options Menu: Xóa
+        private void DeleteItem_Click(object sender, EventArgs e)
+        {
+            if (_currentTask == null) return;
+            if (Services.TaskManager.DeleteTask(_currentTask.Id))
+            {
+                ShowExistingForm<FormTaskList>();
+            }
+            else
+            {
+                MessageBox.Show("Xóa Task thất bại.", "Lỗi");
+            }
+        }
+
+        // Hàm Options Menu: Thay đổi Trạng thái (Cần CreateStatusSubMenu để gọi hàm này)
+        private void ChangeStatusItem_Click(TaskState newStatus)
+        {
+            if (_currentTask == null) return;
+
+            TaskState oldStatus = _currentTask.Status;
+            _currentTask.Status = newStatus;
+
+            if (Services.TaskManager.UpdateTask(_currentTask))
+            {
+                LoadTaskDetail(_currentTask.Id);
+            }
+            else
+            {
+                _currentTask.Status = oldStatus; // Rollback
+            }
+        }
+
+        private void CreateStatusSubMenu(System.Windows.Forms.ToolStripMenuItem statusMenu)
+        {
+            System.Array statusValues = System.Enum.GetValues(typeof(TaskState));
+            foreach (TaskState status in statusValues)
+            {
+                System.Windows.Forms.ToolStripMenuItem item = new System.Windows.Forms.ToolStripMenuItem(status.ToString());
+                if (status == _currentTask.Status) item.Checked = true;
+                item.Click += (sender, e) => ChangeStatusItem_Click(status);
+                statusMenu.DropDownItems.Add(item);
+            }
+        }
         private Control CreateActivityLog(string activity, string time, int width)
         {
             FlowLayoutPanel logItem = new FlowLayoutPanel
@@ -125,6 +254,11 @@ namespace TimeFlow.Tasks
             logItem.Controls.Add(lblActivity);
             logItem.Controls.Add(lblTime);
             return logItem;
+        }
+
+        private void FormTaskDetail_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
