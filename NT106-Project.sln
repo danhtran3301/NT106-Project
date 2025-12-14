@@ -5,6 +5,8 @@ VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeFlow", "TimeFlow\TimeFlow.csproj", "{2F1C5C41-7DD4-E92A-76F1-EF9F04BEA5FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TimeFlowServer", "TimeFlowServer\TimeFlowServer.csproj", "{A0C0638A-DC48-6ABB-F835-B636F5D2BE8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{2F1C5C41-7DD4-E92A-76F1-EF9F04BEA5FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2F1C5C41-7DD4-E92A-76F1-EF9F04BEA5FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2F1C5C41-7DD4-E92A-76F1-EF9F04BEA5FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0C0638A-DC48-6ABB-F835-B636F5D2BE8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0C0638A-DC48-6ABB-F835-B636F5D2BE8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0C0638A-DC48-6ABB-F835-B636F5D2BE8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0C0638A-DC48-6ABB-F835-B636F5D2BE8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
