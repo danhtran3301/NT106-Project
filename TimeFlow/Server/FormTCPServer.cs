@@ -52,7 +52,7 @@ namespace TimeFlow.Server
                 {
                     AppendLog("✓ Database connection successful!");
                     AppendLog($"Connection string: {testDb.GetConnectionString()}");
-                    
+
                     // Test query de kiem tra table Users ton tai
                     var testQuery = "SELECT COUNT(*) FROM Users";
                     var count = testDb.ExecuteScalar(testQuery, null);
@@ -64,8 +64,8 @@ namespace TimeFlow.Server
                 AppendLog($"✗ Database connection failed: {ex.Message}");
                 if (ex.InnerException != null)
                     AppendLog($"  Inner error: {ex.InnerException.Message}");
-                
-                MessageBox.Show($"Database connection failed:\n{ex.Message}\n\nPlease check:\n1. SQL Server is running\n2. Database 'TimeFlowDB' exists\n3. Run TimeFlowDB_Schema.sql and TestData.sql", 
+
+                MessageBox.Show($"Database connection failed:\n{ex.Message}\n\nPlease check:\n1. SQL Server is running\n2. Database 'TimeFlowDB' exists\n3. Run TimeFlowDB_Schema.sql and TestData.sql",
                     "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -125,7 +125,7 @@ namespace TimeFlow.Server
                     {
                         var data = root.GetProperty("data").Deserialize<LoginRequest>();
                         var user = ValidateLogin(data.username, data.password);
-                        
+
                         if (user != null)
                         {
                             currentUsername = user.Username;
@@ -146,9 +146,10 @@ namespace TimeFlow.Server
                             {
                                 status = "success",
                                 token = token,
-                                user = new { 
+                                user = new
+                                {
                                     userId = user.UserId,
-                                    username = user.Username, 
+                                    username = user.Username,
                                     email = user.Email,
                                     fullName = user.FullName
                                 }
@@ -193,9 +194,10 @@ namespace TimeFlow.Server
                                 string res = JsonSerializer.Serialize(new
                                 {
                                     status = "autologin_success",
-                                    user = new { 
+                                    user = new
+                                    {
                                         userId = user.UserId,
-                                        username = user.Username, 
+                                        username = user.Username,
                                         email = user.Email,
                                         fullName = user.FullName
                                     }
