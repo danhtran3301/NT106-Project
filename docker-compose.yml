@@ -1,0 +1,71 @@
+﻿version: '3.8'
+
+services:
+  timeflow-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: timeflow-database
+    hostname: timeflow-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - timeflow-network
+    restart: unless-stopped
+
+  timeflow-db-init:
+    image: mcr.microsoft.com/mssql-tools
+    container_name: timeflow-db-init
+    depends_on:
+      - timeflow-db
+    networks:
+      - timeflow-network
+    volumes:
+      - ./TimeFlow/Database:/scripts:ro
+    command: >
+      sh -c "
+      echo 'Sleeping 30s to let SQL Server boot...' &&
+      sleep 30 && 
+      echo 'Waking up! Creating database and schema...' &&
+      /opt/mssql-tools/bin/sqlcmd -S timeflow-db -U sa -P YourStrong@Passw0rd -i /scripts/TimeFlowDB_Schema.sql &&
+      echo 'Loading test data...' &&
+      /opt/mssql-tools/bin/sqlcmd -S timeflow-db -U sa -P YourStrong@Passw0rd -i /scripts/TestData.sql &&
+      echo 'Database initialization completed!'
+      "
+    restart: "no"
+
+  timeflow-server:
+    build:
+      context: .
+      dockerfile: TimeFlowServer/Dockerfile
+    container_name: timeflow-server
+    depends_on:
+      timeflow-db:
+        condition: service_started
+      timeflow-db-init:
+        condition: service_completed_successfully
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Docker
+      - ConnectionStrings__Default=Server=timeflow-db;Database=TimeFlowDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ServerSettings__Port=1010
+      - ServerSettings__MaxConnections=100
+    ports:
+      - "1010:1010"
+    networks:
+      - timeflow-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  timeflow-network:
+    driver: bridge
+    name: timeflow-network
+
+volumes:
+  sqlserver_data:
+    driver: local
+    name: timeflow-sqlserver-data

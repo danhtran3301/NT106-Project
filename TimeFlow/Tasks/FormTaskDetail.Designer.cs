@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
+using TimeFlow.UI.Components;
+using TimeFlow.Models;
 
-namespace TimeFlow
+namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
     {
-
         private void InitializeComponent()
         {
             SetupLayout();
@@ -16,10 +18,16 @@ namespace TimeFlow
         private void SetupLayout()
         {
             this.Text = "Task Details";
-            this.BackColor = ColorPalette.Gray100;
+            this.BackColor = AppColors.Gray100;
             this.WindowState = FormWindowState.Maximized;
             this.Padding = new Padding(0);
             this.MinimumSize = new Size(800, 600);
+
+            // Set default task if none provided
+            if (_currentTask == null)
+            {
+                _currentTask = Services.TaskManager.GetTaskById(1) ?? Services.TaskManager.GetAllTasks().FirstOrDefault();
+            }
 
             Panel rootPanel = new Panel
             {
@@ -84,13 +92,13 @@ namespace TimeFlow
                 Height = 60
             };
 
-            CustomButton arrowButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "←",
                 Font = new Font("Segoe UI Emoji", 16F),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -105,7 +113,7 @@ namespace TimeFlow
             {
                 Text = "Task Details",
                 Font = FontHeaderTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
@@ -124,13 +132,13 @@ namespace TimeFlow
                 Margin = new Padding(0)
             };
 
-            CustomButton closeButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "✕",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -140,13 +148,13 @@ namespace TimeFlow
             closeButton.Click += (sender, e) => { this.Close(); };
             rightFlow.Controls.Add(closeButton);
 
-            CustomButton optionsButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "...",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
                 ForeColor = HeaderIconColor,
                 BackColor = Color.Transparent,
-                HoverColor = ColorPalette.Gray200,
+                HoverColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Width = 40,
                 Height = 40,
@@ -161,7 +169,7 @@ namespace TimeFlow
             {
                 Dock = DockStyle.Bottom,
                 Height = 1,
-                BackColor = ColorPalette.Gray200
+                BackColor = AppColors.Gray200
             };
 
             Panel headerContainer = new Panel { Dock = DockStyle.Top, Height = 81, BackColor = Color.Transparent };
@@ -186,7 +194,6 @@ namespace TimeFlow
                 Margin = new Padding(0, 0, 1, 0)
             };
 
-
             int buttonWidth = 200;
             int buttonHeight = 50;
 
@@ -208,34 +215,30 @@ namespace TimeFlow
             {
                 Text = "ACCOUNT",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = ColorPalette.Gray700,
+                ForeColor = AppColors.Gray700,
                 AutoSize = true
             });
             menuPanel.Controls.Add(accountHeader);
 
-            menuPanel.Controls.Add(CreateMenuButton("Your Task", ColorPalette.Blue500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight));
+            menuPanel.Controls.Add(CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight));
 
-            menuPanel.Controls.Add(CreateMenuButton("Group", ColorPalette.Green500, Color.White, buttonWidth, buttonHeight));
-
-            menuPanel.Controls.Add(CreateMenuButton("New task", ColorPalette.Orange500, Color.White, buttonWidth, buttonHeight));
-
-            Color submitColor = ColorPalette.Purple500;
-
+            Color submitColor = AppColors.Purple500;
             menuPanel.Controls.Add(CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight,
                 Color.FromArgb(200, submitColor)));
-
 
             MonthCalendar monthCalendar = new MonthCalendar
             {
                 BackColor = Color.White,
-                ForeColor = ColorPalette.Gray700,
+                ForeColor = AppColors.Gray700,
                 Font = FontRegular,
                 SelectionStart = new DateTime(2025, 11, 16),
                 SelectionEnd = new DateTime(2025, 11, 16),
                 ShowTodayCircle = false,
                 TitleBackColor = Color.White,
-                TitleForeColor = ColorPalette.Gray800,
-                TrailingForeColor = ColorPalette.Gray300,
+                TitleForeColor = AppColors.Gray800,
+                TrailingForeColor = AppColors.Gray300,
                 CalendarDimensions = new Size(1, 1)
             };
 
@@ -271,7 +274,6 @@ namespace TimeFlow
             };
             scrollContainer.Controls.Add(contentPanel);
 
-
             int centerContentWidth = 800;
 
             TableLayoutPanel headerLayout = new TableLayoutPanel
@@ -293,19 +295,28 @@ namespace TimeFlow
 
             Label title = new Label
             {
-                Text = "Design a new dashboard for the mobile app",
+                Text = _currentTask.Name,
                 Font = FontTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
-                Anchor = AnchorStyles.Left
+                Anchor = AnchorStyles.Left,
+                MaximumSize = new Size(600, 0)
             };
             headerLayout.Controls.Add(title, 0, 0);
 
-            CustomPanel status = new CustomPanel
+            Color statusColor = _currentTask.Status switch
             {
-                Text = "In Progress",
-                BackColor = ColorPalette.Blue500,
-                ForeColor = Color.White,
+                TaskState.Pending => AppColors.Yellow500,
+                TaskState.InProgress => AppColors.Blue500,
+                TaskState.Completed => AppColors.Green500,
+                _ => AppColors.Gray400
+            };
+
+            ModernPanel status = new ModernPanel
+            {
+                Text = _currentTask.StatusText,
+                BackColor = statusColor,
+                ForeColor = statusColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
                 Width = 130,
@@ -320,52 +331,20 @@ namespace TimeFlow
 
             Label description = new Label
             {
-                Text = "The current dashboard design is outdated and doesn't provide a good user experience. We need to create a new design that is modern, intuitive, and visually appealing. The new design should include a clear information hierarchy, data visualizations, and easy navigation.",
+                Text = _currentTask.Description,
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray600,
+                ForeColor = AppColors.Gray600,
                 MaximumSize = new Size(centerContentWidth, 0),
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 20)
             };
             contentPanel.Controls.Add(description);
 
-
-            Label keyReqTitle = new Label
-            {
-                Text = "Key requirements:",
-                Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 8)
-            };
-            contentPanel.Controls.Add(keyReqTitle);
-
-            string[] requirements =
-            {
-                "User-friendly interface with a clean layout.",
-                "Interactive charts and graphs for data visualization.",
-                "Customizable widgets for personalization.",
-                "Responsive design for various screen sizes."
-            };
-
-            foreach (var req in requirements)
-            {
-                Label reqLabel = new Label
-                {
-                    Text = "• " + req,
-                    Font = FontRegular,
-                    ForeColor = ColorPalette.Gray600,
-                    AutoSize = true,
-                    Margin = new Padding(0, 0, 0, 4)
-                };
-                contentPanel.Controls.Add(reqLabel);
-            }
-
             Label commentsTitle = new Label
             {
                 Text = "Comments",
                 Font = FontTitle,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 30, 0, 16)
             };
@@ -379,12 +358,12 @@ namespace TimeFlow
             };
             contentPanel.Controls.Add(newCommentBox);
 
-            CustomButton postButton = new CustomButton
+            TimeFlow.UI.Components.CustomButton postButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "Post",
-                BackColor = ColorPalette.Blue500,
+                BackColor = AppColors.Blue500,
                 ForeColor = Color.White,
-                HoverColor = ColorPalette.Blue600,
+                HoverColor = AppColors.Blue600,
                 BorderRadius = 6,
                 Width = 100,
                 Height = 40,
@@ -392,11 +371,23 @@ namespace TimeFlow
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 0, 0, 24)
             };
+            postButton.Click += (s, e) => {
+                if (!string.IsNullOrWhiteSpace(newCommentBox.TextBoxText) && newCommentBox.TextBoxText != "Add a comment...")
+                {
+                    Services.TaskManager.AddComment(_currentTask.Id, "Current User", newCommentBox.TextBoxText);
+                    newCommentBox.TextBoxText = "Add a comment...";
+                    // Refresh to show new comment
+                    this.Controls.Clear();
+                    InitializeComponent();
+                }
+            };
             contentPanel.Controls.Add(postButton);
 
-            contentPanel.Controls.Add(CreateComment("Diana", "Can we make sure the dark mode colors are consistent with the web version?", "3 hours ago"));
-            contentPanel.Controls.Add(CreateComment("Charlie", "Great progress! I've attached the latest wireframes.", "1 hour ago"));
-
+            // Display existing comments from task data
+            foreach (var comment in _currentTask.Comments.OrderByDescending(c => c.CreatedDate))
+            {
+                contentPanel.Controls.Add(CreateComment(comment.Username, comment.Content, comment.TimeAgo));
+            }
 
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentPanel.Controls.Add(spacer);
@@ -409,7 +400,7 @@ namespace TimeFlow
             int sidebarPadding = 24;
             int contentWidth = sidebarWidth - (sidebarPadding * 2);
 
-            CustomPanel mainSidebarPanel = new CustomPanel
+            ModernPanel mainSidebarPanel = new ModernPanel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
@@ -429,12 +420,11 @@ namespace TimeFlow
             };
             mainSidebarPanel.Controls.Add(contentFlow);
 
-
             Label detailsTitle = new Label
             {
                 Text = "Details",
                 Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 0, 0, 16)
             };
@@ -461,7 +451,7 @@ namespace TimeFlow
                 {
                     Text = label,
                     Font = FontRegular,
-                    ForeColor = ColorPalette.Gray500,
+                    ForeColor = AppColors.Gray500,
                     Dock = DockStyle.Fill,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Margin = new Padding(0, 10, 0, 10)
@@ -474,7 +464,6 @@ namespace TimeFlow
                 detailsContainer.Controls.Add(control, 1, row);
             };
 
-
             FlowLayoutPanel assigneesValue = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.LeftToRight,
@@ -484,16 +473,22 @@ namespace TimeFlow
             };
 
             assigneesValue.Controls.Add(new Label { Text = "🧑‍💻", Font = new Font("Segoe UI Emoji", 10F), AutoSize = true, Margin = new Padding(0, 0, 4, 0) });
-            assigneesValue.Controls.Add(new Label { Text = "Alice, Bob", Font = FontRegular, ForeColor = ColorPalette.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
-            assigneesValue.Controls.Add(new Label { Text = "(+2)", Font = FontRegular, ForeColor = ColorPalette.Gray500, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            string assigneeNames = _currentTask.Assignees.Count > 0 
+                ? string.Join(", ", _currentTask.Assignees.Take(2))
+                : "Unassigned";
+            assigneesValue.Controls.Add(new Label { Text = assigneeNames, Font = FontRegular, ForeColor = AppColors.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            if (_currentTask.Assignees.Count > 2)
+            {
+                assigneesValue.Controls.Add(new Label { Text = $"(+{_currentTask.Assignees.Count - 2})", Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            }
 
             AddDetailRowToTable("Assignees", assigneesValue, 0);
 
             Label dueDate = new Label
             {
-                Text = "Dec 15, 2025",
+                Text = _currentTask.DueDateText,
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleLeft
             };
@@ -505,10 +500,20 @@ namespace TimeFlow
                 AutoSize = true,
                 Margin = new Padding(0)
             };
-            CustomPanel priority = new CustomPanel
+
+            Color priorityColor = _currentTask.Priority switch
             {
-                Text = "High",
-                BackColor = ColorPalette.Red600,
+                TaskPriorityLevel.Low => AppColors.Green500,
+                TaskPriorityLevel.Medium => AppColors.Orange500,
+                TaskPriorityLevel.High => AppColors.Red600,
+                TaskPriorityLevel.Critical => AppColors.Red700,
+                _ => AppColors.Gray400
+            };
+
+            ModernPanel priority = new ModernPanel
+            {
+                Text = _currentTask.PriorityText,
+                BackColor = priorityColor,
                 ForeColor = Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
@@ -527,27 +532,27 @@ namespace TimeFlow
                 Margin = new Padding(0)
             };
 
-            CustomPanel progressPanel = new CustomPanel
+            ModernPanel progressPanel = new ModernPanel
             {
-                BackColor = ColorPalette.Gray200,
+                BackColor = AppColors.Gray200,
                 BorderRadius = 4,
                 Height = 8,
                 Width = 150
             };
-            CustomPanel progressBar = new CustomPanel
+            ModernPanel progressBar = new ModernPanel
             {
-                BackColor = ColorPalette.Blue500,
+                BackColor = AppColors.Blue500,
                 BorderRadius = 4,
                 Height = 8,
-                Width = (int)(150 * 0.75)
+                Width = (int)(150 * (_currentTask.Progress / 100.0))
             };
             progressPanel.Controls.Add(progressBar);
 
             Label progressLabel = new Label
             {
-                Text = "75%",
+                Text = $"{_currentTask.Progress}%",
                 Font = FontRegular,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 Margin = new Padding(8, -5, 0, 0),
                 TextAlign = ContentAlignment.MiddleLeft,
                 AutoSize = true
@@ -558,12 +563,11 @@ namespace TimeFlow
 
             contentFlow.Controls.Add(detailsContainer);
 
-
             Label activityTitle = new Label
             {
                 Text = "Activity",
                 Font = FontBold,
-                ForeColor = ColorPalette.Gray800,
+                ForeColor = AppColors.Gray800,
                 AutoSize = true,
                 Margin = new Padding(0, 30, 0, 24)
             };
@@ -571,9 +575,11 @@ namespace TimeFlow
 
             int activityLogWidth = contentWidth;
 
-            contentFlow.Controls.Add(CreateActivityLog("Alice assigned this task to Bob.", "2 days ago", activityLogWidth));
-            contentFlow.Controls.Add(CreateActivityLog("Charlie changed the due date to Dec 15, 2025.", "1 day ago", activityLogWidth));
-            contentFlow.Controls.Add(CreateActivityLog("Diana left a comment.", "3 hours ago", activityLogWidth));
+            // Display activities from task data
+            foreach (var activity in _currentTask.Activities.OrderByDescending(a => a.CreatedDate))
+            {
+                contentFlow.Controls.Add(CreateActivityLog(activity.Description, activity.TimeAgo, activityLogWidth));
+            }
 
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentFlow.Controls.Add(spacer);
