@@ -15,21 +15,26 @@ namespace TimeFlow.Server
 {
     public partial class FormTCPServer : Form
     {
-        public FormTCPServer()
-        {
-            InitializeComponent();
-        }
-
         // --- CAC BIEN TOAN CUC ---
         private TcpListener tcpListener;
         private Thread serverThread;
 
-        // Chuỗi kết nối Database
-        private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
+        // Database Repositories
+        private UserRepository _userRepo;
+        private ActivityLogRepository _activityLogRepo;
 
         // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private static object _lock = new object();
+
+        public FormTCPServer()
+        {
+            InitializeComponent();
+            
+            // Khoi tao Repositories
+            _userRepo = new UserRepository();
+            _activityLogRepo = new ActivityLogRepository();
+        }
 
         // --- CAC CLASS DU LIEU (DTO) ---
         public class LoginRequest { public string username { get; set; } public string password { get; set; } }
@@ -330,54 +335,78 @@ namespace TimeFlow.Server
             }
         }
 
-        // REFACTORED: Dung UserRepository thay vi raw SQL
+        // Validate login va tra ve User object neu thanh cong
         private User? ValidateLogin(string username, string password)
         {
-            // 1. In ra thông tin đầu vào
-            string inputHash = HashPassword(password);
-            AppendLog($"[DEBUG] Đang check login: User={username}");
-            AppendLog($"[DEBUG] Hash từ Client: {inputHash}");
-
             try
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username = @u AND Password = @p";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                return (int)cmd.ExecuteScalar() > 0;
+                string passwordHash = HashPassword(password);
+                AppendLog($"[DEBUG] Đang check login: User={username}");
+                AppendLog($"[DEBUG] Hash từ Client: {passwordHash}");
+
+                // Dung UserRepository de validate login
+                var user = _userRepo.ValidateLogin(username, passwordHash);
+                
+                if (user != null)
+                {
+                    AppendLog($"[DEBUG] ✓ Login successful for user: {username}");
+                }
+                else
+                {
+                    AppendLog($"[DEBUG] ✗ Login failed for user: {username}");
+                }
+
+                return user;
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[ERROR] ValidateLogin exception: {ex.Message}");
+                return null;
             }
         }
 
-        // REFACTORED: Dung UserRepository thay vi raw SQL
+        // Dang ky user moi
         private bool RegisterNewUser(string username, string password, string email)
         {
             try
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string check = "SELECT COUNT(*) FROM Users WHERE Username = @u OR Email = @e";
-                using SqlCommand cmdCheck = new SqlCommand(check, conn);
-                cmdCheck.Parameters.AddWithValue("@u", username);
-                cmdCheck.Parameters.AddWithValue("@e", email);
-                if ((int)cmdCheck.ExecuteScalar() > 0) return false;
+                // Kiem tra username hoac email da ton tai chua
+                if (_userRepo.UsernameOrEmailExists(username, email))
+                {
+                    AppendLog($"[DEBUG] Register failed: Username or Email already exists");
+                    return false;
+                }
 
-                string query = "INSERT INTO Users (Username, Password, Email) VALUES (@u, @p, @e)";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                cmd.Parameters.AddWithValue("@e", email);
-                return cmd.ExecuteNonQuery() > 0;
+                // Tao user moi
+                var newUser = new User
+                {
+                    Username = username,
+                    PasswordHash = HashPassword(password),
+                    Email = email,
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
+                };
+
+                int userId = _userRepo.Create(newUser);
+                
+                if (userId > 0)
+                {
+                    AppendLog($"[DEBUG] ✓ User registered successfully: {username} (ID: {userId})");
+                    
+                    // Log activity
+                    _activityLogRepo.LogActivity(userId, null, "Register", $"New user registered: {username}");
+                    
+                    return true;
+                }
+                else
+                {
+                    AppendLog($"[DEBUG] ✗ Register failed for user: {username}");
+                    return false;
+                }
             }
-            catch { return false; }
-        }
-
-        private string GetEmailByUsername(string username)
-        {
-            try
+            catch (Exception ex)
             {
-                AppendLog("Register Error: " + ex.Message);
+                AppendLog($"[ERROR] Register exception: {ex.Message}");
                 return false;
             }
         }

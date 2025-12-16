@@ -16,6 +16,7 @@ namespace TimeFlow.UI
     {
         private FormGiaoDien parentForm;
         private DateTime? preSelectedDate; // Ngày được chọn từ calendar
+        private int? _taskIdToEdit = null; // ID của task đang edit (nếu có)
 
         public FormThemTask()
         {
@@ -36,6 +37,13 @@ namespace TimeFlow.UI
             preSelectedDate = selectedDate;
         }
 
+        // ✅ Constructor để edit task
+        public FormThemTask(int taskId) : this()
+        {
+            _taskIdToEdit = taskId;
+            this.Text = "Chỉnh sửa Task";
+        }
+
         private void FormThemTask_Load(object sender, EventArgs e)
         {
             // ✅ Set ngày bắt đầu nếu có ngày được chọn trước
@@ -49,6 +57,19 @@ namespace TimeFlow.UI
                 dateTimePicker1.Value = DateTime.Now;
                 // dateTimePicker2.Value = DateTime.Now.AddDays(1);
             }
+
+            // TODO: Nếu đang chỉnh sửa task, cần implement method GetTaskById trong FormGiaoDien
+            // if (_taskIdToEdit.HasValue)
+            // {
+            //     var taskToEdit = parentForm?.GetTaskById(_taskIdToEdit.Value);
+            //     if (taskToEdit != null)
+            //     {
+            //         textBox1.Text = taskToEdit.Title;
+            //         richTextBox1.Text = taskToEdit.Description;
+            //         dateTimePicker1.Value = taskToEdit.DueDate;
+            //         this.Text = "Chỉnh sửa Task";
+            //     }
+            // }
         }
 
 
