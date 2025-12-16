@@ -24,11 +24,10 @@ namespace TimeFlow.Server
         private TcpListener tcpListener;
         private Thread serverThread;
 
-        // Repositories
-        private readonly UserRepository _userRepo = new UserRepository();
-        private readonly ActivityLogRepository _activityLogRepo = new ActivityLogRepository();
+        // Chuỗi kết nối Database
+        private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
 
-        // DANH SACH USER ONLINE: Map tu Username -> Socket Client
+        // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private static object _lock = new object();
 
@@ -316,9 +315,15 @@ namespace TimeFlow.Server
         {
             using (SHA256 sha256 = SHA256.Create())
             {
+                // Chuyển password nhập vào thành byte
                 byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                // Chuyển byte thành chuỗi Hex (viết thường)
                 StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes) sb.Append(b.ToString("x2"));
+                foreach (byte b in bytes)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
                 return sb.ToString();
             }
         }
@@ -326,41 +331,20 @@ namespace TimeFlow.Server
         // REFACTORED: Dung UserRepository thay vi raw SQL
         private User? ValidateLogin(string username, string password)
         {
+            // 1. In ra thông tin đầu vào
+            string inputHash = HashPassword(password);
+            AppendLog($"[DEBUG] Đang check login: User={username}");
+            AppendLog($"[DEBUG] Hash từ Client: {inputHash}");
+
             try
             {
-                AppendLog($"[DEBUG] Attempting login for user: {username}");
-                AppendLog($"[DEBUG] Plain password received: {password}");
-                
-                string hashedPassword = HashPassword(password);
-                AppendLog($"[DEBUG] Password hash computed: {hashedPassword}");
-                
-                var user = _userRepo.ValidateLogin(username, hashedPassword);
-                
-                if (user != null)
-                {
-                    AppendLog($"[DEBUG] User found: {user.Username} (ID: {user.UserId})");
-                }
-                else
-                {
-                    AppendLog($"[DEBUG] User not found or password incorrect");
-                }
-                
-                return user;
-            }
-            catch (Data.DatabaseException ex)
-            {
-                AppendLog($"DB Error: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    AppendLog($"Inner Error: {ex.InnerException.Message}");
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-                AppendLog($"Unexpected Error: {ex.Message}");
-                AppendLog($"Stack Trace: {ex.StackTrace}");
-                return null;
+                using SqlConnection conn = new SqlConnection(connectionString);
+                conn.Open();
+                string query = "SELECT COUNT(*) FROM Users WHERE Username = @u AND Password = @p";
+                using SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@u", username);
+                cmd.Parameters.AddWithValue("@p", HashPassword(password));
+                return (int)cmd.ExecuteScalar() > 0;
             }
         }
 
@@ -369,34 +353,27 @@ namespace TimeFlow.Server
         {
             try
             {
-                // Kiem tra username hoac email da ton tai chua
-                if (_userRepo.UsernameOrEmailExists(username, email))
-                {
-                    return false;
-                }
+                using SqlConnection conn = new SqlConnection(connectionString);
+                conn.Open();
+                string check = "SELECT COUNT(*) FROM Users WHERE Username = @u OR Email = @e";
+                using SqlCommand cmdCheck = new SqlCommand(check, conn);
+                cmdCheck.Parameters.AddWithValue("@u", username);
+                cmdCheck.Parameters.AddWithValue("@e", email);
+                if ((int)cmdCheck.ExecuteScalar() > 0) return false;
 
-                // Tao user moi
-                var newUser = new User
-                {
-                    Username = username,
-                    Email = email,
-                    PasswordHash = HashPassword(password),
-                    IsActive = true
-                };
-
-                int userId = _userRepo.Create(newUser);
-                
-                if (userId > 0)
-                {
-                    // Log activity
-                    _activityLogRepo.LogActivity(userId, null, "Register", "New user registered");
-                    AppendLog($"User '{username}' đã đăng ký thành công.");
-                    return true;
-                }
-                
-                return false;
+                string query = "INSERT INTO Users (Username, Password, Email) VALUES (@u, @p, @e)";
+                using SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@u", username);
+                cmd.Parameters.AddWithValue("@p", HashPassword(password));
+                cmd.Parameters.AddWithValue("@e", email);
+                return cmd.ExecuteNonQuery() > 0;
             }
-            catch (Exception ex)
+            catch { return false; }
+        }
+
+        private string GetEmailByUsername(string username)
+        {
+            try
             {
                 AppendLog("Register Error: " + ex.Message);
                 return false;

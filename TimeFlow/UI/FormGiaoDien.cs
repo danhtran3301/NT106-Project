@@ -10,6 +10,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeFlow.Authentication;
 using TimeFlow.Server;
+<<<<<<< HEAD
+using TimeFlow;
+=======
+>>>>>>> 4b4f42b10bf4f52b062839463b4981cbca790977
 using TimeFlow.UI;
 using TimeFlow.Tasks;
 using TimeFlow.Models;
@@ -276,7 +280,7 @@ namespace TimeFlow
             if (task != null)
             {
                 // Không dùng singleton cho task detail vì mỗi task khác nhau
-                FormTaskDetail detailForm = new FormTaskDetail(task);
+                FormTaskDetail detailForm = new FormTaskDetail(taskId);
                 detailForm.FormClosed += (s, e) => {
                     this.Show();
                     this.Activate();
