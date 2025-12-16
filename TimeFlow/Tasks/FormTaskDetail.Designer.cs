@@ -173,7 +173,27 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 16, 0, 0)
             };
+            /*rightFlow.Controls.Add(optionsButton);
+            headerPanel.Controls.Add(rightFlow, 2, 0);*/
+            ContextMenuStrip contextMenu = new ContextMenuStrip();
+            ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
+            ToolStripMenuItem deleteItem = new ToolStripMenuItem("Xóa Task (Delete)");
+            ToolStripMenuItem statusMenu = new ToolStripMenuItem("Thay đổi Trạng thái (Status)");
+            contextMenu.Items.Add(editItem);
+            contextMenu.Items.Add(deleteItem);
+            contextMenu.Items.Add(new ToolStripSeparator()); 
+            contextMenu.Items.Add(statusMenu);
+            optionsButton.Click += (sender, e) =>
+            {
+                contextMenu.Show(optionsButton, new Point(optionsButton.Width - contextMenu.Width, optionsButton.Height));
+            };
+            //editItem.Click += EditItem_Click;
+            deleteItem.Click += DeleteItem_Click;
+            CreateStatusSubMenu(statusMenu);
+
             rightFlow.Controls.Add(optionsButton);
+<<<<<<< HEAD
+=======
             headerPanel.Controls.Add(rightFlow, 2, 0);
             ContextMenuStrip contextMenu = new ContextMenuStrip();
             ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
@@ -192,6 +212,7 @@ namespace TimeFlow.Tasks
             CreateStatusSubMenu(statusMenu);
 
             rightFlow.Controls.Add(optionsButton);
+>>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
             Panel separator = new Panel
             {
                 Dock = DockStyle.Bottom,
@@ -257,9 +278,15 @@ namespace TimeFlow.Tasks
             btnYourTask.Click += BtnYourTask_Click; 
             menuPanel.Controls.Add(btnYourTask);
 
+<<<<<<< HEAD
+           /* var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
+            btnGroup.Click += BtnGroup_Click; 
+            menuPanel.Controls.Add(btnGroup);*/
+=======
             var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
             btnGroup.Click += BtnGroup_Click; 
             menuPanel.Controls.Add(btnGroup);
+>>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
 
             var btnNewTask = CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight);
             btnNewTask.Click += BtnNewTask_Click; 
@@ -416,14 +443,12 @@ namespace TimeFlow.Tasks
                 {
                     Services.TaskManager.AddComment(_currentTask.Id, "Current User", newCommentBox.TextBoxText);
                     newCommentBox.TextBoxText = "Add a comment...";
-                    // Refresh to show new comment
                     this.Controls.Clear();
                     InitializeComponent();
                 }
             };
             contentPanel.Controls.Add(postButton);
 
-            // Display existing comments from task data
             foreach (var comment in _currentTask.Comments.OrderByDescending(c => c.CreatedDate))
             {
                 contentPanel.Controls.Add(CreateComment(comment.Username, comment.Content, comment.TimeAgo));
@@ -634,7 +659,7 @@ namespace TimeFlow.Tasks
 
             int activityLogWidth = contentWidth;
 
-            // Display activities from task data
+     
             foreach (var activity in _currentTask.Activities.OrderByDescending(a => a.CreatedDate))
             {
                 contentFlow.Controls.Add(CreateActivityLog(activity.Description, activity.TimeAgo, activityLogWidth));
