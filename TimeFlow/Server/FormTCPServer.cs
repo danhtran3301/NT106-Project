@@ -20,16 +20,19 @@ namespace TimeFlow.Server
             InitializeComponent();
         }
 
-        // --- CAC BIEN TOAN CUC ---
+        private readonly UserRepository _userRepo;
+        private readonly ActivityLogRepository _activityLogRepo;
+
+        // --- CÁC BIẾN TOÀN CỤC KHÁC ---
         private TcpListener tcpListener;
         private Thread serverThread;
+        private static object _lock = new object();
 
         // Chuỗi kết nối Database
         private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
 
         // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
-        private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
-        private static object _lock = new object();
+        private static readonly Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
 
         // --- CAC CLASS DU LIEU (DTO) ---
         public class LoginRequest { public string username { get; set; } public string password { get; set; } }
@@ -99,6 +102,41 @@ namespace TimeFlow.Server
             }
         }
 
+        // Gửi danh sách user online cho TẤT CẢ client đang kết nối
+        private void BroadcastOnlineUsers()
+        {
+            List<string> userList;
+            lock (_lock)
+            {
+                userList = new List<string>(_onlineClients.Keys);
+            }
+
+            var packet = new
+            {
+                type = "user_list",
+                users = userList
+            };
+
+            string json = JsonSerializer.Serialize(packet);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+            lock (_lock)
+            {
+                foreach (var client in _onlineClients.Values)
+                {
+                    try
+                    {
+                        if (client.Connected)
+                        {
+                            client.GetStream().Write(bytes, 0, bytes.Length);
+                        }
+                    }
+                    catch { /* Bỏ qua nếu client nào đó bị lỗi */ }
+                }
+            }
+            AppendLog($"[System] Đã cập nhật danh sách online ({userList.Count} users)");
+        }
+
         // --- HAM XU LY CLIENT ---
         private void HandleClient(TcpClient client)
         {
@@ -140,6 +178,7 @@ namespace TimeFlow.Server
                                 if (_onlineClients.ContainsKey(currentUsername))
                                     _onlineClients[currentUsername].Close();
                                 _onlineClients[currentUsername] = client;
+                                BroadcastOnlineUsers();
                             }
 
                             string res = JsonSerializer.Serialize(new
@@ -241,6 +280,7 @@ namespace TimeFlow.Server
                         {
                             _onlineClients.Remove(currentUsername);
                         }
+                        BroadcastOnlineUsers();
                     }
                     AppendLog($"User '{currentUsername}' đã Offline.");
 
@@ -340,11 +380,32 @@ namespace TimeFlow.Server
             {
                 using SqlConnection conn = new SqlConnection(connectionString);
                 conn.Open();
-                string query = "SELECT COUNT(*) FROM Users WHERE Username = @u AND Password = @p";
+                string query = "SELECT TOP 1 UserId, Username, Email, FullName, IsActive FROM Users WHERE Username = @u AND Password = @p";
                 using SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@u", username);
                 cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                return (int)cmd.ExecuteScalar() > 0;
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                            Username = reader.GetString(reader.GetOrdinal("Username")),
+                            Email = reader.GetString(reader.GetOrdinal("Email")),
+                            FullName = reader.IsDBNull(reader.GetOrdinal("FullName")) ? null : reader.GetString(reader.GetOrdinal("FullName")),
+                            IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive"))
+                        };
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -375,8 +436,14 @@ namespace TimeFlow.Server
         {
             try
             {
+                // Your logic to get email by username should be here
+                // For now, return an empty string or a valid email string
+                return string.Empty;
+            }
+            catch (Exception ex)
+            {
                 AppendLog("Register Error: " + ex.Message);
-                return false;
+                return string.Empty;
             }
         }
 

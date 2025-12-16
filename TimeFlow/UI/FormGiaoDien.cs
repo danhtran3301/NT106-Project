@@ -10,10 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using TimeFlow.Authentication;
 using TimeFlow.Server;
-<<<<<<< HEAD
 using TimeFlow;
-=======
->>>>>>> 4b4f42b10bf4f52b062839463b4981cbca790977
 using TimeFlow.UI;
 using TimeFlow.Tasks;
 using TimeFlow.Models;
