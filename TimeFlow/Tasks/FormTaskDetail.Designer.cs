@@ -37,8 +37,8 @@ namespace TimeFlow.Tasks
             if (_currentTask == null)
             {
                 MessageBox.Show("Không tìm thấy Task nào để hiển thị.", "Lỗi Dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.Close(); 
-                return; 
+                this.Close();
+                return;
             }
 
             Panel rootPanel = new Panel
@@ -115,7 +115,7 @@ namespace TimeFlow.Tasks
                 Width = 40,
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0,18,0,0)
+                Margin = new Padding(0, 18, 0, 0)
             };
             arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại trang trước..."); };
             leftFlow.Controls.Add(arrowButton);
@@ -155,7 +155,7 @@ namespace TimeFlow.Tasks
                 Width = 40,
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0,18,0,0)
+                Margin = new Padding(0, 18, 0, 0)
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             rightFlow.Controls.Add(closeButton);
@@ -181,7 +181,7 @@ namespace TimeFlow.Tasks
             ToolStripMenuItem statusMenu = new ToolStripMenuItem("Thay đổi Trạng thái (Status)");
             contextMenu.Items.Add(editItem);
             contextMenu.Items.Add(deleteItem);
-            contextMenu.Items.Add(new ToolStripSeparator()); 
+            contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(statusMenu);
             optionsButton.Click += (sender, e) =>
             {
@@ -254,20 +254,20 @@ namespace TimeFlow.Tasks
                 AutoSize = true
             });
             var btnYourTask = CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight);
-            btnYourTask.Click += BtnYourTask_Click; 
+            btnYourTask.Click += BtnYourTask_Click;
             menuPanel.Controls.Add(btnYourTask);
 
             var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
-            btnGroup.Click += BtnGroup_Click; 
+            btnGroup.Click += BtnGroup_Click;
             menuPanel.Controls.Add(btnGroup);
 
             var btnNewTask = CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight);
-            btnNewTask.Click += BtnNewTask_Click; 
+            btnNewTask.Click += BtnNewTask_Click;
             menuPanel.Controls.Add(btnNewTask);
 
             Color submitColor = AppColors.Purple500;
             var btnSubmitTask = CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight, Color.FromArgb(200, submitColor));
-            btnSubmitTask.Click += BtnSubmitTask_Click; 
+            btnSubmitTask.Click += BtnSubmitTask_Click;
             menuPanel.Controls.Add(btnSubmitTask);
             MonthCalendar monthCalendar = new MonthCalendar
             {
@@ -297,7 +297,7 @@ namespace TimeFlow.Tasks
             Panel scrollContainer = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true,                
+                AutoScroll = true,
                 BackColor = Color.White,
                 Padding = new Padding(0),
                 Margin = new Padding(0)
@@ -309,7 +309,7 @@ namespace TimeFlow.Tasks
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = false,
-                AutoSize =true,
+                AutoSize = true,
                 Padding = new Padding(32, 130, 32, 24),
                 BackColor = Color.White,
             };
@@ -355,7 +355,7 @@ namespace TimeFlow.Tasks
             _statusBadge = new ModernPanel
             {
                 Text = _currentTask.StatusText,
-                BackColor = statusColor, 
+                BackColor = statusColor,
                 ForeColor = statusColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
@@ -532,7 +532,7 @@ namespace TimeFlow.Tasks
             };
 
             assigneesValue.Controls.Add(new Label { Text = "🧑‍💻", Font = new Font("Segoe UI Emoji", 10F), AutoSize = true, Margin = new Padding(0, 0, 4, 0) });
-            string assigneeNames = _currentTask.Assignees.Count > 0 
+            string assigneeNames = _currentTask.Assignees.Count > 0
                 ? string.Join(", ", _currentTask.Assignees.Take(2))
                 : "Unassigned";
             assigneesValue.Controls.Add(new Label { Text = assigneeNames, Font = FontRegular, ForeColor = AppColors.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
