@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using TimeFlow.UI;
 using TimeFlow.Tasks;
 using TimeFlow.Server;
+using TimeFlow.Authentication;
 
 namespace TimeFlow
 {
@@ -21,7 +22,8 @@ namespace TimeFlow
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);      
             Application.Run(new FormTaskDetail());
-            Application.Run(new FormMenuTCP());
+           //Application.Run(new FormMenuTCP());
+            //Application.Run(new FormDangNhap());
         }
     }
 }
