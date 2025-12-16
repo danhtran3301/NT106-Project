@@ -36,7 +36,30 @@ namespace TimeFlow
             StartListening();
         }
 
-        // --- HÀM 1: LẮNG NGHE TIN NHẮN (BACKGROUND THREAD) ---
+        // --- HÀM 1: KẾT NỐI SERVER (Chỉ dùng khi test riêng Form này) ---
+        private void ConnectToServer(string user)
+        {
+            try
+            {
+                _client = new TcpClient("127.0.0.1", 1010); // Đổi PORT cho khớp server
+                _stream = _client.GetStream();
+                _myUsername = user;
+                _isConnected = true;
+
+                // Gửi lệnh Login giả để Server biết mình là ai
+                var loginData = new { type = "login", data = new { username = user, password = "123" } };
+                byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(loginData));
+                _stream.Write(data, 0, data.Length);
+
+                StartListening();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể kết nối Server: " + ex.Message);
+            }
+        }
+
+        // --- HÀM 2: LẮNG NGHE TIN NHẮN (BACKGROUND THREAD) ---
         private void StartListening()
         {
             _listenThread = new Thread(() =>
@@ -81,17 +104,8 @@ namespace TimeFlow
                     {
                         string type = typeElem.GetString();
 
-                        // CASE A: NHẬN DANH SÁCH USER ONLINE
-                        if (type == "user_list")
-                        {
-                            if (root.TryGetProperty("users", out JsonElement usersElem))
-                            {
-                                var users = JsonSerializer.Deserialize<string[]>(usersElem.GetRawText());
-                                this.Invoke((MethodInvoker)delegate { UpdateSidebar(users); });
-                            }
-                        }
-                        // CASE B: NHẬN TIN NHẮN CHAT (REAL-TIME)
-                        else if (type == "receive_message")
+                        // Nếu là tin nhắn chat đến
+                        if (type == "receive_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
                             string content = root.GetProperty("content").GetString();
@@ -99,106 +113,15 @@ namespace TimeFlow
 
                             this.Invoke((MethodInvoker)delegate
                             {
-                                // Chỉ hiện nếu đang chat đúng với người đó, hoặc tin của chính mình (đồng bộ từ thiết bị khác)
-                                if (sender == _currentReceiver || sender == _myUsername)
-                                {
-                                    bool isMe = (sender == _myUsername);
-                                    AddMessageBubble(content, isMe, time);
-                                }
-                                else
-                                {
-                                    // TODO: Có thể hiện thông báo đỏ ở Sidebar nếu tin đến từ người khác
-                                }
+                                bool isMe = (sender == _myUsername);
+                                AddMessageBubble(content, isMe, time);
                             });
-                        }
-                        // CASE C: NHẬN LỊCH SỬ CHAT (HISTORY)
-                        else if (type == "history_data")
-                        {
-                            if (root.TryGetProperty("data", out JsonElement dataArray))
-                            {
-                                this.Invoke((MethodInvoker)delegate
-                                {
-                                    flowChatMessages.Controls.Clear(); // Xóa sạch màn hình cũ
-                                    foreach (JsonElement msg in dataArray.EnumerateArray())
-                                    {
-                                        string sender = msg.GetProperty("Sender").GetString();
-                                        string content = msg.GetProperty("Content").GetString();
-                                        DateTime time = msg.GetProperty("Time").GetDateTime();
-                                        bool isMe = (sender == _myUsername);
-
-                                        AddMessageBubble(content, isMe, time.ToString("HH:mm"));
-                                    }
-                                    // Cuộn xuống cuối
-                                    if (flowChatMessages.Controls.Count > 0)
-                                        flowChatMessages.ScrollControlIntoView(flowChatMessages.Controls[flowChatMessages.Controls.Count - 1]);
-                                });
-                            }
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("JSON Error: " + ex.Message);
-            }
+            catch { /* Bỏ qua lỗi parse JSON rác */ }
         }
-
-        // --- HÀM 3: CẬP NHẬT THANH SIDEBAR (USER LIST) ---
-        private void UpdateSidebar(string[] users)
-        {
-            flowSidebar.Controls.Clear();
-
-            foreach (var user in users)
-            {
-                if (user == _myUsername) continue; // Không hiện chính mình
-
-                Button btn = new Button();
-                btn.Text = user;
-                btn.Width = flowSidebar.Width - 25;
-                btn.Height = 50;
-                btn.TextAlign = ContentAlignment.MiddleLeft;
-                btn.Padding = new Padding(20, 0, 0, 0);
-                btn.FlatStyle = FlatStyle.Flat;
-                btn.FlatAppearance.BorderSize = 0;
-                btn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-                btn.Cursor = Cursors.Hand;
-
-                // Highlight người đang chọn
-                if (user == _currentReceiver)
-                {
-                    btn.BackColor = Color.AliceBlue;
-                    btn.ForeColor = Color.DodgerBlue;
-                }
-                else
-                {
-                    btn.BackColor = Color.White;
-                    btn.ForeColor = Color.Black;
-                }
-
-                // SỰ KIỆN CLICK CHỌN USER
-                btn.Click += (s, e) => SwitchUser(user);
-
-                flowSidebar.Controls.Add(btn);
-            }
-        }
-
-        // --- HÀM 4: CHUYỂN NGƯỜI CHAT & LẤY LỊCH SỬ ---
-        private void SwitchUser(string targetUser)
-        {
-            _currentReceiver = targetUser;
-            lblChatTitle.Text = targetUser;
-            flowChatMessages.Controls.Clear(); // Xóa chat cũ ngay lập tức
-
-            // Update màu sắc sidebar
-            foreach (Control c in flowSidebar.Controls)
-            {
-                if (c is Button b)
-                {
-                    bool isTarget = (b.Text == targetUser);
-                    b.BackColor = isTarget ? Color.AliceBlue : Color.White;
-                    b.ForeColor = isTarget ? Color.DodgerBlue : Color.Black;
-                }
-            }
 
             // Gửi yêu cầu lấy lịch sử
             SendJson(new { type = "get_history", target_user = targetUser });
