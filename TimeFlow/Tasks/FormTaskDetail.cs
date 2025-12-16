@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Linq; 
-using TimeFlow.Services; 
-using System.Collections.Generic; 
-using System.Text.RegularExpressions; 
+using System.Linq;
+using TimeFlow.Services;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TimeFlow.Models;
 using TimeFlow.UI;
-<<<<<<< HEAD
-using TimeFlow.Services;
-using TimeFlow.Tasks;
-
-=======
 using TimeFlow.UI.Components;
->>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
 namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
@@ -49,43 +43,7 @@ namespace TimeFlow.Tasks
 
             SetupLayout();
         }
-        private RichTextBox CreateFormattedActivityText(string activityText, List<string> userNameList)
-        {
-            RichTextBox rtb = new RichTextBox
-            {
-                Text = activityText,
-                ReadOnly = true,           
-                BorderStyle = BorderStyle.None, 
-                BackColor = this.BackColor, 
-                AutoSize = false,       
-                WordWrap = true,
-                ScrollBars = RichTextBoxScrollBars.None,
-            };
 
-      
-            SizeF size = TextRenderer.MeasureText(activityText, rtb.Font, new Size(200, 1000),
-                                                 TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
-            rtb.Size = new Size(220, (int)size.Height + 5); 
-
-            foreach (string userName in userNameList)
-            {
-                int startIndex = 0;
-                while ((startIndex = rtb.Find(userName, startIndex, RichTextBoxFinds.None)) != -1)
-                {
-                   
-                    rtb.Select(startIndex, userName.Length);
-
-                    rtb.SelectionFont = new Font(rtb.Font, FontStyle.Bold);
-
-                    startIndex += userName.Length;
-                }
-            }
-
-            rtb.Select(0, 0); 
-            rtb.SelectionFont = new Font(rtb.Font, FontStyle.Regular);
-
-            return rtb;
-        }
         private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor)
         {
             return new TimeFlow.UI.Components.CustomButton
@@ -173,37 +131,9 @@ namespace TimeFlow.Tasks
 
             return comment;
         }
-<<<<<<< HEAD
-        // Hàm hỗ trợ tìm và hiển thị form đích (FormTaskList)
-        private void ShowExistingForm<T>() where T : Form, new()
-        {
-            Form existingForm = Application.OpenForms.OfType<T>().FirstOrDefault();
-            if (existingForm != null)
-            {
-                existingForm.Show();
-                existingForm.BringToFront();
-            }
-            else
-            {
-                T newForm = new T();
-                newForm.Show();
-            }
-            this.Close();
-        }
 
-        // Hàm cần thiết để tải lại dữ liệu sau khi cập nhật
-        private void LoadTaskDetail(int taskId)
-        {
-            // Tải lại dữ liệu mới nhất từ TaskManager
-            var updatedTask = Services.TaskManager.GetTaskById(taskId);
 
-            if (updatedTask != null)
-            {
-                _currentTask = updatedTask;
-=======
-       
 
-       
         private void LoadTaskDetail(int taskId)
         {
             var updatedTask = Services.TaskManager.GetTaskById(taskId);
@@ -211,16 +141,12 @@ namespace TimeFlow.Tasks
             {
                 _currentTask = updatedTask;
                 LoadGroupData(taskId);
->>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
                 this.Controls.Clear();
                 InitializeComponent();
             }
             else
             {
                 MessageBox.Show("Task này không còn tồn tại.", "Thông báo");
-<<<<<<< HEAD
-                ShowExistingForm<FormTaskList>();
-=======
             }
         }
         private void BtnYourTask_Click(object sender, EventArgs e)
@@ -258,17 +184,17 @@ namespace TimeFlow.Tasks
                 MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
             }
         }
-        private void BtnGroup_Click(object sender,EventArgs e)
+        private void BtnGroup_Click(object sender, EventArgs e)
         {
-           /* try
-            {
-                FromGroupList groupListForm = new FormGroupList();
-                groupListForm.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
-            }*/
+            /* try
+             {
+                 FromGroupList groupListForm = new FormGroupList();
+                 groupListForm.ShowDialog();
+             }
+             catch (Exception ex)
+             {
+                 MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
+             }*/
         }
         private void EditItem_Click(object sender, EventArgs e)
         {
@@ -280,136 +206,12 @@ namespace TimeFlow.Tasks
                 {
                     LoadTaskDetail(_currentTask.Id);
                 }
->>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
             }
         }
         private void DeleteItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
 
-<<<<<<< HEAD
-            var confirm = MessageBox.Show(
-                $"Bạn có chắc chắn muốn xóa vĩnh viễn Task: {_currentTask.Name}?",
-                "Xác nhận Xóa Task",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning);
-
-            if (confirm == DialogResult.Yes)
-            {
-                try
-                {
-                    // GỌI SERVICE XÓA TASK (MOCK)
-                    bool success = Services.TaskManager.DeleteTask(_currentTask.Id);
-
-                    if (success)
-                    {
-                        MessageBox.Show($"Task '{_currentTask.Name}' đã được xóa thành công.", "Thành công");
-
-                        // Điều hướng quay lại Task List (sử dụng Singleton Helper)
-                        ShowExistingForm<FormTaskList>();
-                    }
-                    else
-                    {
-                        MessageBox.Show("Lỗi: Không tìm thấy Task hoặc xóa thất bại.", "Lỗi");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi xảy ra trong quá trình xóa: {ex.Message}", "Lỗi");
-                }
-            }
-        }
-       /* private void EditItem_Click(object sender, EventArgs e)
-        {
-            if (_currentTask == null) return;
-
-            try
-            {
-                // YÊU CẦU: FormThemTask phải có constructor nhận Task ID để vào chế độ chỉnh sửa
-                FormThemTask editForm = new FormThemTask(_currentTask.Id);
-
-                if (editForm.ShowDialog() == DialogResult.OK)
-                {
-                    // Nếu FormThemTask trả về OK (đã lưu), tải lại dữ liệu Task hiện tại
-                    LoadTaskDetail(_currentTask.Id);
-                    MessageBox.Show("Task đã được cập nhật thành công.", "Thành công");
-                }
-            }
-            catch (Exception ex)
-            {
-                // Bắt lỗi nếu FormThemTask chưa có constructor hoặc lỗi khác
-                MessageBox.Show($"Lỗi mở form chỉnh sửa: {ex.Message}", "Lỗi");
-            }
-        }*/
-        // Hàm tạo Menu con chứa các trạng thái
-        private void CreateStatusSubMenu(ToolStripMenuItem statusMenu)
-        {
-            Array statusValues = Enum.GetValues(typeof(TaskState));
-
-            foreach (TaskState status in statusValues)
-            {
-                ToolStripMenuItem item = new ToolStripMenuItem(status.ToString());
-
-                if (status == _currentTask.Status)
-                {
-                    item.Checked = true;
-                }
-
-                item.Click += (sender, e) => ChangeStatusItem_Click(status);
-
-                statusMenu.DropDownItems.Add(item);
-            }
-        }
-
-        // Hàm xử lý khi người dùng chọn một trạng thái mới
-        private void ChangeStatusItem_Click(TaskState newStatus)
-        {
-            if (_currentTask == null || newStatus == _currentTask.Status) return;
-
-            var confirm = MessageBox.Show(
-                $"Xác nhận thay đổi trạng thái của Task '{_currentTask.Name}' sang {newStatus.ToString()}?",
-                "Xác nhận Thay đổi Trạng thái",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (confirm == DialogResult.Yes)
-            {
-                TaskState oldStatus = _currentTask.Status;
-                _currentTask.Status = newStatus;
-
-                try
-                {
-                    // GỌI SERVICE CẬP NHẬT TASK (MOCK)
-                    bool success = Services.TaskManager.UpdateTask(_currentTask);
-
-                    if (success)
-                    {
-                        // Thêm Activity Log
-                        Services.TaskManager.AddActivity(
-                            _currentTask.Id,
-                            $"Trạng thái Task thay đổi từ {oldStatus} sang {newStatus}."
-                        );
-
-                        // Refresh giao diện
-                        LoadTaskDetail(_currentTask.Id);
-                        MessageBox.Show("Trạng thái đã được cập nhật thành công.", "Thành công");
-                    }
-                    else
-                    {
-                        MessageBox.Show("Cập nhật Task thất bại.", "Lỗi");
-                        _currentTask.Status = oldStatus; // Rollback
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi cập nhật trạng thái: {ex.Message}", "Lỗi");
-                    _currentTask.Status = oldStatus; // Rollback
-                }
-            }
-        }
-
-        List<string> userNames = new List<string> { "Alice", "Bob", "Charlie", "Diana" };
-=======
             var confirm = MessageBox.Show($"Bạn có chắc chắn muốn xóa task '{_currentTask.Name}'?",
                                         "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
@@ -454,29 +256,26 @@ namespace TimeFlow.Tasks
                 statusMenu.DropDownItems.Add(item);
             }
         }
->>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
         private Control CreateActivityLog(string activity, string time, int width)
         {
-         
-            List<string> userNames = Services.TaskManager.GetAllTasks()
-                                            .SelectMany(t => t.Assignees)
-                                            .Distinct()
-                                            .ToList();
-
             FlowLayoutPanel logItem = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoSize = false,
-                Width = width, 
+                Width = width,
                 Margin = new Padding(0, 0, 0, 12)
             };
             logItem.AutoSize = true;
 
-         
-            RichTextBox rtbActivity = CreateFormattedActivityText(activity, userNames);
-            rtbActivity.Width = width; 
-
+            Label lblActivity = new Label
+            {
+                Text = activity,
+                Font = FontRegular,
+                ForeColor = AppColors.Gray600,
+                MaximumSize = new Size(width, 0),
+                AutoSize = true
+            };
             Label lblTime = new Label
             {
                 Text = time,
@@ -485,66 +284,14 @@ namespace TimeFlow.Tasks
                 AutoSize = true
             };
 
-            logItem.Controls.Add(rtbActivity);
+            logItem.Controls.Add(lblActivity);
             logItem.Controls.Add(lblTime);
-
             return logItem;
         }
-<<<<<<< HEAD
-        private void BtnYourTask_Click(object sender, EventArgs e)
-        {
-          
-            try
-            {
-                this.Hide();
-
-                FormTaskList taskListForm = new FormTaskList();
-                taskListForm.Show();
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi điều hướng đến Task List: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-        private void BtnNewTask_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                FormThemTask newTaskForm = new FormThemTask();
-                newTaskForm.ShowDialog();
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi mở Form Tạo Task: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-            private void BtnSubmitTask_Click(object sender, EventArgs e)
-        {
-            if (_currentTask == null) return;
-
-            if (_currentTask.Progress < 100)
-            {
-                MessageBox.Show("Vui lòng hoàn thành 100% tiến độ trước khi nộp Task.", "Cảnh báo");
-                return;
-            }
-
-            if (MessageBox.Show($"Xác nhận nộp Task '{_currentTask.Name}'?", "Xác nhận Nộp Task", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                _currentTask.Status = TaskState.Completed;
-                this.Controls.Clear();
-                InitializeComponent();
-
-                MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
-            }
-=======
 
         private void FormTaskDetail_Load(object sender, EventArgs e)
         {
 
->>>>>>> 6fb3b932d2511cd06296fb71a104269de4194c30
         }
     }
 }
