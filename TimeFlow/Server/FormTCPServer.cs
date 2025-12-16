@@ -18,10 +18,12 @@ namespace TimeFlow.Server
         public FormTCPServer()
         {
             InitializeComponent();
+            _messageRepo = new MessageRepository(connectionString);
         }
 
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
+        private readonly MessageRepository _messageRepo;
 
         // --- CÁC BIẾN TOÀN CỤC KHÁC ---
         private TcpListener tcpListener;
@@ -29,8 +31,7 @@ namespace TimeFlow.Server
         private static object _lock = new object();
 
         // Chuỗi kết nối Database
-        private string connectionString = "Data Source=localhost;Initial Catalog=UserDB;User ID=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True";
-
+        private string connectionString = "Server=localhost,1433;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;"; 
         // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static readonly Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
 
@@ -298,8 +299,10 @@ namespace TimeFlow.Server
         // --- HAM DIEU HUONG TIN NHAN (ROUTING) ---
         private void RouteMessage(string sender, string receiver, string content)
         {
-            TcpClient receiverClient = null;
+            // 1. LUÔN LUÔN LƯU VÀO DATABASE
+            _messageRepo.AddMessage(sender, receiver, content);
 
+            TcpClient receiverClient = null;
             lock (_lock)
             {
                 if (_onlineClients.ContainsKey(receiver))
@@ -308,6 +311,7 @@ namespace TimeFlow.Server
                 }
             }
 
+            // 2. NẾU USER ONLINE -> GỬI NGAY
             if (receiverClient != null && receiverClient.Connected)
             {
                 try
@@ -325,13 +329,13 @@ namespace TimeFlow.Server
                 }
                 catch
                 {
-                    AppendLog($"Gửi tin tới {receiver} thất bại.");
+                    AppendLog($"Gửi tin tới {receiver} thất bại (Đã lưu DB).");
                 }
             }
             else
             {
-                // TODO: Luu vao Database bang 'Messages' neu user Offline
-                AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Cần lưu DB.");
+                // 3. NẾU OFFLINE -> CHỈ CẦN LOG VÌ ĐÃ LƯU DB Ở BƯỚC 1 RỒI
+                AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Đã lưu tin nhắn.");
             }
         }
 

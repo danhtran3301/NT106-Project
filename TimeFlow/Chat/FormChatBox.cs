@@ -42,6 +42,77 @@ namespace TimeFlow
             StartListening();
         }
 
+        // Hàm xử lý gói tin danh sách user từ Server
+        private void UpdateSidebar(string[] users)
+        {
+            // Xóa danh sách cũ
+            flowSidebar.Controls.Clear();
+
+            foreach (var user in users)
+            {
+                if (user == _myUsername) continue; // Không hiện chính mình
+
+                Button btn = new Button();
+                btn.Text = user;
+                btn.Width = flowSidebar.Width - 25;
+                btn.Height = 50;
+                btn.TextAlign = ContentAlignment.MiddleLeft;
+                btn.Padding = new Padding(20, 0, 0, 0);
+                btn.FlatStyle = FlatStyle.Flat;
+                btn.FlatAppearance.BorderSize = 0;
+                btn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                btn.Cursor = Cursors.Hand;
+
+                // Kiểm tra xem nút này có phải người đang chat không để đổi màu
+                if (user == _currentReceiver)
+                {
+                    btn.BackColor = Color.AliceBlue;
+                    btn.ForeColor = Color.DodgerBlue;
+                }
+                else
+                {
+                    btn.BackColor = Color.White;
+                    btn.ForeColor = Color.Black;
+                }
+
+                // SỰ KIỆN QUAN TRỌNG: CLICK ĐỂ CHỌN NGƯỜI CHAT
+                btn.Click += (s, e) => SwitchChatUser(user);
+
+                flowSidebar.Controls.Add(btn);
+            }
+        }
+
+        // Hàm đổi người chat
+        private void SwitchChatUser(string targetUser)
+        {
+            _currentReceiver = targetUser;
+            lblChatTitle.Text = targetUser; // Cập nhật tên trên Header
+
+            // Highlight lại sidebar để biết đang chọn ai
+            foreach (Control c in flowSidebar.Controls)
+            {
+                if (c is Button btn)
+                {
+                    if (btn.Text == targetUser)
+                    {
+                        btn.BackColor = Color.AliceBlue;
+                        btn.ForeColor = Color.DodgerBlue;
+                    }
+                    else
+                    {
+                        btn.BackColor = Color.White;
+                        btn.ForeColor = Color.Black;
+                    }
+                }
+            }
+
+            // Quan trọng: Xóa chat cũ của người trước
+            flowChatMessages.Controls.Clear();
+
+            // TODO: Ở đây bạn sẽ gửi lệnh lên Server để lấy lịch sử chat cũ
+            // Ví dụ: SendJson(new { type = "get_history", with_user = targetUser });
+        }
+
         // --- HÀM 1: KẾT NỐI SERVER (Chỉ dùng khi test riêng Form này) ---
         private void ConnectToServer(string user)
         {
@@ -132,75 +203,6 @@ namespace TimeFlow
                 }
             }
             catch { /* Bỏ qua lỗi parse JSON rác */ }
-        }
-        // Cập nhật danh sách user ở sidebar
-        private void UpdateSidebar(string[] users)
-        {
-            flowSidebar.Controls.Clear(); // Xóa danh sách cũ
-
-            foreach (var user in users)
-            {
-                // Không hiển thị chính mình
-                if (user == _myUsername) continue;
-
-                // Tạo Panel chứa User (để đẹp hơn Button thường)
-                Button btnUser = new Button();
-                btnUser.Text = user; // Tên User
-                btnUser.Width = flowSidebar.Width - 25;
-                btnUser.Height = 50;
-                btnUser.TextAlign = ContentAlignment.MiddleLeft;
-                btnUser.Padding = new Padding(20, 0, 0, 0);
-                btnUser.FlatStyle = FlatStyle.Flat;
-                btnUser.FlatAppearance.BorderSize = 0;
-                btnUser.BackColor = Color.White;
-                btnUser.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-                btnUser.Cursor = Cursors.Hand;
-
-                // Hightlight người đang chat hiện tại
-                if (user == _currentReceiver)
-                {
-                    btnUser.BackColor = Color.AliceBlue;
-                    btnUser.ForeColor = Color.DodgerBlue;
-                }
-
-                // Sự kiện khi bấm vào User
-                btnUser.Click += (s, e) =>
-                {
-                    SwitchChatUser(user);
-                };
-
-                flowSidebar.Controls.Add(btnUser);
-            }
-        }
-        // Chuyển đổi người chat hiện tại
-        private void SwitchChatUser(string targetUser)
-        {
-            _currentReceiver = targetUser;
-            lblChatTitle.Text = targetUser; // Cập nhật tên trên Header
-
-            // Highlight lại sidebar để biết đang chọn ai
-            foreach (Control c in flowSidebar.Controls)
-            {
-                if (c is Button btn)
-                {
-                    if (btn.Text == targetUser)
-                    {
-                        btn.BackColor = Color.AliceBlue;
-                        btn.ForeColor = Color.DodgerBlue;
-                    }
-                    else
-                    {
-                        btn.BackColor = Color.White;
-                        btn.ForeColor = Color.Black;
-                    }
-                }
-            }
-
-            // Quan trọng: Xóa chat cũ của người trước
-            flowChatMessages.Controls.Clear();
-
-            // TODO: Ở đây bạn sẽ gửi lệnh lên Server để lấy lịch sử chat cũ
-            // Ví dụ: SendJson(new { type = "get_history", with_user = targetUser });
         }
         // --- HÀM 3: GỬI TIN NHẮN ---
         private void btnSend_Click(object sender, EventArgs e)
