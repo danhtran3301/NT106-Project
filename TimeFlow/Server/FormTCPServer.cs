@@ -265,6 +265,28 @@ namespace TimeFlow.Server
                             RouteMessage(currentUsername, receiver, content);
                         }
                     }
+                    else if (type == "get_history")
+                    {
+                        // 1. Lấy tên người mà Client muốn xem tin nhắn cùng
+                        string targetUser = root.GetProperty("target_user").GetString();
+
+                        if (!string.IsNullOrEmpty(currentUsername))
+                        {
+                            // 2. Gọi Repo lấy dữ liệu từ SQL
+                            var historyList = _messageRepo.GetHistory(currentUsername, targetUser);
+
+                            // 3. Đóng gói JSON gửi trả về Client
+                            var response = new
+                            {
+                                type = "history_data",
+                                data = historyList
+                            };
+                            SendResponse(client, JsonSerializer.Serialize(response));
+
+                            // Log nhẹ để debug
+                            AppendLog($"[History] User '{currentUsername}' lấy lịch sử chat với '{targetUser}' ({historyList.Count} tin).");
+                        }
+                    }
                 }
             }
             catch (Exception ex)

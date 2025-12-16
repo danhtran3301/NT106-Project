@@ -42,6 +42,28 @@ namespace TimeFlow
             StartListening();
         }
 
+        private void RequestHistory(string targetUser)
+        {
+            if (!_isConnected) return;
+
+            try
+            {
+                var packet = new
+                {
+                    type = "get_history",
+                    target_user = targetUser
+                };
+
+                string json = JsonSerializer.Serialize(packet);
+                byte[] bytes = Encoding.UTF8.GetBytes(json);
+                _stream.Write(bytes, 0, bytes.Length);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi lấy lịch sử: " + ex.Message);
+            }
+        }
+
         // Hàm xử lý gói tin danh sách user từ Server
         private void UpdateSidebar(string[] users)
         {
@@ -86,9 +108,8 @@ namespace TimeFlow
         private void SwitchChatUser(string targetUser)
         {
             _currentReceiver = targetUser;
-            lblChatTitle.Text = targetUser; // Cập nhật tên trên Header
+            lblChatTitle.Text = targetUser; 
 
-            // Highlight lại sidebar để biết đang chọn ai
             foreach (Control c in flowSidebar.Controls)
             {
                 if (c is Button btn)
@@ -105,12 +126,9 @@ namespace TimeFlow
                     }
                 }
             }
-
-            // Quan trọng: Xóa chat cũ của người trước
             flowChatMessages.Controls.Clear();
+            RequestHistory(targetUser);
 
-            // TODO: Ở đây bạn sẽ gửi lệnh lên Server để lấy lịch sử chat cũ
-            // Ví dụ: SendJson(new { type = "get_history", with_user = targetUser });
         }
 
         // --- HÀM 1: KẾT NỐI SERVER (Chỉ dùng khi test riêng Form này) ---
@@ -174,36 +192,79 @@ namespace TimeFlow
                     if (root.TryGetProperty("type", out JsonElement typeElem))
                     {
                         string type = typeElem.GetString();
+
+                        // 1. Xử lý danh sách User Online
                         if (type == "user_list")
                         {
-                            // Lấy mảng users từ JSON
-                            var users = root.GetProperty("users").Deserialize<string[]>();
-
-                            // Cập nhật UI (Sidebar)
-                            this.Invoke((MethodInvoker)delegate
+                            if (root.TryGetProperty("users", out JsonElement usersElem))
                             {
-                                UpdateSidebar(users);
-                            });
+                                var users = usersElem.Deserialize<string[]>();
+                                this.Invoke((MethodInvoker)delegate
+                                {
+                                    UpdateSidebar(users);
+                                });
+                            }
                         }
-                        // Nếu là tin nhắn chat đến
+                        // 2. Xử lý tin nhắn mới nhận được (Real-time)
                         else if (type == "receive_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
                             string content = root.GetProperty("content").GetString();
                             string time = root.GetProperty("timestamp").GetString();
 
-                            // Update UI phải dùng Invoke
                             this.Invoke((MethodInvoker)delegate
                             {
-                                bool isMe = (sender == _myUsername);
-                                AddMessageBubble(content, isMe, time);
+                                // Chỉ hiện tin nhắn nếu đúng người đang chat hoặc là tin của chính mình
+                                if (sender == _currentReceiver || sender == _myUsername)
+                                {
+                                    bool isMe = (sender == _myUsername);
+                                    AddMessageBubble(content, isMe, time);
+                                }
                             });
+                        }
+                        // 3. Xử lý tải lại lịch sử tin nhắn (History)
+                        else if (type == "history_data")
+                        {
+                            // Lấy mảng tin nhắn
+                            if (root.TryGetProperty("data", out JsonElement dataArray))
+                            {
+                                this.Invoke((MethodInvoker)delegate
+                                {
+                                    // Đảm bảo màn hình sạch sẽ trước khi load
+                                    flowChatMessages.Controls.Clear();
+
+                                    foreach (JsonElement msg in dataArray.EnumerateArray())
+                                    {
+                                        // Parse từng tin nhắn (Khớp với Property Name trong Server DTO)
+                                        string sender = msg.GetProperty("Sender").GetString();
+                                        string content = msg.GetProperty("Content").GetString();
+                                        DateTime time = msg.GetProperty("Time").GetDateTime();
+
+                                        // Kiểm tra xem tin nhắn này là của mình hay của bạn
+                                        bool isMe = (sender == _myUsername);
+
+                                        // Vẽ lên màn hình
+                                        AddMessageBubble(content, isMe, time.ToString("HH:mm"));
+                                    }
+
+                                    // Tự động cuộn xuống tin nhắn cuối cùng
+                                    if (flowChatMessages.Controls.Count > 0)
+                                    {
+                                        flowChatMessages.ScrollControlIntoView(flowChatMessages.Controls[flowChatMessages.Controls.Count - 1]);
+                                    }
+                                });
+                            }
                         }
                     }
                 }
             }
-            catch { /* Bỏ qua lỗi parse JSON rác */ }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi ra cửa sổ Output của Visual Studio để dễ debug
+                System.Diagnostics.Debug.WriteLine("Lỗi xử lý tin nhắn: " + ex.Message);
+            }
         }
+
         // --- HÀM 3: GỬI TIN NHẮN ---
         private void btnSend_Click(object sender, EventArgs e)
         {
