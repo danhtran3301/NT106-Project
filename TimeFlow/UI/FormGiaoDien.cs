@@ -276,7 +276,7 @@ namespace TimeFlow
             if (task != null)
             {
                 // Không dùng singleton cho task detail vì mỗi task khác nhau
-                FormTaskDetail detailForm = new FormTaskDetail(task);
+                FormTaskDetail detailForm = new FormTaskDetail(taskId);
                 detailForm.FormClosed += (s, e) => {
                     this.Show();
                     this.Activate();

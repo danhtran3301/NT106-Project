@@ -187,7 +187,7 @@ namespace TimeFlow.Tasks
             {
                 contextMenu.Show(optionsButton, new Point(optionsButton.Width - contextMenu.Width, optionsButton.Height));
             };
-            //editItem.Click += EditItem_Click;
+            editItem.Click += EditItem_Click;
             deleteItem.Click += DeleteItem_Click;
             CreateStatusSubMenu(statusMenu);
 
@@ -198,7 +198,15 @@ namespace TimeFlow.Tasks
                 Height = 1,
                 BackColor = AppColors.Gray200
             };
+            bool hasPerm = UserHasPermission();
 
+            editItem.Enabled = hasPerm;
+            deleteItem.Enabled = hasPerm;
+
+            if (!hasPerm)
+            {
+                editItem.Text += " (Read Only)";
+            }
             Panel headerContainer = new Panel { Dock = DockStyle.Top, Height = 81, BackColor = Color.Transparent };
             headerContainer.Controls.Add(headerPanel);
             separator.Location = new Point(0, headerPanel.Height);
@@ -249,9 +257,9 @@ namespace TimeFlow.Tasks
             btnYourTask.Click += BtnYourTask_Click; 
             menuPanel.Controls.Add(btnYourTask);
 
-           /* var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
+            var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
             btnGroup.Click += BtnGroup_Click; 
-            menuPanel.Controls.Add(btnGroup);*/
+            menuPanel.Controls.Add(btnGroup);
 
             var btnNewTask = CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight);
             btnNewTask.Click += BtnNewTask_Click; 
@@ -283,7 +291,7 @@ namespace TimeFlow.Tasks
 
             return menuPanel;
         }
-
+        private ModernPanel _statusBadge;
         private Control CreateCenterContent()
         {
             Panel scrollContainer = new Panel
@@ -344,11 +352,10 @@ namespace TimeFlow.Tasks
                 TaskState.Completed => AppColors.Green500,
                 _ => AppColors.Gray400
             };
-
-            ModernPanel status = new ModernPanel
+            _statusBadge = new ModernPanel
             {
                 Text = _currentTask.StatusText,
-                BackColor = statusColor,
+                BackColor = statusColor, 
                 ForeColor = statusColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White,
                 Font = FontBold,
                 BorderRadius = 6,
@@ -357,8 +364,8 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Anchor = AnchorStyles.Right
             };
-            status.Margin = new Padding(10, 0, 0, 0);
-            headerLayout.Controls.Add(status, 1, 0);
+            _statusBadge.Margin = new Padding(10, 0, 0, 0);
+            headerLayout.Controls.Add(_statusBadge, 1, 0);
 
             contentPanel.Controls.Add(headerLayout);
 
@@ -444,6 +451,7 @@ namespace TimeFlow.Tasks
 
             FlowLayoutPanel contentFlow = new FlowLayoutPanel
             {
+
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
@@ -452,7 +460,25 @@ namespace TimeFlow.Tasks
                 BackColor = Color.Transparent
             };
             mainSidebarPanel.Controls.Add(contentFlow);
+            if (_groupTaskDetails != null && _currentGroup != null)
+            {
+                contentFlow.Controls.Add(new Label
+                {
+                    Text = $"Group: {_currentGroup.GroupName}",
+                    Font = FontBold,
+                    ForeColor = AppColors.Blue600,
+                    AutoSize = true,
+                    Margin = new Padding(0, 0, 0, 5)
+                });
 
+                contentFlow.Controls.Add(new Label
+                {
+                    Text = $"Assigned to: {_groupTaskDetails.AssignedToName}",
+                    Font = FontRegular,
+                    AutoSize = true,
+                    Margin = new Padding(0, 0, 0, 15)
+                });
+            }
             Label detailsTitle = new Label
             {
                 Text = "Details",

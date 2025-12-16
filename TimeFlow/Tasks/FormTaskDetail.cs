@@ -30,10 +30,18 @@ namespace TimeFlow.Tasks
             this.UpdateStyles();
         }
 
-        // Constructor nhận task data
-        public FormTaskDetail(TaskModel task) : this()
+        public FormTaskDetail(int taskId) : this()
         {
-            _currentTask = task ?? throw new ArgumentNullException(nameof(task));
+            _currentTask = Services.TaskManager.GetTaskById(taskId);
+
+            if (_currentTask == null)
+            {
+                MessageBox.Show("Không tìm thấy thông tin công việc!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+                return;
+            }
+
+            SetupLayout();
         }
 
         private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor)
@@ -51,6 +59,33 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 0, 0, 12)
             };
+        }
+        private GroupTask _groupTaskDetails;
+        private TimeFlow.Models.Group _currentGroup;
+
+        private void LoadGroupData(int taskId)
+        {
+            _groupTaskDetails = Services.TaskManager.GetGroupTaskByTaskId(taskId);
+
+            if (_groupTaskDetails != null)
+            {
+                _currentGroup = _groupTaskDetails.Group;
+            }
+        }
+        private bool UserHasPermission()
+        {
+            if (_currentTask == null) return false;
+            int currentUserId = 1; // ID người dùng hiện tại (Giả định)
+
+            if (_groupTaskDetails == null)
+            {
+                return _currentTask.CreatorId == currentUserId;
+            }
+
+            bool isCreator = _currentTask.CreatorId == currentUserId;
+            bool isAdmin = _currentGroup != null && _currentGroup.IsAdmin(currentUserId);
+
+            return isCreator || isAdmin;
         }
 
         private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height)
@@ -105,6 +140,7 @@ namespace TimeFlow.Tasks
             if (updatedTask != null)
             {
                 _currentTask = updatedTask;
+                LoadGroupData(taskId);
                 this.Controls.Clear();
                 InitializeComponent();
             }
@@ -148,57 +184,67 @@ namespace TimeFlow.Tasks
                 MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
             }
         }
+        private void BtnGroup_Click(object sender,EventArgs e)
+        {
+           /* try
+            {
+                FromGroupList groupListForm = new FormGroupList();
+                groupListForm.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
+            }*/
+        }
         private void EditItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
-            try
+
+            using (FormThemTask editForm = new FormThemTask(_currentTask.Id))
             {
-                // FormThemTask cần constructor FormThemTask(int taskId)
-                FormThemTask editForm = new FormThemTask(_currentTask.Id);
-                if (editForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                if (editForm.ShowDialog() == DialogResult.OK)
                 {
                     LoadTaskDetail(_currentTask.Id);
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi mở form chỉnh sửa: {ex.Message}", "Lỗi");
-            }
         }
-
-        // Hàm Options Menu: Xóa
         private void DeleteItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
-            if (Services.TaskManager.DeleteTask(_currentTask.Id))
+
+            var confirm = MessageBox.Show($"Bạn có chắc chắn muốn xóa task '{_currentTask.Name}'?",
+                                        "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+
+            if (confirm == DialogResult.Yes)
             {
-                FormTaskList taskListForm = new FormTaskList();
-                taskListForm.Show();
-            }
-            else
-            {
-                MessageBox.Show("Xóa Task thất bại.", "Lỗi");
+                if (Services.TaskManager.DeleteTask(_currentTask.Id))
+                {
+                    this.Close();
+                }
             }
         }
-
-        // Hàm Options Menu: Thay đổi Trạng thái (Cần CreateStatusSubMenu để gọi hàm này)
         private void ChangeStatusItem_Click(TaskState newStatus)
         {
-            if (_currentTask == null) return;
+            if (_currentTask == null || _statusBadge == null) return;
 
-            TaskState oldStatus = _currentTask.Status;
             _currentTask.Status = newStatus;
 
-            if (Services.TaskManager.UpdateTask(_currentTask))
+            Color newColor = newStatus switch
             {
-                LoadTaskDetail(_currentTask.Id);
-            }
-            else
-            {
-                _currentTask.Status = oldStatus; // Rollback
-            }
-        }
+                TaskState.Pending => AppColors.Yellow500,
+                TaskState.InProgress => AppColors.Blue500, //
+                TaskState.Completed => AppColors.Green500,
+                _ => AppColors.Gray400
+            };
 
+            _statusBadge.Text = _currentTask.StatusText;
+            _statusBadge.BackColor = newColor;
+            _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
+
+            Services.TaskManager.UpdateTask(_currentTask);
+
+            Services.TaskManager.AddActivity(_currentTask.Id, $"Trạng thái đổi sang {newStatus}");
+        }
         private void CreateStatusSubMenu(System.Windows.Forms.ToolStripMenuItem statusMenu)
         {
             System.Array statusValues = System.Enum.GetValues(typeof(TaskState));

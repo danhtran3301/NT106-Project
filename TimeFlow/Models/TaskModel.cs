@@ -21,7 +21,9 @@ namespace TimeFlow.Models
         public List<TaskActivity> Activities { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? CompletedDate { get; set; }
-
+        public int CreatorId { get; set; } 
+        public bool IsGroupTask { get; set; }
+        public int GroupId { get; set; }
         public TaskModel()
         {
             Assignees = new List<string>();
