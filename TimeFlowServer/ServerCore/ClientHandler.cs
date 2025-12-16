@@ -15,6 +15,7 @@ namespace TimeFlowServer.ServerCore
         private readonly NetworkStream _stream;
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
+        private readonly MessageRepository _messageRepo;
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
@@ -26,6 +27,7 @@ namespace TimeFlowServer.ServerCore
             TcpClient client,
             UserRepository userRepo,
             ActivityLogRepository activityLogRepo,
+            MessageRepository messageRepo,
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -34,6 +36,7 @@ namespace TimeFlowServer.ServerCore
             _stream = client.GetStream();
             _userRepo = userRepo;
             _activityLogRepo = activityLogRepo;
+            _messageRepo = messageRepo;
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -70,6 +73,38 @@ namespace TimeFlowServer.ServerCore
             }
         }
 
+        private async Task BroadcastOnlineUsers()
+        {
+            List<string> userList;
+            lock (_clientsLock)
+            {
+                userList = _onlineClients.Keys.ToList();
+            }
+
+            var packet = new { type = "user_list", users = userList };
+            string json = JsonSerializer.Serialize(packet);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+            // Gửi cho tất cả mọi người
+            List<TcpClient> clients;
+            lock (_clientsLock)
+            {
+                clients = _onlineClients.Values.ToList();
+            }
+
+            foreach (var client in clients)
+            {
+                try
+                {
+                    if (client.Connected)
+                    {
+                        await client.GetStream().WriteAsync(bytes, 0, bytes.Length);
+                    }
+                }
+                catch { }
+            }
+        }
+
         private async Task ProcessMessageAsync(string json)
         {
             try
@@ -101,6 +136,10 @@ namespace TimeFlowServer.ServerCore
 
                     case "chat":
                         await HandleChatAsync(root);
+                        break;
+
+                    case "get_history":
+                        await HandleGetHistoryAsync(root);
                         break;
 
                     default:
@@ -316,6 +355,14 @@ namespace TimeFlowServer.ServerCore
                 string content = root.GetProperty("content").GetString() ?? "";
 
                 Log.Information($"[CHAT] {_currentUsername} → {receiver}: {content}");
+                try
+                {
+                    _messageRepo.AddMessage(_currentUsername, receiver, content);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Lỗi lưu tin nhắn vào DB");
+                }
 
                 // Tim receiver client
                 TcpClient? receiverClient = null;
@@ -375,6 +422,24 @@ namespace TimeFlowServer.ServerCore
             {
                 Log.Warning(ex, $"[{_clientId}] Failed to send response");
             }
+        }
+
+        private async Task HandleGetHistoryAsync(JsonElement root)
+        {
+            if (string.IsNullOrEmpty(_currentUsername)) return;
+
+            string targetUser = root.GetProperty("target_user").GetString() ?? "";
+
+            // Lấy lịch sử từ DB
+            var history = _messageRepo.GetHistory(_currentUsername, targetUser);
+
+            var response = new
+            {
+                type = "history_data",
+                data = history
+            };
+
+            await SendResponseAsync(JsonSerializer.Serialize(response));
         }
 
         private void Cleanup()

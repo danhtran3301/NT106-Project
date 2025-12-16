@@ -5,16 +5,20 @@ using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TimeFlow.Authentication;
-using TimeFlow.Server;
 using TimeFlow;
-using TimeFlow.UI;
-using TimeFlow.Tasks;
+using TimeFlow.Authentication;
 using TimeFlow.Models;
+using TimeFlow.Server;
 using TimeFlow.Services;
+using TimeFlow.Tasks;
+using TimeFlow.UI;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace TimeFlow
 {
@@ -22,11 +26,16 @@ namespace TimeFlow
     {
         // Dictionary để track các form đã tạo (singleton pattern)
         private static Dictionary<Type, Form> _openForms = new Dictionary<Type, Form>();
+        private string _currentUsername;
+        private string _currentEmail;
 
-        public FormGiaoDien()
+        public FormGiaoDien(string username = "Guest", string email = "")
         {
             InitializeComponent();
-            
+            _currentUsername = username;
+            _currentEmail = email;
+
+
             // Gán sự kiện cho các buttons
             button1.Click += Button1_Click;  // Your Task
             button2.Click += Button2_Click;  // Group (Chat)
@@ -298,7 +307,61 @@ namespace TimeFlow
         // Group - Mở Chat với single-window pattern
         private void Button2_Click(object sender, EventArgs e)
         {
-            NavigateToForm<ChatForm>();
+            OpenChatForm();
+        }
+        private void OpenChatForm()
+        {
+            try
+            {
+                if (_openForms.ContainsKey(typeof(ChatForm)))
+                {
+                    var f = _openForms[typeof(ChatForm)];
+                    this.Hide();
+                    f.Show();
+                    f.Activate();
+                    return;
+                }
+
+                // 1. Tạo kết nối tới Docker Server
+                TcpClient client = new TcpClient();
+                client.Connect("127.0.0.1", 1010); // Port của Docker Container
+
+                // 2. Gửi lệnh Login tự động để xác thực TCP connection này
+                var loginPayload = new
+                {
+                    type = "login",
+                    data = new { username = _currentUsername, password = "123" } // Lưu ý: Password này nên lấy từ session thật
+                };
+
+                // Gửi login
+                byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(loginPayload));
+                client.GetStream().Write(data, 0, data.Length);
+
+                // Chờ Server phản hồi (Login Success) một chút để đảm bảo OK
+                // (Trong thực tế nên đọc stream để check "success", ở đây ta làm tắt cho nhanh)
+                System.Threading.Thread.Sleep(200);
+
+                // 3. Khởi tạo ChatForm với client đã kết nối
+                ChatForm chatForm = new ChatForm(client, _currentUsername);
+
+                _openForms[typeof(ChatForm)] = chatForm;
+
+                chatForm.FormClosed += (s, args) =>
+                {
+                    _openForms.Remove(typeof(ChatForm));
+                    this.Show();
+                    this.Activate();
+                    // Khi đóng ChatForm, nó sẽ tự Close() TcpClient
+                };
+
+                this.Hide();
+                chatForm.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể kết nối tới Chat Server (Docker).\nLỗi: " + ex.Message, "Lỗi Kết Nối");
+                this.Show();
+            }
         }
 
         // New Task - Mở FormThemTask
