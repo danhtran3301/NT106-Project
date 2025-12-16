@@ -507,7 +507,7 @@ namespace TimeFlow.Tasks
             var task = TaskManager.GetTaskById(taskId);
             if (task != null)
             {
-                FormTaskDetail detailForm = new FormTaskDetail(task);
+                FormTaskDetail detailForm = new FormTaskDetail(taskId);
                 detailForm.FormClosed += (s, e) => this.Show();
                 this.Hide();
                 detailForm.Show();

@@ -51,7 +51,7 @@ namespace TimeFlow.UI
             }
         }
 
-        
+
 
         // Các hàm sự kiện rỗng (Giữ lại để không lỗi Designer)
         private void textBox1_TextChanged(object sender, EventArgs e) { }

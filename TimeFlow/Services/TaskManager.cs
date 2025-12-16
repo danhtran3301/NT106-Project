@@ -13,6 +13,8 @@ namespace TimeFlow.Services
     {
         private static List<TaskModel> _tasks;
         private static int _nextId = 11;
+        private static List<Group> _groups;
+        private static List<GroupTask> _groupTasks;
 
         // Event để notify khi task thay đổi
         public static event EventHandler<TaskModel> TaskCreated;
@@ -342,6 +344,27 @@ namespace TimeFlow.Services
             task.Activities.Add(activity);
             TaskUpdated?.Invoke(null, task);
             return true;
+        }
+
+
+            public static GroupTask GetGroupTaskByTaskId(int taskId)
+        {
+            var gt = _groupTasks.FirstOrDefault(gt => gt.TaskId == taskId);
+
+            if (gt != null && gt.Group == null)
+            {
+                gt.Group = GetGroupById(gt.GroupId);
+            }
+
+            return gt;
+
+        }
+        /// <summary>
+        /// Lấy thông tin Group theo ID
+        /// </summary>
+        public static Group GetGroupById(int groupId)
+        {
+            return _groups.FirstOrDefault(g => g.GroupId == groupId);
         }
     }
 }
