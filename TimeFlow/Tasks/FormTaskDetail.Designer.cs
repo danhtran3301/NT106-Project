@@ -13,8 +13,13 @@ namespace TimeFlow.Tasks
     {
         private void InitializeComponent()
         {
-            SetupLayout();
-            this.LayoutMdi(MdiLayout.ArrangeIcons);
+            SuspendLayout();
+            // 
+            // FormTaskDetail
+            // 
+            ClientSize = new Size(274, 229);
+            Name = "FormTaskDetail";
+            ResumeLayout(false);
         }
 
         private void SetupLayout()
@@ -25,10 +30,15 @@ namespace TimeFlow.Tasks
             this.Padding = new Padding(0);
             this.MinimumSize = new Size(800, 600);
 
-            // Set default task if none provided
             if (_currentTask == null)
             {
                 _currentTask = Services.TaskManager.GetTaskById(1) ?? Services.TaskManager.GetAllTasks().FirstOrDefault();
+            }
+            if (_currentTask == null)
+            {
+                MessageBox.Show("Không tìm thấy Task nào để hiển thị.", "Lỗi Dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close(); 
+                return; 
             }
 
             Panel rootPanel = new Panel
@@ -163,8 +173,8 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 16, 0, 0)
             };
-            /*rightFlow.Controls.Add(optionsButton);
-            headerPanel.Controls.Add(rightFlow, 2, 0);*/
+            rightFlow.Controls.Add(optionsButton);
+            headerPanel.Controls.Add(rightFlow, 2, 0);
             ContextMenuStrip contextMenu = new ContextMenuStrip();
             ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
             ToolStripMenuItem deleteItem = new ToolStripMenuItem("Xóa Task (Delete)");

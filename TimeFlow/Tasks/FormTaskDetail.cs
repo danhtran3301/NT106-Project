@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq; 
+using TimeFlow.Services; 
+using System.Collections.Generic; 
+using System.Text.RegularExpressions; 
 using TimeFlow.Models;
 using TimeFlow.UI;
-using System.Linq; 
-using TimeFlow.Services;
 using TimeFlow.UI.Components;
-
 namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
@@ -22,6 +23,7 @@ namespace TimeFlow.Tasks
         public FormTaskDetail()
         {
             InitializeComponent();
+            SetupLayout();
             this.SetStyle(ControlStyles.DoubleBuffer |
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
@@ -94,26 +96,9 @@ namespace TimeFlow.Tasks
 
             return comment;
         }
-        private void ShowExistingForm<T>() where T : Form, new()
-        {
-            System.Windows.Forms.Form existingForm = System.Windows.Forms.Application.OpenForms.OfType<T>().FirstOrDefault();
-            if (existingForm != null)
-            {
-                existingForm.Show();
-                existingForm.BringToFront();
-            }
-            else
-            {
-                T newForm = new T();
-                newForm.Show();
-            }
-            this.Close();
-        }
+       
 
-        private void CloseAndNavigateToTaskList(object sender, EventArgs e)
-        {
-            ShowExistingForm<FormTaskList>();
-        }
+       
         private void LoadTaskDetail(int taskId)
         {
             var updatedTask = Services.TaskManager.GetTaskById(taskId);
@@ -126,12 +111,12 @@ namespace TimeFlow.Tasks
             else
             {
                 MessageBox.Show("Task này không còn tồn tại.", "Thông báo");
-                ShowExistingForm<FormTaskList>();
             }
         }
         private void BtnYourTask_Click(object sender, EventArgs e)
         {
-            CloseAndNavigateToTaskList(sender, e);
+            FormTaskList newTasklist = new FormTaskList();
+            newTasklist.ShowDialog();
         }
 
         private void BtnNewTask_Click(object sender, EventArgs e)
@@ -168,6 +153,7 @@ namespace TimeFlow.Tasks
             if (_currentTask == null) return;
             try
             {
+                // FormThemTask cần constructor FormThemTask(int taskId)
                 FormThemTask editForm = new FormThemTask(_currentTask.Id);
                 if (editForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
@@ -186,7 +172,8 @@ namespace TimeFlow.Tasks
             if (_currentTask == null) return;
             if (Services.TaskManager.DeleteTask(_currentTask.Id))
             {
-                ShowExistingForm<FormTaskList>();
+                FormTaskList taskListForm = new FormTaskList();
+                taskListForm.Show();
             }
             else
             {
