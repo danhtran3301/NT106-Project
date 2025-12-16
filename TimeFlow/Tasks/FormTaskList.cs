@@ -259,12 +259,12 @@ namespace TimeFlow.Tasks
                 BorderThickness = borderThickness,
                 BorderColor = borderColor ?? Color.Transparent
             };
-            
+
             if (borderColor.HasValue)
             {
                 button.HoverBorderColor = borderColor.Value;
             }
-            
+
             return button;
         }
 
@@ -367,7 +367,8 @@ namespace TimeFlow.Tasks
                 Padding = new Padding(12, 0, 12, 0),
                 Anchor = AnchorStyles.Left | AnchorStyles.Right
             };
-            columnHeader.SizeChanged += (sender, e) => {
+            columnHeader.SizeChanged += (sender, e) =>
+            {
                 if (columnHeader.Parent is FlowLayoutPanel parent)
                 {
                     columnHeader.Width = parent.ClientSize.Width - parent.Padding.Left - parent.Padding.Right;
@@ -399,17 +400,18 @@ namespace TimeFlow.Tasks
 
                 Control taskItem = CreateTaskListItem(
                     task.Id,
-                    task.Name, 
-                    task.AssigneeCount, 
-                    task.DueDateText, 
-                    task.StatusText, 
-                    statusColor, 
-                    task.PriorityText, 
+                    task.Name,
+                    task.AssigneeCount,
+                    task.DueDateText,
+                    task.StatusText,
+                    statusColor,
+                    task.PriorityText,
                     priorityColor
                 );
 
                 taskItem.Anchor = AnchorStyles.Left | AnchorStyles.Right;
-                taskItem.SizeChanged += (sender, e) => {
+                taskItem.SizeChanged += (sender, e) =>
+                {
                     if (taskItem.Parent is FlowLayoutPanel parent)
                     {
                         taskItem.Width = parent.ClientSize.Width - parent.Padding.Left - parent.Padding.Right;
@@ -560,6 +562,11 @@ namespace TimeFlow.Tasks
                 Padding = new Padding(8, 2, 8, 2),
                 Margin = new Padding(0)
             };
+        }
+
+        private void FormTaskList_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

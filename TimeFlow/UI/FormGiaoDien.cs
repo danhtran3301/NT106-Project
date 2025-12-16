@@ -19,6 +19,7 @@ namespace TimeFlow
 {
     public partial class FormGiaoDien : Form
     {
+
         public static void EnableDoubleBuffered(Control control)
         {
             typeof(Control).InvokeMember("DoubleBuffered",
@@ -53,6 +54,10 @@ namespace TimeFlow
 
             // Setup calendar events
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
+
+            this.WindowState = FormWindowState.Maximized;
+            this.FormBorderStyle = FormBorderStyle.None; // Nếu muốn ẩn viền cửa sổ
+
         }
 
         private void GiaoDien_Load(object sender, EventArgs e)
@@ -272,37 +277,11 @@ namespace TimeFlow
 
         private void button1_Click(object sender, EventArgs e)
         {
-            NavigateToTaskList();
+            FormTaskList formTaskList = new FormTaskList();
+            formTaskList.Show();
         }
 
-        private void NavigateToTaskList()
-        {
-            // Lọc những task có trạng thái KHÁC "Completed" (Đã xong)
-            var pendingTasks = userTasks
-                .Where(t => t.Status != TimeFlow.Models.TaskStatus.Completed)
-                .ToList();
-
-            if (pendingTasks.Any())
-            {
-                string taskList = "📋 Your Pending Tasks:\n\n";
-                foreach (var task in pendingTasks)
-                {
-                    string dateString = task.DueDate.HasValue
-                        ? task.DueDate.Value.ToString("dd/MM")
-                        : "N/A";
-
-                    // Hiển thị Title (Model nhóm dùng Title nên giữ nguyên, nếu lỗi đổi thành TaskName)
-                    taskList += $"• {task.Title} (Hạn: {dateString}) ⏳\n";
-                }
-
-                MessageBox.Show(taskList, "Task List", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                MessageBox.Show("Tuyệt vời! Bạn không còn task nào cần xử lý.",
-                    "All Clear", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
+      
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -312,37 +291,11 @@ namespace TimeFlow
 
         private void button2_Click(object sender, EventArgs e)
         {
-            DialogResult result = MessageBox.Show(
-                "Choose an option:\n\nYes = Groups Management\nNo = Chat",
-                "Group Features",
-                MessageBoxButtons.YesNoCancel,
-                MessageBoxIcon.Question);
-
-            switch (result)
-            {
-                case DialogResult.Yes:
-                    NavigateToGroups();
-                    break;
-                case DialogResult.No:
-                    NavigateToChat();
-                    break;
-                case DialogResult.Cancel:
-                    break;
-            }
+            FormChatBox chatForm = new FormChatBox();
+            chatForm.Show();
         }
 
-        private void NavigateToGroups()
-        {
-            MessageBox.Show("Navigate to Groups Management - Feature coming soon!",
-                "Groups", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
-        private void NavigateToChat()
-        {
-            MessageBox.Show("Navigate to Chat - Feature coming soon!",
-                "Chat", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-
+     
         // Empty event handlers
         private void label1_Click(object sender, EventArgs e) { }
         private void tableLayoutPanel2_Paint(object sender, PaintEventArgs e) { }
@@ -359,26 +312,14 @@ namespace TimeFlow
 
         private void button4_Click(object sender, EventArgs e)
         {
-            if (currentSelectedTask == null)
-            {
-                MessageBox.Show("Vui lòng chọn task cần submit!");
-                return;
-            }
+            FormTaskDetail formTaskDetail = new FormTaskDetail();
+            formTaskDetail.Show();
+        }
 
-            DialogResult result = MessageBox.Show($"Xác nhận hoàn thành task: {currentSelectedTask.Title}?",
-                "Xác nhận", MessageBoxButtons.YesNo);
-
-            if (result == DialogResult.Yes)
-            {
-                // 1. Đánh dấu task đã xong (⚠️ Có thể cần đổi IsCompleted thành Status = "Done")
-                currentSelectedTask.Status = TimeFlow.Models.TaskStatus.Completed;
-                // 2. Reset biến chọn
-                currentSelectedTask = null;
-
-                // 3. Cập nhật UI
-                UpdateCalendarView();
-                LoadTaskCountBadges();
-            }
+        private void pictureBox4_Click(object sender, EventArgs e)
+        {
+            FormSettings formSettings = new FormSettings();
+            formSettings.Show();
         }
     }
 

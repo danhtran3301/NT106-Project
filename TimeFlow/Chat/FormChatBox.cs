@@ -9,7 +9,7 @@ using System.Windows.Forms;
 
 namespace TimeFlow
 {
-    public partial class ChatForm : Form
+    public partial class FormChatBox : Form
     {
         // --- CẤU HÌNH MẠNG ---
         private TcpClient _client;
@@ -20,7 +20,7 @@ namespace TimeFlow
         private bool _isConnected = false;
 
         // Constructor mặc định (Dùng cho testing)
-        public ChatForm()
+        public FormChatBox()
         {
             InitializeComponent();
             // Tự động kết nối giả lập nếu chạy form này trực tiếp
@@ -28,7 +28,7 @@ namespace TimeFlow
         }
 
         // Constructor chính (Được gọi từ Form Login sau khi đăng nhập thành công)
-        public ChatForm(TcpClient client, string myUsername)
+        public FormChatBox(TcpClient client, string myUsername)
         {
             InitializeComponent();
             _client = client;
@@ -303,6 +303,11 @@ namespace TimeFlow
             path.AddArc(arc, 90, 90);
             path.CloseFigure();
             return path;
+        }
+
+        private void lblHeaderTitle_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

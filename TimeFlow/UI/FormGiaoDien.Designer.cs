@@ -159,6 +159,7 @@
             pictureBox4.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox4.TabIndex = 3;
             pictureBox4.TabStop = false;
+            pictureBox4.Click += pictureBox4_Click;
             // 
             // tableLayoutPanel1
             // 
@@ -439,7 +440,7 @@
             pictureBox2.TabStop = false;
             pictureBox2.Click += pictureBox2_Click;
             // 
-            // GiaoDien
+            // FormGiaoDien
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -448,7 +449,7 @@
             Controls.Add(label2);
             Controls.Add(tableLayoutPanel2);
             Controls.Add(panel1);
-            Name = "GiaoDien";
+            Name = "FormGiaoDien";
             Text = " GiaoDien";
             Load += GiaoDien_Load;
             panel1.ResumeLayout(false);
