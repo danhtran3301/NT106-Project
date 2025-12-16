@@ -409,7 +409,6 @@ namespace TimeFlow.Server
             }
         }
 
-        // REFACTORED: Dung UserRepository thay vi raw SQL
         private bool RegisterNewUser(string username, string password, string email)
         {
             try
