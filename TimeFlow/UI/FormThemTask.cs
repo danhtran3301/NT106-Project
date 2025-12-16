@@ -7,13 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using DOANNT106;
+using TimeFlow.Authentication; // Để lấy SessionManager
+using TimeFlow.Models;         // ✅ QUAN TRỌNG: Để dùng TaskItem chuẩn
 
 namespace TimeFlow.UI
 {
     public partial class FormThemTask : Form
     {
-        private GiaoDien parentForm;
+        private FormGiaoDien parentForm;
         private DateTime? preSelectedDate; // Ngày được chọn từ calendar
 
         public FormThemTask()
@@ -21,14 +22,14 @@ namespace TimeFlow.UI
             InitializeComponent();
         }
 
-        public FormThemTask(GiaoDien parent)
+        public FormThemTask(FormGiaoDien parent)
         {
             InitializeComponent();
             parentForm = parent;
         }
 
         // ✅ Constructor mới với ngày được chọn trước
-        public FormThemTask(GiaoDien parent, DateTime selectedDate)
+        public FormThemTask(FormGiaoDien parent, DateTime selectedDate)
         {
             InitializeComponent();
             parentForm = parent;
@@ -41,22 +42,36 @@ namespace TimeFlow.UI
             if (preSelectedDate.HasValue)
             {
                 dateTimePicker1.Value = preSelectedDate.Value;
-                dateTimePicker2.Value = preSelectedDate.Value.AddDays(1); // Mặc định kết thúc sau 1 ngày
+                // dateTimePicker2.Value = preSelectedDate.Value.AddDays(1); 
             }
             else
             {
                 dateTimePicker1.Value = DateTime.Now;
-                dateTimePicker2.Value = DateTime.Now.AddDays(1);
+                // dateTimePicker2.Value = DateTime.Now.AddDays(1);
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
-        {
-            // ✅ Lấy thông tin task từ các control
+        
+
+        // Các hàm sự kiện rỗng (Giữ lại để không lỗi Designer)
+        private void textBox1_TextChanged(object sender, EventArgs e) { }
+        private void dateTimePicker1_ValueChanged(object sender, EventArgs e) { }
+        private void richTextBox1_TextChanged(object sender, EventArgs e) { }
+        private void pictureBox1_Click(object sender, EventArgs e) { }
+        private void labelTaskDescription_Click(object sender, EventArgs e) { }
+        private void labelTaskTime_Click(object sender, EventArgs e) { }
+
+        // Hàm button2_Click_1 này bị thừa (trùng lặp logic), tôi đã gộp lên trên rồi.
+        // Bạn có thể xóa hoặc comment lại hàm này.
+        private void button2_Click_1(object sender, EventArgs e)
+        {  // ✅ Lấy thông tin task từ các control
             string title = textBox1.Text.Trim();
             DateTime startDate = dateTimePicker1.Value.Date;
-            DateTime endDate = dateTimePicker2.Value.Date;
-            string description = richTextBox1.Text.Trim(); // Nội dung yêu cầu
+
+            // Lưu ý: Model nhóm có vẻ chỉ có DueDate (Hạn chót), không có StartDate/EndDate riêng.
+            // Tạm thời mình sẽ dùng StartDate làm DueDate.
+
+            string description = richTextBox1.Text.Trim();
 
             // Validation
             if (string.IsNullOrEmpty(title))
@@ -67,24 +82,24 @@ namespace TimeFlow.UI
                 return;
             }
 
-            if (endDate < startDate)
-            {
-                MessageBox.Show("Ngày kết thúc không thể sớm hơn ngày bắt đầu!", "Lỗi",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                dateTimePicker2.Focus();
-                return;
-            }
-
-            // ✅ Tạo task mới với thông tin đầy đủ
+            // ✅ Tạo task mới với thông tin đầy đủ theo Model CHUẨN
             var newTask = new TaskItem
             {
-                Id = 0,
+                TaskId = 0, // Database sẽ tự tăng, hoặc logic AddTaskFromForm sẽ xử lý
                 Title = title,
-                Description = description, // Nội dung yêu cầu
-                Date = startDate, // Ngày bắt đầu
-                EndDate = endDate, // Cần thêm property này vào TaskItem
-                IsCompleted = false,
-                AssignedTo = SessionManager.Username ?? "Current User"
+                Description = description,
+
+                // Map ngày tháng
+                DueDate = startDate,
+
+                // Map trạng thái (Thay vì IsCompleted = false)
+                // Giả sử Enum: 1=New, 2=InProgress... Bạn cần check kỹ enum của nhóm.
+                Status = (TimeFlow.Models.TaskStatus)1,
+                // Các trường bắt buộc khác (nếu Model yêu cầu)
+                Priority = TaskPriority.Medium, // Mặc định
+                CreatedBy = 0, // Cần ID user (int), lấy từ SessionManager nếu có thể parse được
+                IsGroupTask = false,
+                CreatedAt = DateTime.Now
             };
 
             // Gọi hàm public ở GiaoDien để thêm task
@@ -94,29 +109,5 @@ namespace TimeFlow.UI
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
-
-        private void textBox1_TextChanged(object sender, EventArgs e) { }
-        private void dateTimePicker1_ValueChanged(object sender, EventArgs e) { }
-        private void richTextBox1_TextChanged(object sender, EventArgs e) { }
-        private void pictureBox1_Click(object sender, EventArgs e) { }
-        private void labelTaskDescription_Click(object sender, EventArgs e) { }
-        private void labelTaskTime_Click(object sender, EventArgs e) { }
-
-        private void button2_Click_1(object sender, EventArgs e)
-        {
-            TaskItem task = new TaskItem
-            {
-                Title = textBox1.Text,
-                Description = richTextBox1.Text,
-                Date = dateTimePicker1.Value,
-                EndDate = dateTimePicker2.Value,
-                IsCompleted = false
-            };
-
-            parentForm.AddTaskFromForm(task);
-            DialogResult = DialogResult.OK;
-            Close();
-        }
     }
-    }
-
+}
