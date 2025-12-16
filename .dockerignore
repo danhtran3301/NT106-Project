@@ -1,0 +1,71 @@
+﻿# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE and Editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+Documentation/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database files
+*.mdf
+*.ldf
+
+# Temporary files
+**/temp/
+**/tmp/
+**/TestResults/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+
+# Test coverage
+coverage/
+*.coverage
+*.coveragexml
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
