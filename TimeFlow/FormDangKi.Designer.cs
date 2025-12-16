@@ -209,7 +209,7 @@
             // pictureBox4
             // 
             pictureBox4.BackColor = SystemColors.HotTrack;
-            pictureBox4.Location = new Point(317, 124);
+            pictureBox4.Location = new Point(321, 108);
             pictureBox4.Name = "pictureBox4";
             pictureBox4.Size = new Size(434, 545);
             pictureBox4.TabIndex = 15;

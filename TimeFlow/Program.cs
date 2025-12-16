@@ -1,4 +1,5 @@
 using BT3_LTMCB;
+using DOANNT106;
 
 namespace Exercise3
 {
@@ -12,8 +13,10 @@ namespace Exercise3
         {
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
-            ApplicationConfiguration.Initialize();
-            Application.Run(new FormMenuTCP());
+            //ApplicationConfiguration.Initialize();
+            //Application.Run(new FormMenuTCP());
+            Application.Run(new GiaoDien());
+
         }
     }
 }

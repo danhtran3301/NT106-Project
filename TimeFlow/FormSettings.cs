@@ -15,16 +15,47 @@ namespace TimeFlow
     {
         public FormSettings()
         {
+            InitializeComponent(); // Phải gọi trước tiên
+
+            // Sau đó mới set các properties sử dụng AppColors
             this.Text = "Application Settings";
             this.Size = new Size(1100, 700);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.BackColor = AppColors.Gray50;
             this.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular);
             this.WindowState = FormWindowState.Maximized;
-
-            InitializeComponent();
         }
 
+        // Thêm event handlers cho các buttons
+        private void OnBackButtonClick(object sender, EventArgs e)
+        {
+            this.Close();
+        }
 
+        private void OnSaveButtonClick(object sender, EventArgs e)
+        {
+            MessageBox.Show("Settings saved successfully!", "Settings",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void OnCancelButtonClick(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void OnDeleteAccountClick(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to delete your account? This action cannot be undone.",
+                "Delete Account",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                MessageBox.Show("Account deletion process initiated.", "Delete Account",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
     }
 }
