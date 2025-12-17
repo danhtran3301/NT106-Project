@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeFlow.Authentication;
 using TimeFlow.UI.Components;
 
 namespace TimeFlow.UI
@@ -25,6 +26,24 @@ namespace TimeFlow.UI
             this.BackColor = AppColors.Gray50;
             this.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular);
             this.WindowState = FormWindowState.Maximized;
+        }
+        private void BtnLogout_Click(object sender, EventArgs e)
+        {
+            var confirm = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất không?",
+                                         "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (confirm == DialogResult.Yes)
+            {
+                // 1. Xóa thông tin Session
+                //Models.UserToken.Clear();
+
+                // 2. Đóng tất cả các form và quay lại Form Đăng nhập
+                this.Hide();
+                FormDangNhap loginForm = new FormDangNhap();
+                loginForm.Show();
+
+                
+            }
         }
 
         // Thêm event handlers cho các buttons

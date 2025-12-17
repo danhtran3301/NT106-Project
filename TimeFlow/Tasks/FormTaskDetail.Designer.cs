@@ -17,7 +17,7 @@ namespace TimeFlow.Tasks
             // 
             // FormTaskDetail
             // 
-            ClientSize = new Size(274, 229);
+            ClientSize = new Size(1573, 778);
             Name = "FormTaskDetail";
             ResumeLayout(false);
         }
