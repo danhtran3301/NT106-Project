@@ -116,9 +116,12 @@ namespace TimeFlow.Tasks
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 18, 0, 0)
+<<<<<<< HEAD
             };
             arrowButton.Click += (sender, e) => {
                 this.Close();
+=======
+>>>>>>> 9106d6c48a5a5a676c186037a16cbc5dde198e2e
             };
             leftFlow.Controls.Add(arrowButton);
             headerPanel.Controls.Add(leftFlow, 0, 0);
