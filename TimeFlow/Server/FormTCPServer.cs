@@ -15,22 +15,26 @@ namespace TimeFlow.Server
 {
     public partial class FormTCPServer : Form
     {
-        public FormTCPServer()
-        {
-            InitializeComponent();
-        }
-
         // --- CAC BIEN TOAN CUC ---
         private TcpListener tcpListener;
         private Thread serverThread;
 
-        // Repositories
-        private readonly UserRepository _userRepo = new UserRepository();
-        private readonly ActivityLogRepository _activityLogRepo = new ActivityLogRepository();
+        // Database Repositories
+        private UserRepository _userRepo;
+        private ActivityLogRepository _activityLogRepo;
 
-        // DANH SACH USER ONLINE: Map tu Username -> Socket Client
+        // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private static object _lock = new object();
+
+        public FormTCPServer()
+        {
+            InitializeComponent();
+            
+            // Khoi tao Repositories
+            _userRepo = new UserRepository();
+            _activityLogRepo = new ActivityLogRepository();
+        }
 
         // --- CAC CLASS DU LIEU (DTO) ---
         public class LoginRequest { public string username { get; set; } public string password { get; set; } }
@@ -53,7 +57,7 @@ namespace TimeFlow.Server
                 {
                     AppendLog("✓ Database connection successful!");
                     AppendLog($"Connection string: {testDb.GetConnectionString()}");
-                    
+
                     // Test query de kiem tra table Users ton tai
                     var testQuery = "SELECT COUNT(*) FROM Users";
                     var count = testDb.ExecuteScalar(testQuery, null);
@@ -65,8 +69,8 @@ namespace TimeFlow.Server
                 AppendLog($"✗ Database connection failed: {ex.Message}");
                 if (ex.InnerException != null)
                     AppendLog($"  Inner error: {ex.InnerException.Message}");
-                
-                MessageBox.Show($"Database connection failed:\n{ex.Message}\n\nPlease check:\n1. SQL Server is running\n2. Database 'TimeFlowDB' exists\n3. Run TimeFlowDB_Schema.sql and TestData.sql", 
+
+                MessageBox.Show($"Database connection failed:\n{ex.Message}\n\nPlease check:\n1. SQL Server is running\n2. Database 'TimeFlowDB' exists\n3. Run TimeFlowDB_Schema.sql and TestData.sql",
                     "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -126,7 +130,7 @@ namespace TimeFlow.Server
                     {
                         var data = root.GetProperty("data").Deserialize<LoginRequest>();
                         var user = ValidateLogin(data.username, data.password);
-                        
+
                         if (user != null)
                         {
                             currentUsername = user.Username;
@@ -147,9 +151,10 @@ namespace TimeFlow.Server
                             {
                                 status = "success",
                                 token = token,
-                                user = new { 
+                                user = new
+                                {
                                     userId = user.UserId,
-                                    username = user.Username, 
+                                    username = user.Username,
                                     email = user.Email,
                                     fullName = user.FullName
                                 }
@@ -194,9 +199,10 @@ namespace TimeFlow.Server
                                 string res = JsonSerializer.Serialize(new
                                 {
                                     status = "autologin_success",
-                                    user = new { 
+                                    user = new
+                                    {
                                         userId = user.UserId,
-                                        username = user.Username, 
+                                        username = user.Username,
                                         email = user.Email,
                                         fullName = user.FullName
                                     }
@@ -316,55 +322,50 @@ namespace TimeFlow.Server
         {
             using (SHA256 sha256 = SHA256.Create())
             {
+                // Chuyển password nhập vào thành byte
                 byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+                // Chuyển byte thành chuỗi Hex (viết thường)
                 StringBuilder sb = new StringBuilder();
-                foreach (byte b in bytes) sb.Append(b.ToString("x2"));
+                foreach (byte b in bytes)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
                 return sb.ToString();
             }
         }
 
-        // REFACTORED: Dung UserRepository thay vi raw SQL
+        // Validate login va tra ve User object neu thanh cong
         private User? ValidateLogin(string username, string password)
         {
             try
             {
-                AppendLog($"[DEBUG] Attempting login for user: {username}");
-                AppendLog($"[DEBUG] Plain password received: {password}");
-                
-                string hashedPassword = HashPassword(password);
-                AppendLog($"[DEBUG] Password hash computed: {hashedPassword}");
-                
-                var user = _userRepo.ValidateLogin(username, hashedPassword);
+                string passwordHash = HashPassword(password);
+                AppendLog($"[DEBUG] Đang check login: User={username}");
+                AppendLog($"[DEBUG] Hash từ Client: {passwordHash}");
+
+                // Dung UserRepository de validate login
+                var user = _userRepo.ValidateLogin(username, passwordHash);
                 
                 if (user != null)
                 {
-                    AppendLog($"[DEBUG] User found: {user.Username} (ID: {user.UserId})");
+                    AppendLog($"[DEBUG] ✓ Login successful for user: {username}");
                 }
                 else
                 {
-                    AppendLog($"[DEBUG] User not found or password incorrect");
+                    AppendLog($"[DEBUG] ✗ Login failed for user: {username}");
                 }
-                
+
                 return user;
-            }
-            catch (Data.DatabaseException ex)
-            {
-                AppendLog($"DB Error: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    AppendLog($"Inner Error: {ex.InnerException.Message}");
-                }
-                return null;
             }
             catch (Exception ex)
             {
-                AppendLog($"Unexpected Error: {ex.Message}");
-                AppendLog($"Stack Trace: {ex.StackTrace}");
+                AppendLog($"[ERROR] ValidateLogin exception: {ex.Message}");
                 return null;
             }
         }
 
-        // REFACTORED: Dung UserRepository thay vi raw SQL
+        // Dang ky user moi
         private bool RegisterNewUser(string username, string password, string email)
         {
             try
@@ -372,6 +373,7 @@ namespace TimeFlow.Server
                 // Kiem tra username hoac email da ton tai chua
                 if (_userRepo.UsernameOrEmailExists(username, email))
                 {
+                    AppendLog($"[DEBUG] Register failed: Username or Email already exists");
                     return false;
                 }
 
@@ -379,26 +381,32 @@ namespace TimeFlow.Server
                 var newUser = new User
                 {
                     Username = username,
-                    Email = email,
                     PasswordHash = HashPassword(password),
-                    IsActive = true
+                    Email = email,
+                    IsActive = true,
+                    CreatedAt = DateTime.Now
                 };
 
                 int userId = _userRepo.Create(newUser);
                 
                 if (userId > 0)
                 {
+                    AppendLog($"[DEBUG] ✓ User registered successfully: {username} (ID: {userId})");
+                    
                     // Log activity
-                    _activityLogRepo.LogActivity(userId, null, "Register", "New user registered");
-                    AppendLog($"User '{username}' đã đăng ký thành công.");
+                    _activityLogRepo.LogActivity(userId, null, "Register", $"New user registered: {username}");
+                    
                     return true;
                 }
-                
-                return false;
+                else
+                {
+                    AppendLog($"[DEBUG] ✗ Register failed for user: {username}");
+                    return false;
+                }
             }
             catch (Exception ex)
             {
-                AppendLog("Register Error: " + ex.Message);
+                AppendLog($"[ERROR] Register exception: {ex.Message}");
                 return false;
             }
         }

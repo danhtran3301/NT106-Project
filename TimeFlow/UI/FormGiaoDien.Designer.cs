@@ -94,7 +94,7 @@
             panel3.Controls.Add(panel5);
             panel3.Controls.Add(panel4);
             panel3.Controls.Add(label11);
-            panel3.Location = new Point(14, 481);
+            panel3.Location = new Point(14, 499);
             panel3.Name = "panel3";
             panel3.Size = new Size(262, 125);
             panel3.TabIndex = 7;
@@ -109,6 +109,7 @@
             label13.Size = new Size(105, 20);
             label13.TabIndex = 7;
             label13.Text = "Assigned task ";
+            label13.Click += label13_Click_1;
             // 
             // label12
             // 
@@ -158,6 +159,7 @@
             pictureBox4.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox4.TabIndex = 3;
             pictureBox4.TabStop = false;
+            pictureBox4.Click += pictureBox4_Click;
             // 
             // tableLayoutPanel1
             // 
@@ -206,6 +208,7 @@
             button4.TabIndex = 4;
             button4.Text = "Submit task";
             button4.UseVisualStyleBackColor = false;
+            button4.Click += button4_Click;
             // 
             // button3
             // 
@@ -219,6 +222,7 @@
             button3.TabIndex = 3;
             button3.Text = "New task";
             button3.UseVisualStyleBackColor = false;
+            button3.Click += button3_Click;
             // 
             // button2
             // 
@@ -232,6 +236,7 @@
             button2.TabIndex = 2;
             button2.Text = "Group";
             button2.UseVisualStyleBackColor = false;
+            button2.Click += button2_Click;
             // 
             // button1
             // 
@@ -249,9 +254,10 @@
             // 
             // monthCalendar1
             // 
-            monthCalendar1.Location = new Point(14, 262);
+            monthCalendar1.Location = new Point(38, 264);
             monthCalendar1.Name = "monthCalendar1";
             monthCalendar1.TabIndex = 0;
+            monthCalendar1.DateChanged += monthCalendar1_DateChanged;
             // 
             // tableLayoutPanel2
             // 
@@ -271,7 +277,8 @@
             tableLayoutPanel2.Controls.Add(label4, 1, 0);
             tableLayoutPanel2.Controls.Add(label3, 0, 0);
             tableLayoutPanel2.Controls.Add(label5, 2, 0);
-            tableLayoutPanel2.Location = new Point(295, 128);
+            tableLayoutPanel2.Location = new Point(296, 128);
+            tableLayoutPanel2.Margin = new Padding(0);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 10;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 23.7967911F));
@@ -347,6 +354,7 @@
             label4.TabIndex = 4;
             label4.Text = "TUE";
             label4.TextAlign = ContentAlignment.MiddleCenter;
+            label4.Click += label4_Click;
             // 
             // label3
             // 
@@ -418,6 +426,7 @@
             pictureBox3.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox3.TabIndex = 1;
             pictureBox3.TabStop = false;
+            pictureBox3.Click += pictureBox3_Click;
             // 
             // pictureBox2
             // 
@@ -431,7 +440,7 @@
             pictureBox2.TabStop = false;
             pictureBox2.Click += pictureBox2_Click;
             // 
-            // GiaoDien
+            // FormGiaoDien
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
@@ -440,9 +449,9 @@
             Controls.Add(label2);
             Controls.Add(tableLayoutPanel2);
             Controls.Add(panel1);
-            Name = "GiaoDien";
+            Name = "FormGiaoDien";
             Text = " GiaoDien";
-            Load += GiaDien_Load;
+            Load += GiaoDien_Load;
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             panel3.ResumeLayout(false);

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Linq; 
-using TimeFlow.Services; 
-using System.Collections.Generic; 
-using System.Text.RegularExpressions; 
+using System.Linq;
+using TimeFlow.Services;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TimeFlow.Models;
 using TimeFlow.UI;
 using TimeFlow.UI.Components;
@@ -131,9 +131,9 @@ namespace TimeFlow.Tasks
 
             return comment;
         }
-       
 
-       
+
+
         private void LoadTaskDetail(int taskId)
         {
             var updatedTask = Services.TaskManager.GetTaskById(taskId);
@@ -184,17 +184,17 @@ namespace TimeFlow.Tasks
                 MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
             }
         }
-        private void BtnGroup_Click(object sender,EventArgs e)
+        private void BtnGroup_Click(object sender, EventArgs e)
         {
-           /* try
-            {
-                FromGroupList groupListForm = new FormGroupList();
-                groupListForm.ShowDialog();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
-            }*/
+            /* try
+             {
+                 FromGroupList groupListForm = new FormGroupList();
+                 groupListForm.ShowDialog();
+             }
+             catch (Exception ex)
+             {
+                 MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
+             }*/
         }
         private void EditItem_Click(object sender, EventArgs e)
         {
