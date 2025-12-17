@@ -103,7 +103,7 @@ namespace TimeFlow.Tasks
                 AutoSize = false,
                 Height = 60
             };
-
+        
             TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "←",
@@ -117,7 +117,9 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 18, 0, 0)
             };
-            arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại trang trước..."); };
+            arrowButton.Click += (sender, e) => {
+                this.Close();
+            };
             leftFlow.Controls.Add(arrowButton);
             headerPanel.Controls.Add(leftFlow, 0, 0);
 
@@ -143,8 +145,8 @@ namespace TimeFlow.Tasks
                 Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
                 Margin = new Padding(0)
             };
-
-            TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
+            
+            /*TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "✕",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
@@ -159,7 +161,7 @@ namespace TimeFlow.Tasks
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             rightFlow.Controls.Add(closeButton);
-
+            */
             TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "...",
@@ -214,7 +216,67 @@ namespace TimeFlow.Tasks
 
             return headerContainer;
         }
+        
+       /* private Control CreateHeaderBar()
+{
+    Panel headerWrapper = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = Color.White };
 
+    TableLayoutPanel headerTable = new TableLayoutPanel
+    {
+        Dock = DockStyle.Fill,
+        ColumnCount = 3,
+        // CỐ ĐỊNH: Cột 0 (Back) và Cột 2 (Options) phải có độ rộng cố định
+        ColumnStyles = {
+            new ColumnStyle(SizeType.Absolute, 60F),  
+            new ColumnStyle(SizeType.Percent, 100F), 
+            new ColumnStyle(SizeType.Absolute, 60F)  
+        },
+        RowCount = 1,
+        RowStyles = { new RowStyle(SizeType.Percent, 100F) },
+        Padding = new Padding(16, 0, 16, 0)
+    };
+
+    // 1. Nút Back (←) - Căn giữa ô trái
+    TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
+    {
+        Text = "←",
+        Font = new Font("Segoe UI Emoji", 16F),
+        Size = new Size(40, 40),
+        Anchor = AnchorStyles.None // Giúp icon nằm chính giữa ô 60px
+    };
+    arrowButton.Click += (s, e) => this.Close();
+    headerTable.Controls.Add(arrowButton, 0, 0);
+
+    // 2. Tiêu đề - Luôn chiếm phần giữa
+    Label titleLabel = new Label
+    {
+        Text = "Task Details",
+        Font = FontHeaderTitle,
+        ForeColor = AppColors.Gray800,
+        Dock = DockStyle.Fill,
+        TextAlign = ContentAlignment.MiddleLeft,
+        Margin = new Padding(10, 0, 0, 0)
+    };
+    headerTable.Controls.Add(titleLabel, 1, 0);
+
+    // 3. Nút Options (...) - Căn giữa ô phải
+    TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
+    {
+        Text = "...",
+        Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
+        Size = new Size(40, 40),
+        Anchor = AnchorStyles.None
+    };
+    // (Logic ContextMenu của bạn giữ nguyên tại đây)
+    headerTable.Controls.Add(optionsButton, 2, 0);
+
+    Panel separator = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = AppColors.Gray200 };
+    headerWrapper.Controls.Add(headerTable);
+    headerWrapper.Controls.Add(separator);
+
+    return headerWrapper;
+}
+       */
         private Control CreateLeftMenu()
         {
             FlowLayoutPanel menuPanel = new FlowLayoutPanel

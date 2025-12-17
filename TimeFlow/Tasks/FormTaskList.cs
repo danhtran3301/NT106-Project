@@ -62,99 +62,173 @@ namespace TimeFlow.Tasks
             mainLayout.Controls.Add(CreateTaskListContent(), 1, 0);
         }
 
-        private Control CreateHeaderBar()
+         private Control CreateHeaderBar()
+         {
+             Panel headerWrapper = new Panel
+             {
+                 Dock = DockStyle.Top,
+                 Height = 61,
+                 BackColor = Color.White,
+                 Margin = new Padding(0)
+             };
+
+             TableLayoutPanel headerTable = new TableLayoutPanel
+             {
+                 Dock = DockStyle.Top,
+                 Height = 60,
+                 BackColor = Color.White,
+                 ColumnCount = 3,
+                 ColumnStyles =
+                 {
+                     new ColumnStyle(SizeType.AutoSize),
+                     new ColumnStyle(SizeType.Percent, 100F),
+                     new ColumnStyle(SizeType.AutoSize)
+                 },
+                 RowCount = 1,
+                 RowStyles = { new RowStyle(SizeType.Percent, 100F) },
+                 Padding = new Padding(16, 10, 16, 10)
+             };
+
+             FlowLayoutPanel leftContainer = new FlowLayoutPanel
+             {
+                 FlowDirection = FlowDirection.LeftToRight,
+                 AutoSize = true,
+                 Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom,
+                 Margin = new Padding(0)
+             };
+             TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
+             {
+                 Text = "←",
+                 Font = new Font("Segoe UI Emoji", 16F),
+                 ForeColor = HeaderIconColor,
+                 BackColor = Color.White,
+                 HoverColor = AppColors.Gray200,
+                 BorderRadius = 4,
+                 Width = 40,
+                 Height = 40,
+                 TextAlign = ContentAlignment.MiddleCenter,
+                 Margin = new Padding(0)
+             };
+             arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại..."); };
+             leftContainer.Controls.Add(arrowButton);
+
+             Label titleLabel = new Label
+             {
+                 Text = "My Tasks",
+                 Font = FontHeaderTitle,
+                 ForeColor = AppColors.Gray800,
+                 AutoSize = true,
+                 Dock = DockStyle.Fill,
+                 TextAlign = ContentAlignment.MiddleLeft,
+                 Margin = new Padding(8, 0, 0, 0)
+             };
+             leftContainer.Controls.Add(titleLabel);
+             headerTable.Controls.Add(leftContainer, 0, 0);
+
+             TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
+             {
+                 Text = "✕",
+                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
+                 ForeColor = HeaderIconColor,
+                 BackColor = Color.White,
+                 HoverColor = AppColors.Gray200,
+                 BorderRadius = 4,
+                 Width = 40,
+                 Height = 40,
+                 TextAlign = ContentAlignment.MiddleCenter,
+                 Margin = new Padding(0)
+             };
+             closeButton.Click += (sender, e) => { this.Close(); };
+             headerTable.Controls.Add(closeButton, 2, 0);
+
+             Panel separator = new Panel
+             {
+                 Dock = DockStyle.Bottom,
+                 Height = 1,
+                 BackColor = AppColors.Gray200
+             };
+
+             headerTable.Dock = DockStyle.Fill;
+             headerWrapper.Controls.Add(headerTable);
+             headerWrapper.Controls.Add(separator);
+
+             return headerWrapper;
+         }
+        
+       /* private Control CreateHeaderBar()
         {
-            Panel headerWrapper = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 61,
-                BackColor = Color.White,
-                Margin = new Padding(0)
-            };
+            // Panel ngoài cùng để giữ đường kẻ dưới (separator)
+            Panel headerWrapper = new Panel { Dock = DockStyle.Top, Height = 62, BackColor = Color.White };
 
             TableLayoutPanel headerTable = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.White,
+                Dock = DockStyle.Fill,
                 ColumnCount = 3,
+                // CỐ ĐỊNH CỘT: Cột 0 và 2 chứa icon phải có kích thước tuyệt đối
                 ColumnStyles =
-                {
-                    new ColumnStyle(SizeType.AutoSize),
-                    new ColumnStyle(SizeType.Percent, 100F),
-                    new ColumnStyle(SizeType.AutoSize)
-                },
+        {
+            new ColumnStyle(SizeType.Absolute, 60F),  // Cột trái cho nút Back
+            new ColumnStyle(SizeType.Percent, 100F), // Cột giữa cho Title (tự co giãn)
+            new ColumnStyle(SizeType.Absolute, 100F) // Cột phải cho nút Option/Close
+        },
                 RowCount = 1,
                 RowStyles = { new RowStyle(SizeType.Percent, 100F) },
-                Padding = new Padding(16, 10, 16, 10)
+                Padding = new Padding(10, 0, 10, 0)
             };
 
-            FlowLayoutPanel leftContainer = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.LeftToRight,
-                AutoSize = true,
-                Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom,
-                Margin = new Padding(0)
-            };
+            // 1. NÚT BACK (Bên trái)
             TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
             {
                 Text = "←",
                 Font = new Font("Segoe UI Emoji", 16F),
-                ForeColor = HeaderIconColor,
-                BackColor = Color.White,
-                HoverColor = AppColors.Gray200,
-                BorderRadius = 4,
-                Width = 40,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0)
+                Size = new Size(40, 40),
+                Margin = new Padding(0),
+                Anchor = AnchorStyles.None // Để nó nằm giữa ô 60x60
             };
-            arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại..."); };
-            leftContainer.Controls.Add(arrowButton);
+            arrowButton.Click += (s, e) => this.Close();
+            headerTable.Controls.Add(arrowButton, 0, 0);
 
+            // 2. TIÊU ĐỀ (Ở giữa)
             Label titleLabel = new Label
             {
-                Text = "My Tasks",
+                Text = this.Text == "My Tasks" ? "My Tasks" : "Task Details",
                 Font = FontHeaderTitle,
                 ForeColor = AppColors.Gray800,
-                AutoSize = true,
                 Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Margin = new Padding(8, 0, 0, 0)
+                TextAlign = ContentAlignment.MiddleLeft, // Căn lề trái trong cột giữa
+                Margin = new Padding(10, 0, 0, 0)
             };
-            leftContainer.Controls.Add(titleLabel);
-            headerTable.Controls.Add(leftContainer, 0, 0);
+            headerTable.Controls.Add(titleLabel, 1, 0);
 
-            TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
+            // 3. NHÓM NÚT BÊN PHẢI (Options hoặc Close)
+            FlowLayoutPanel rightButtons = new FlowLayoutPanel
             {
-                Text = "✕",
-                Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
-                ForeColor = HeaderIconColor,
-                BackColor = Color.White,
-                HoverColor = AppColors.Gray200,
-                BorderRadius = 4,
-                Width = 40,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0)
+                FlowDirection = FlowDirection.RightToLeft,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
+                WrapContents = false
             };
-            closeButton.Click += (sender, e) => { this.Close(); };
-            headerTable.Controls.Add(closeButton, 2, 0);
 
-            Panel separator = new Panel
+            TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
             {
-                Dock = DockStyle.Bottom,
-                Height = 1,
-                BackColor = AppColors.Gray200
+                Text = "...",
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                Size = new Size(40, 40),
+                Margin = new Padding(5, 10, 0, 0)
             };
+            // (Gán ContextMenu cho optionsButton tại đây nếu là FormTaskDetail)
 
-            headerTable.Dock = DockStyle.Fill;
+            rightButtons.Controls.Add(optionsButton);
+            headerTable.Controls.Add(rightButtons, 2, 0);
+
+            // Đường kẻ ngang dưới header
+            Panel line = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = AppColors.Gray200 };
+
             headerWrapper.Controls.Add(headerTable);
-            headerWrapper.Controls.Add(separator);
+            headerWrapper.Controls.Add(line);
 
             return headerWrapper;
-        }
-
+        }*/
         private Control CreateLeftMenu()
         {
             Panel menuWrapper = new Panel
