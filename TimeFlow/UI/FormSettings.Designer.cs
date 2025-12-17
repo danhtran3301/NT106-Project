@@ -14,6 +14,7 @@ namespace TimeFlow.UI
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        private ModernButton btnLogout;
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -128,6 +129,23 @@ namespace TimeFlow.UI
                 sidebarPanel.Controls.Add(btnMenu);
                 topOffset += 50;
             }
+
+              btnLogout = new ModernButton
+            {
+                Text = "      🚪 Log Out", 
+                Size = new Size(230, 45),
+        
+                Location = new Point(10, topOffset + 20),
+                BackColor = AppColors.White,
+                ForeColor = AppColors.Red600, 
+                BorderRadius = 8,
+                HoverColor = AppColors.Red50, 
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold)
+            };
+            btnLogout.Click += BtnLogout_Click;
+
+            sidebarPanel.Controls.Add(btnLogout);
 
             // --- MAIN CONTENT AREA ---
             FlowLayoutPanel contentPanel = new FlowLayoutPanel();
