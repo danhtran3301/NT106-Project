@@ -43,21 +43,22 @@ namespace TimeFlow
 
         private void InitializeForm()
         {
-            // Hiển thị thông tin user
+            // --- Code hiển thị user/ngày tháng giữ nguyên ---
             if (!string.IsNullOrEmpty(SessionManager.Username))
             {
                 label1.Text = SessionManager.Username;
             }
-
-            // Thiết lập ngày hiện tại
             label10.Text = currentSelectedDate.ToString("MMMM yyyy");
-
-            // Setup calendar events
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
+            // -----------------------------------------------
 
+            // --- CẤU HÌNH FULL MÀN HÌNH CHUẨN ---
+
+            // 1. Dùng kiểu cửa sổ chuẩn (Sizable) để có thanh tiêu đề như trong ảnh bạn gửi
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+
+            // 2. Ra lệnh cho Windows tự phóng to hết cỡ (Windows sẽ tự chừa thanh Taskbar ra)
             this.WindowState = FormWindowState.Maximized;
-            this.FormBorderStyle = FormBorderStyle.None; // Nếu muốn ẩn viền cửa sổ
-
         }
 
         private void GiaoDien_Load(object sender, EventArgs e)
@@ -281,7 +282,7 @@ namespace TimeFlow
             formTaskList.Show();
         }
 
-      
+
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -295,7 +296,7 @@ namespace TimeFlow
             chatForm.Show();
         }
 
-     
+
         // Empty event handlers
         private void label1_Click(object sender, EventArgs e) { }
         private void tableLayoutPanel2_Paint(object sender, PaintEventArgs e) { }
@@ -320,6 +321,11 @@ namespace TimeFlow
         {
             FormSettings formSettings = new FormSettings();
             formSettings.Show();
+        }
+
+        private void panel1_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 
