@@ -11,15 +11,15 @@ using System.Windows.Forms;
 using TimeFlow.Authentication;
 using TimeFlow.Server;
 using TimeFlow.UI;
+using TimeFlow.UI.Components;
 using TimeFlow.Tasks;
-using TimeFlow.Models; // ✅ Đã dùng Model chuẩn của nhóm
+using TimeFlow.Models;
 using TimeFlow.Services;
 
 namespace TimeFlow
 {
     public partial class FormGiaoDien : Form
     {
-
         public static void EnableDoubleBuffered(Control control)
         {
             typeof(Control).InvokeMember("DoubleBuffered",
@@ -29,57 +29,121 @@ namespace TimeFlow
                 null, control, new object[] { true });
         }
 
+        private readonly TaskApiClient _taskApi;
         private int totalTaskCount = 0;
         private int completedTaskCount = 0;
-        private List<TaskItem> userTasks = new List<TaskItem>();
+        private List<TaskItem> _currentTasks = new List<TaskItem>();
         private DateTime currentSelectedDate = DateTime.Now;
         private TaskItem currentSelectedTask = null;
+        private bool _isLoading = false;
 
         public FormGiaoDien()
         {
             InitializeComponent();
+            _taskApi = new TaskApiClient();
             InitializeForm();
         }
 
         private void InitializeForm()
         {
-            // --- Code hiển thị user/ngày tháng giữ nguyên ---
+            // Display user info
             if (!string.IsNullOrEmpty(SessionManager.Username))
             {
                 label1.Text = SessionManager.Username;
             }
+            
             label10.Text = currentSelectedDate.ToString("MMMM yyyy");
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
-            // -----------------------------------------------
 
-            // --- CẤU HÌNH FULL MÀN HÌNH CHUẨN ---
-
-            // 1. Dùng kiểu cửa sổ chuẩn (Sizable) để có thanh tiêu đề như trong ảnh bạn gửi
+            // Window config
             this.FormBorderStyle = FormBorderStyle.Sizable;
-
-            // 2. Ra lệnh cho Windows tự phóng to hết cỡ (Windows sẽ tự chừa thanh Taskbar ra)
             this.WindowState = FormWindowState.Maximized;
         }
 
-        private void GiaoDien_Load(object sender, EventArgs e)
+        private async void GiaoDien_Load(object sender, EventArgs e)
         {
-            // 🔥 CHO PHÉP TEST KHÔNG LOGIN
+            // Test mode fallback
             if (string.IsNullOrEmpty(SessionManager.Username))
             {
                 SessionManager.Username = "TEST_USER";
             }
-            // ✅ HẾT BỊ NHÁY/GIẬT
+            
             EnableDoubleBuffered(tableLayoutPanel2);
 
-            UpdateCalendarView();
-            LoadTaskCountBadges();
+            // ✅ Load tasks từ server
+            await LoadTasksFromServerAsync();
+        }
+
+        // ✅ PRIORITY 1: Load tasks từ server
+        private async System.Threading.Tasks.Task LoadTasksFromServerAsync()
+        {
+            try
+            {
+                _isLoading = true;
+                ShowLoadingIndicator();
+                
+                _currentTasks = await _taskApi.GetTasksAsync();
+                
+                UpdateCalendarView();
+                LoadTaskCountBadges();
+                
+                HideLoadingIndicator();
+            }
+            catch (Exception ex)
+            {
+                HideLoadingIndicator();
+                MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                // Show empty state
+                UpdateCalendarView();
+                LoadTaskCountBadges();
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+
+        // ✅ Loading indicator
+        private void ShowLoadingIndicator()
+        {
+            tableLayoutPanel2.SuspendLayout();
+            tableLayoutPanel2.Controls.Clear();
+            
+            Label loadingLabel = new Label
+            {
+                Text = "⏳ Loading your tasks...\n\nPlease wait...",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 14F),
+                ForeColor = AppColors.Gray600,
+                BackColor = Color.White
+            };
+            
+            tableLayoutPanel2.Controls.Add(loadingLabel, 0, 0);
+            tableLayoutPanel2.SetColumnSpan(loadingLabel, 7);
+            tableLayoutPanel2.SetRowSpan(loadingLabel, tableLayoutPanel2.RowCount);
+            
+            tableLayoutPanel2.ResumeLayout();
+        }
+
+        private void HideLoadingIndicator()
+        {
+            // Will be cleared by UpdateCalendarView()
+        }
+
+        // ✅ PRIORITY 3: Refresh calendar (called by events)
+        private async void RefreshCalendar()
+        {
+            await LoadTasksFromServerAsync();
         }
 
         private void LoadTaskCountBadges()
         {
-            // ⚠️ LƯU Ý: Nếu 'IsCompleted' báo đỏ, hãy đổi thành tên biến đúng của nhóm (VD: Status == "Completed")
-            totalTaskCount = userTasks.Count(t => t.Status != TimeFlow.Models.TaskStatus.Completed);
-            completedTaskCount = userTasks.Count(t => t.Status == TimeFlow.Models.TaskStatus.Completed);
+            totalTaskCount = _currentTasks.Count(t => t.Status != TimeFlow.Models.TaskStatus.Completed);
+            completedTaskCount = _currentTasks.Count(t => t.Status == TimeFlow.Models.TaskStatus.Completed);
+            
             button1.Text = $"Your Task ({totalTaskCount})";
             label12.Text = $"Pending tasks: {totalTaskCount} ⏳";
             label13.Text = $"Completed: {completedTaskCount} ✓";
@@ -103,7 +167,7 @@ namespace TimeFlow
 
             DateTime startDate = currentSelectedDate;
 
-            // --- DUYỆT QUA 7 CỘT (7 NGÀY) ---
+            // Render 7 columns (7 days)
             for (int col = 0; col < 7; col++)
             {
                 DateTime columnDate = startDate.AddDays(col);
@@ -128,12 +192,11 @@ namespace TimeFlow
 
                 tableLayoutPanel2.Controls.Add(lblHeader, col, 0);
 
-                // ⚠️ LƯU Ý: Nếu 'Date' báo đỏ, kiểm tra xem nhóm dùng tên gì (VD: DueDate, CreatedAt)
-                var dailyTasks = userTasks
+                var dailyTasks = _currentTasks
                    .Where(t => t.DueDate.HasValue
                      && t.DueDate.Value.Date == columnDate.Date
                      && t.Status != TimeFlow.Models.TaskStatus.Completed)
-                   .OrderBy(t => t.TaskId) // Đổi Id -> TaskId
+                   .OrderBy(t => t.TaskId)
                    .ToList();
 
                 for (int row = 1; row < tableLayoutPanel2.RowCount; row++)
@@ -170,11 +233,9 @@ namespace TimeFlow
 
             if (task != null)
             {
-                // ⚠️ LƯU Ý: Nếu 'Title' báo đỏ -> Đổi thành 'TaskName'
                 lblContent.Text = task.Title;
                 lblContent.Font = new Font("Segoe UI", 9, FontStyle.Regular);
 
-                // ⚠️ Nếu 'Id' đỏ -> Đổi thành 'TaskId'
                 if (currentSelectedTask != null && task.TaskId == currentSelectedTask.TaskId)
                 {
                     lblContent.BackColor = Color.Orange;
@@ -183,8 +244,6 @@ namespace TimeFlow
                 }
                 else
                 {
-                    // ⚠️ Nếu 'IsCompleted' đỏ -> Kiểm tra logic Status của nhóm
-                    bool isDone = task.Status == TimeFlow.Models.TaskStatus.Completed;
                     lblContent.BorderStyle = BorderStyle.None;
                 }
             }
@@ -203,52 +262,58 @@ namespace TimeFlow
             tableLayoutPanel2.Controls.Add(dayCell, col, row);
         }
 
+        // ✅ PRIORITY 2: Click task → Open FormTaskDetail
         private void OnCalendarCellClick(DateTime date, TaskItem task)
         {
             if (task != null)
             {
-                currentSelectedTask = task;
-                UpdateCalendarView();
+                // ✅ Open task detail
+                OpenTaskDetail(task);
             }
             else
             {
+                // Click vào ô trống → Tạo task mới
                 currentSelectedTask = null;
                 UpdateCalendarView();
                 OpenNewTaskFormForDate(date);
             }
         }
 
-        private void OpenNewTaskFormForDate(DateTime selectedDate)
+        // ✅ Open FormTaskDetail với event subscription
+        private void OpenTaskDetail(TaskItem task)
         {
-            FormThemTask newTaskForm = new FormThemTask(this, selectedDate);
-            if (newTaskForm.ShowDialog() == DialogResult.OK)
+            FormTaskDetail detailForm = new FormTaskDetail(task);
+            
+            // ✅ Subscribe to TaskUpdated event
+            detailForm.TaskUpdated += (s, e) =>
             {
-                UpdateCalendarView();
-                LoadTaskCountBadges();
-            }
+                RefreshCalendar();
+            };
+            
+            // ✅ Subscribe to TaskDeleted event
+            detailForm.TaskDeleted += (s, e) =>
+            {
+                RefreshCalendar();
+            };
+            
+            detailForm.Show();
         }
 
-        public void AddTaskFromForm(TaskItem newTask)
+        private void OpenNewTaskFormForDate(DateTime selectedDate)
         {
-            // ⚠️ LƯU Ý: Kiểm tra 'Id' có phải là 'TaskId' không?
-            newTask.TaskId = userTasks.Count > 0 ? userTasks.Max(t => t.TaskId) + 1 : 1;
-            userTasks.Add(newTask);
-
-            UpdateCalendarView();
-            LoadTaskCountBadges();
-
-            // ⚠️ LƯU Ý: Kiểm tra 'Title' có phải là 'TaskName' không?
-            MessageBox.Show($"Task '{newTask.Title}' added successfully!",
-                "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            FormThemTask newTaskForm = new FormThemTask(selectedDate);
+            if (newTaskForm.ShowDialog() == DialogResult.OK)
+            {
+                RefreshCalendar();
+            }
         }
 
         private void OpenNewTaskForm()
         {
-            FormThemTask newTaskForm = new FormThemTask(this);
+            FormThemTask newTaskForm = new FormThemTask();
             if (newTaskForm.ShowDialog() == DialogResult.OK)
             {
-                UpdateCalendarView();
-                LoadTaskCountBadges();
+                RefreshCalendar();
             }
         }
 
@@ -282,8 +347,6 @@ namespace TimeFlow
             formTaskList.Show();
         }
 
-
-
         private void pictureBox1_Click(object sender, EventArgs e)
         {
             FormThongTinNguoiDung profileForm = new FormThongTinNguoiDung(SessionManager.Username, SessionManager.Email);
@@ -296,6 +359,24 @@ namespace TimeFlow
             chatForm.Show();
         }
 
+        private void button4_Click(object sender, EventArgs e)
+        {
+            // Test button - open task detail directly
+            if (_currentTasks.Count > 0)
+            {
+                OpenTaskDetail(_currentTasks[0]);
+            }
+            else
+            {
+                MessageBox.Show("No tasks to display!", "Info");
+            }
+        }
+
+        private void pictureBox4_Click(object sender, EventArgs e)
+        {
+            FormSettings formSettings = new FormSettings();
+            formSettings.Show();
+        }
 
         // Empty event handlers
         private void label1_Click(object sender, EventArgs e) { }
@@ -310,23 +391,6 @@ namespace TimeFlow
         private void label4_Click(object sender, EventArgs e) { }
         private void label10_Click(object sender, EventArgs e) { }
         private void label13_Click_1(object sender, EventArgs e) { }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            FormTaskDetail formTaskDetail = new FormTaskDetail();
-            formTaskDetail.Show();
-        }
-
-        private void pictureBox4_Click(object sender, EventArgs e)
-        {
-            FormSettings formSettings = new FormSettings();
-            formSettings.Show();
-        }
-
-        private void panel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
+        private void panel1_Paint(object sender, PaintEventArgs e) { }
     }
-
 }
