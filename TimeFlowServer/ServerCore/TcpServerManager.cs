@@ -18,6 +18,9 @@ namespace TimeFlowServer.ServerCore
         // Repositories
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
+        private readonly TaskRepository _taskRepo;
+        private readonly CategoryRepository _categoryRepo;
+        private readonly CommentRepository _commentRepo;
 
         // Security
         private readonly JwtManager _jwtManager;
@@ -37,6 +40,9 @@ namespace TimeFlowServer.ServerCore
             var dbHelper = new TimeFlow.Data.DatabaseHelper(connectionString);
             _userRepo = new UserRepository(dbHelper);
             _activityLogRepo = new ActivityLogRepository(dbHelper);
+            _taskRepo = new TaskRepository(dbHelper);
+            _categoryRepo = new CategoryRepository(dbHelper);
+            _commentRepo = new CommentRepository(dbHelper);
 
             // Khoi tao JWT manager (lay secret tu config)
             _jwtManager = new JwtManager("your_super_secret_jwt_key_change_in_production_minimum_32_characters_long_for_security");
@@ -138,6 +144,9 @@ namespace TimeFlowServer.ServerCore
                 client,
                 _userRepo,
                 _activityLogRepo,
+                _taskRepo,
+                _categoryRepo,
+                _commentRepo,
                 _jwtManager,
                 _onlineClients,
                 _clientsLock

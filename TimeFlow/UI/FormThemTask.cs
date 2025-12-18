@@ -1,101 +1,127 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using TimeFlow.Authentication; // Để lấy SessionManager
-using TimeFlow.Models;         // ✅ QUAN TRỌNG: Để dùng TaskItem chuẩn
+using TimeFlow.Models;
+using TimeFlow.Services;
 
 namespace TimeFlow.UI
 {
     public partial class FormThemTask : Form
     {
-        
-        private FormGiaoDien parentForm;
-        private DateTime? preSelectedDate; // Ngày được chọn từ calendar
-        private int? _taskIdToEdit = null; // ID của task đang edit (nếu có)
+        private readonly TaskApiClient _taskApi;
+        private DateTime? preSelectedDate;
+        private int? _taskIdToEdit;
+        private TaskItem _taskToEdit;
 
+        // Constructor mặc định
         public FormThemTask()
         {
             InitializeComponent();
+            _taskApi = new TaskApiClient();
         }
 
-        public FormThemTask(FormGiaoDien parent)
+        // Constructor với ngày được chọn trước (backward compatibility)
+        public FormThemTask(FormGiaoDien parent, DateTime selectedDate) : this(selectedDate)
         {
-            InitializeComponent();
-            parentForm = parent;
+            // Giữ lại để tương thích với code cũ
         }
 
-        // ✅ Constructor mới với ngày được chọn trước
-        public FormThemTask(FormGiaoDien parent, DateTime selectedDate)
+        // Constructor với parent form (backward compatibility)
+        public FormThemTask(FormGiaoDien parent) : this()
         {
-            InitializeComponent();
-            parentForm = parent;
+            // Giữ lại để tương thích với code cũ
+        }
+
+        // Constructor với ngày được chọn trước
+        public FormThemTask(DateTime selectedDate) : this()
+        {
             preSelectedDate = selectedDate;
         }
 
-        // ✅ Constructor để edit task
+        // Constructor để edit task
         public FormThemTask(int taskId) : this()
         {
             _taskIdToEdit = taskId;
             this.Text = "Chỉnh sửa Task";
         }
 
-        private void FormThemTask_Load(object sender, EventArgs e)
+        private async void FormThemTask_Load(object sender, EventArgs e)
         {
-            // ✅ Set ngày bắt đầu nếu có ngày được chọn trước
+            // Set ngày bắt đầu
             if (preSelectedDate.HasValue)
             {
                 dateTimePicker1.Value = preSelectedDate.Value;
-                // dateTimePicker2.Value = preSelectedDate.Value.AddDays(1); 
+                dateTimePicker2.Value = preSelectedDate.Value.AddDays(1);
             }
             else
             {
                 dateTimePicker1.Value = DateTime.Now;
-                // dateTimePicker2.Value = DateTime.Now.AddDays(1);
+                dateTimePicker2.Value = DateTime.Now.AddDays(1);
             }
 
-            // TODO: Nếu đang chỉnh sửa task, cần implement method GetTaskById trong FormGiaoDien
-            // if (_taskIdToEdit.HasValue)
-            // {
-            //     var taskToEdit = parentForm?.GetTaskById(_taskIdToEdit.Value);
-            //     if (taskToEdit != null)
-            //     {
-            //         textBox1.Text = taskToEdit.Title;
-            //         richTextBox1.Text = taskToEdit.Description;
-            //         dateTimePicker1.Value = taskToEdit.DueDate;
-            //         this.Text = "Chỉnh sửa Task";
-            //     }
-            // }
+            // Load task data nếu đang edit
+            if (_taskIdToEdit.HasValue)
+            {
+                await LoadTaskForEdit(_taskIdToEdit.Value);
+            }
         }
 
+        private async System.Threading.Tasks.Task LoadTaskForEdit(int taskId)
+        {
+            try
+            {
+                // Get task from TaskManager (mock data) and convert to TaskItem
+                var taskModel = Services.TaskManager.GetTaskById(taskId);
 
+                if (taskModel != null)
+                {
+                    // Convert TaskModel to TaskItem
+                    _taskToEdit = new TaskItem
+                    {
+                        TaskId = taskModel.Id,
+                        Title = taskModel.Name,
+                        Description = taskModel.Description,
+                        DueDate = taskModel.DueDate,
+                        Priority = taskModel.Priority switch
+                        {
+                            TaskPriorityLevel.Low => TaskPriority.Low,
+                            TaskPriorityLevel.Medium => TaskPriority.Medium,
+                            TaskPriorityLevel.High => TaskPriority.High,
+                            TaskPriorityLevel.Critical => TaskPriority.High,
+                            _ => TaskPriority.Medium
+                        },
+                        Status = taskModel.Status switch
+                        {
+                            TaskState.Pending => TimeFlow.Models.TaskStatus.Pending,
+                            TaskState.InProgress => TimeFlow.Models.TaskStatus.InProgress,
+                            TaskState.Completed => TimeFlow.Models.TaskStatus.Completed,
+                            TaskState.Cancelled => TimeFlow.Models.TaskStatus.Cancelled,
+                            _ => TimeFlow.Models.TaskStatus.Pending
+                        },
+                        CreatedBy = SessionManager.UserId ?? 0
+                    };
 
-        // Các hàm sự kiện rỗng (Giữ lại để không lỗi Designer)
-        private void textBox1_TextChanged(object sender, EventArgs e) { }
-        private void dateTimePicker1_ValueChanged(object sender, EventArgs e) { }
-        private void richTextBox1_TextChanged(object sender, EventArgs e) { }
-        private void pictureBox1_Click(object sender, EventArgs e) { }
-        private void labelTaskDescription_Click(object sender, EventArgs e) { }
-        private void labelTaskTime_Click(object sender, EventArgs e) { }
+                    textBox1.Text = _taskToEdit.Title;
+                    richTextBox1.Text = _taskToEdit.Description ?? "";
+                    
+                    if (_taskToEdit.DueDate.HasValue)
+                    {
+                        dateTimePicker1.Value = _taskToEdit.DueDate.Value;
+                        dateTimePicker2.Value = _taskToEdit.DueDate.Value.AddDays(1);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tải thông tin task: {ex.Message}", "Lỗi", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
 
-        // Hàm button2_Click_1 này bị thừa (trùng lặp logic), tôi đã gộp lên trên rồi.
-        // Bạn có thể xóa hoặc comment lại hàm này.
-        private void button2_Click_1(object sender, EventArgs e)
-        {  // ✅ Lấy thông tin task từ các control
-            string title = textBox1.Text.Trim();
-            DateTime startDate = dateTimePicker1.Value.Date;
-
-            // Lưu ý: Model nhóm có vẻ chỉ có DueDate (Hạn chót), không có StartDate/EndDate riêng.
-            // Tạm thời mình sẽ dùng StartDate làm DueDate.
-
-            string description = richTextBox1.Text.Trim();
-
+        private async void button2_Click_1(object sender, EventArgs e)
+        {
             // Validation
+            string title = textBox1.Text.Trim();
             if (string.IsNullOrEmpty(title))
             {
                 MessageBox.Show("Vui lòng nhập tên nhiệm vụ!", "Lỗi",
@@ -104,32 +130,107 @@ namespace TimeFlow.UI
                 return;
             }
 
-            // ✅ Tạo task mới với thông tin đầy đủ theo Model CHUẨN
+            // Check authentication
+            if (!SessionManager.IsAuthenticated)
+            {
+                MessageBox.Show("Vui lòng đăng nhập để thực hiện thao tác này!", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+                return;
+            }
+
+            try
+            {
+                button2.Enabled = false;
+                button2.Text = "Đang xử lý...";
+
+                DateTime dueDate = dateTimePicker1.Value.Date;
+                string description = richTextBox1.Text.Trim();
+
+                if (_taskIdToEdit.HasValue)
+                {
+                    // Update existing task
+                    await UpdateTaskAsync(title, description, dueDate);
+                }
+                else
+                {
+                    // Create new task
+                    await CreateTaskAsync(title, description, dueDate);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                button2.Enabled = true;
+                button2.Text = "Submit";
+            }
+        }
+
+        private async System.Threading.Tasks.Task CreateTaskAsync(string title, string description, DateTime dueDate)
+        {
             var newTask = new TaskItem
             {
-                TaskId = 0, // Database sẽ tự tăng, hoặc logic AddTaskFromForm sẽ xử lý
                 Title = title,
                 Description = description,
-
-                // Map ngày tháng
-                DueDate = startDate,
-
-                // Map trạng thái (Thay vì IsCompleted = false)
-                // Giả sử Enum: 1=New, 2=InProgress... Bạn cần check kỹ enum của nhóm.
-                Status = (TimeFlow.Models.TaskStatus)1,
-                // Các trường bắt buộc khác (nếu Model yêu cầu)
-                Priority = TaskPriority.Medium, // Mặc định
-                CreatedBy = 0, // Cần ID user (int), lấy từ SessionManager nếu có thể parse được
+                DueDate = dueDate,
+                Priority = TaskPriority.Medium, // Default
+                Status = TimeFlow.Models.TaskStatus.Pending,
+                CreatedBy = SessionManager.UserId ?? 0,
                 IsGroupTask = false,
                 CreatedAt = DateTime.Now
             };
 
-            // Gọi hàm public ở GiaoDien để thêm task
-            parentForm?.AddTaskFromForm(newTask);
+            int taskId = await _taskApi.CreateTaskAsync(newTask);
 
-            // Đóng form
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            if (taskId > 0)
+            {
+                MessageBox.Show("Task đã được tạo thành công!", "Thành công",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            else
+            {
+                throw new Exception("Không thể tạo task. Vui lòng thử lại!");
+            }
         }
+
+        private async System.Threading.Tasks.Task UpdateTaskAsync(string title, string description, DateTime dueDate)
+        {
+            if (_taskToEdit == null)
+            {
+                throw new Exception("Không tìm thấy thông tin task để cập nhật!");
+            }
+
+            _taskToEdit.Title = title;
+            _taskToEdit.Description = description;
+            _taskToEdit.DueDate = dueDate;
+            _taskToEdit.UpdatedAt = DateTime.Now;
+
+            bool success = await _taskApi.UpdateTaskAsync(_taskToEdit);
+
+            if (success)
+            {
+                MessageBox.Show("Task đã được cập nhật thành công!", "Thành công",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                this.DialogResult = DialogResult.OK;
+                this.Close();
+            }
+            else
+            {
+                throw new Exception("Không thể cập nhật task. Vui lòng thử lại!");
+            }
+        }
+
+        // Empty event handlers for Designer
+        private void textBox1_TextChanged(object sender, EventArgs e) { }
+        private void dateTimePicker1_ValueChanged(object sender, EventArgs e) { }
+        private void richTextBox1_TextChanged(object sender, EventArgs e) { }
+        private void pictureBox1_Click(object sender, EventArgs e) { }
+        private void labelTaskDescription_Click(object sender, EventArgs e) { }
+        private void labelTaskTime_Click(object sender, EventArgs e) { }
     }
 }

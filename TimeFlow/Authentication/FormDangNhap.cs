@@ -167,12 +167,16 @@ namespace TimeFlow.Authentication
                 if (status == "success")
                 {
                     string token = root.GetProperty("token").GetString();
+                    int userId = root.GetProperty("user").GetProperty("userId").GetInt32();
                     string usernameResp = root.GetProperty("user").GetProperty("username").GetString();
                     string email = root.GetProperty("user").GetProperty("email").GetString();
 
                     // Lưu token ra file
                     string tokenPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\token.jwt");
                     File.WriteAllText(tokenPath, token);
+
+                    // Lưu session
+                    SessionManager.SetUserSession(userId, usernameResp, email, token);
 
                     return new LoginResult
                     {
@@ -219,8 +223,12 @@ namespace TimeFlow.Authentication
 
                 if (status == "autologin_success")
                 {
+                    int userId = root.GetProperty("user").GetProperty("userId").GetInt32();
                     string username = root.GetProperty("user").GetProperty("username").GetString();
                     string email = root.GetProperty("user").GetProperty("email").GetString();
+
+                    // Lưu session
+                    SessionManager.SetUserSession(userId, username, email, token);
 
                     return new LoginResult
                     {

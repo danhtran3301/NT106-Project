@@ -5,6 +5,7 @@ using System.Linq;
 using TimeFlow.UI.Components;
 using TimeFlow.Models;
 using TimeFlow.Services;
+using System.Collections.Generic;
 
 namespace TimeFlow.Tasks
 {
@@ -14,15 +15,30 @@ namespace TimeFlow.Tasks
         private readonly Font FontBold = new Font("Segoe UI", 10F, FontStyle.Bold);
         private readonly Font FontHeaderTitle = new Font("Segoe UI", 14F, FontStyle.Bold);
         private readonly Color HeaderIconColor = AppColors.Gray600;
+        private readonly TaskApiClient _taskApi;
+        private List<TaskItem> _currentTasks;
+        
+        // ✅ Caching
+        private Control _cachedLeftMenu;
+        private Control _cachedHeaderBar;
+        
+        // ✅ Virtual scrolling
+        private const int INITIAL_TASKS_TO_RENDER = 20;
+        private int _tasksRendered = 0;
+        private CustomFlowLayoutPanel _contentPanel;
 
         public FormTaskList()
         {
             InitializeComponent();
+            _taskApi = new TaskApiClient();
+            _currentTasks = new List<TaskItem>();
             SetupLayout();
         }
 
         private void SetupLayout()
         {
+            this.SuspendLayout(); // ✅ Suspend layout calculation
+            
             this.Text = "My Tasks";
             this.BackColor = AppColors.Gray100;
             this.WindowState = FormWindowState.Maximized;
@@ -37,7 +53,11 @@ namespace TimeFlow.Tasks
             };
             this.Controls.Add(rootPanel);
 
-            Control headerBar = CreateHeaderBar();
+            // ✅ Use cached header if available
+            Control headerBar = _cachedHeaderBar ?? CreateHeaderBar();
+            if (_cachedHeaderBar == null)
+                _cachedHeaderBar = headerBar;
+            
             headerBar.Dock = DockStyle.Top;
             rootPanel.Controls.Add(headerBar);
 
@@ -58,102 +78,109 @@ namespace TimeFlow.Tasks
             };
             rootPanel.Controls.Add(mainLayout);
 
-            mainLayout.Controls.Add(CreateLeftMenu(), 0, 0);
+            // ✅ Use cached left menu if available
+            Control leftMenu = _cachedLeftMenu ?? CreateLeftMenu();
+            if (_cachedLeftMenu == null)
+                _cachedLeftMenu = leftMenu;
+            
+            mainLayout.Controls.Add(leftMenu, 0, 0);
             mainLayout.Controls.Add(CreateTaskListContent(), 1, 0);
+            
+            this.ResumeLayout(); // ✅ Resume layout - calculate once
         }
 
-         private Control CreateHeaderBar()
-         {
-             Panel headerWrapper = new Panel
-             {
-                 Dock = DockStyle.Top,
-                 Height = 61,
-                 BackColor = Color.White,
-                 Margin = new Padding(0)
-             };
+        private Control CreateHeaderBar()
+        {
+            Panel headerWrapper = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 61,
+                BackColor = Color.White,
+                Margin = new Padding(0)
+            };
 
-             TableLayoutPanel headerTable = new TableLayoutPanel
-             {
-                 Dock = DockStyle.Top,
-                 Height = 60,
-                 BackColor = Color.White,
-                 ColumnCount = 3,
-                 ColumnStyles =
-                 {
-                     new ColumnStyle(SizeType.AutoSize),
-                     new ColumnStyle(SizeType.Percent, 100F),
-                     new ColumnStyle(SizeType.AutoSize)
-                 },
-                 RowCount = 1,
-                 RowStyles = { new RowStyle(SizeType.Percent, 100F) },
-                 Padding = new Padding(16, 10, 16, 10)
-             };
+            TableLayoutPanel headerTable = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 60,
+                BackColor = Color.White,
+                ColumnCount = 3,
+                ColumnStyles =
+                {
+                    new ColumnStyle(SizeType.AutoSize),
+                    new ColumnStyle(SizeType.Percent, 100F),
+                    new ColumnStyle(SizeType.AutoSize)
+                },
+                RowCount = 1,
+                RowStyles = { new RowStyle(SizeType.Percent, 100F) },
+                Padding = new Padding(16, 10, 16, 10)
+            };
 
-             FlowLayoutPanel leftContainer = new FlowLayoutPanel
-             {
-                 FlowDirection = FlowDirection.LeftToRight,
-                 AutoSize = true,
-                 Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom,
-                 Margin = new Padding(0)
-             };
-             TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
-             {
-                 Text = "←",
-                 Font = new Font("Segoe UI Emoji", 16F),
-                 ForeColor = HeaderIconColor,
-                 BackColor = Color.White,
-                 HoverColor = AppColors.Gray200,
-                 BorderRadius = 4,
-                 Width = 40,
-                 Height = 40,
-                 TextAlign = ContentAlignment.MiddleCenter,
-                 Margin = new Padding(0)
-             };
-             arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại..."); };
-             leftContainer.Controls.Add(arrowButton);
+            FlowLayoutPanel leftContainer = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom,
+                Margin = new Padding(0)
+            };
+            TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
+            {
+                Text = "←",
+                Font = new Font("Segoe UI Emoji", 16F),
+                ForeColor = HeaderIconColor,
+                BackColor = Color.White,
+                HoverColor = AppColors.Gray200,
+                BorderRadius = 4,
+                Width = 40,
+                Height = 40,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0)
+            };
+            arrowButton.Click += (sender, e) => { MessageBox.Show("Quay lại..."); };
+            leftContainer.Controls.Add(arrowButton);
 
-             Label titleLabel = new Label
-             {
-                 Text = "My Tasks",
-                 Font = FontHeaderTitle,
-                 ForeColor = AppColors.Gray800,
-                 AutoSize = true,
-                 Dock = DockStyle.Fill,
-                 TextAlign = ContentAlignment.MiddleLeft,
-                 Margin = new Padding(8, 0, 0, 0)
-             };
-             leftContainer.Controls.Add(titleLabel);
-             headerTable.Controls.Add(leftContainer, 0, 0);
+            Label titleLabel = new Label
+            {
+                Text = "My Tasks",
+                Font = FontHeaderTitle,
+                ForeColor = AppColors.Gray800,
+                AutoSize = true,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(8, 0, 0, 0)
+            };
+            leftContainer.Controls.Add(titleLabel);
+            headerTable.Controls.Add(leftContainer, 0, 0);
 
-             TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
-             {
-                 Text = "✕",
-                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
-                 ForeColor = HeaderIconColor,
-                 BackColor = Color.White,
-                 HoverColor = AppColors.Gray200,
-                 BorderRadius = 4,
-                 Width = 40,
-                 Height = 40,
-                 TextAlign = ContentAlignment.MiddleCenter,
-                 Margin = new Padding(0)
-             };
-             closeButton.Click += (sender, e) => { this.Close(); };
-             headerTable.Controls.Add(closeButton, 2, 0);
+            TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
+            {
+                Text = "✕",
+                Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
+                ForeColor = HeaderIconColor,
+                BackColor = Color.White,
+                HoverColor = AppColors.Gray200,
+                BorderRadius = 4,
+                Width = 40,
+                Height = 40,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0)
+            };
+            closeButton.Click += (sender, e) => { this.Close(); };
+            headerTable.Controls.Add(closeButton, 2, 0);
 
-             Panel separator = new Panel
-             {
-                 Dock = DockStyle.Bottom,
-                 Height = 1,
-                 BackColor = AppColors.Gray200
-             };
+            Panel separator = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 1,
+                BackColor = AppColors.Gray200
+            };
 
-             headerTable.Dock = DockStyle.Fill;
-             headerWrapper.Controls.Add(headerTable);
-             headerWrapper.Controls.Add(separator);
+            headerTable.Dock = DockStyle.Fill;
+            headerWrapper.Controls.Add(headerTable);
+            headerWrapper.Controls.Add(separator);
 
-             return headerWrapper;
-         }
+            return headerWrapper;
+        }
         
        /* private Control CreateHeaderBar()
         {
@@ -378,9 +405,61 @@ namespace TimeFlow.Tasks
                 BackColor = AppColors.Gray100,
             };
 
-            // Lấy tasks từ TaskManager thay vì hardcode
-            var tasks = TaskManager.GetAllTasks();
-            int activeTaskCount = tasks.Count(t => t.Status != TaskState.Completed);
+            // Load tasks from server
+            LoadTasksAsync(contentPanel);
+
+            return contentPanel;
+        }
+
+        private async void LoadTasksAsync(CustomFlowLayoutPanel contentPanel)
+        {
+            try
+            {
+                _contentPanel = contentPanel; // ✅ Store reference
+                
+                // Show loading indicator
+                Label loadingLabel = new Label
+                {
+                    Text = "⏳ Loading tasks...",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray600,
+                    AutoSize = true,
+                    Margin = new Padding(0, 20, 0, 0)
+                };
+                contentPanel.Controls.Add(loadingLabel);
+
+                // Fetch tasks from server
+                _currentTasks = await _taskApi.GetTasksAsync();
+
+                // Remove loading label
+                contentPanel.Controls.Remove(loadingLabel);
+
+                // ✅ Render tasks với virtual scrolling
+                RenderTaskList(contentPanel, _currentTasks);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load tasks: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                // Show error label
+                Label errorLabel = new Label
+                {
+                    Text = "Failed to load tasks. Please check server connection.",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Red500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 20, 0, 0)
+                };
+                contentPanel.Controls.Add(errorLabel);
+            }
+        }
+
+        private void RenderTaskList(CustomFlowLayoutPanel contentPanel, List<TaskItem> tasks)
+        {
+            contentPanel.SuspendLayout(); // ✅ Suspend layout
+            
+            int activeTaskCount = tasks.Count(t => t.Status != TimeFlow.Models.TaskStatus.Completed);
 
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
@@ -466,17 +545,39 @@ namespace TimeFlow.Tasks
             AddHeaderLabel("PRIORITY", 3);
             contentPanel.Controls.Add(columnHeader);
 
-            // Tạo task items từ dữ liệu thật
-            foreach (var task in tasks)
+            // ✅ Virtual scrolling: Render initial batch only
+            int tasksToRender = Math.Min(INITIAL_TASKS_TO_RENDER, tasks.Count);
+            _tasksRendered = 0;
+            
+            RenderTaskBatch(contentPanel, tasks, 0, tasksToRender);
+            
+            // ✅ Add "Load more" button if needed
+            if (tasks.Count > INITIAL_TASKS_TO_RENDER)
+            {
+                AddLoadMoreButton(contentPanel, tasks);
+            }
+            
+            contentPanel.ResumeLayout(); // ✅ Resume layout - calculate once
+        }
+
+        // ✅ Batch rendering method
+        private void RenderTaskBatch(CustomFlowLayoutPanel contentPanel, List<TaskItem> tasks, int startIndex, int count)
+        {
+            var tasksToRender = tasks.Skip(startIndex).Take(count).ToList();
+            
+            foreach (var task in tasksToRender)
             {
                 Color statusColor = GetStatusColor(task.Status);
                 Color priorityColor = GetPriorityColor(task.Priority);
 
+                string dueDateText = task.DueDate.HasValue ? task.DueDate.Value.ToString("MMM dd, yyyy") : "No due date";
+                int assigneeCount = 0; // TODO: Implement assignee count from server
+
                 Control taskItem = CreateTaskListItem(
-                    task.Id,
-                    task.Name,
-                    task.AssigneeCount,
-                    task.DueDateText,
+                    task.TaskId,
+                    task.Title,
+                    assigneeCount,
+                    dueDateText,
                     task.StatusText,
                     statusColor,
                     task.PriorityText,
@@ -493,8 +594,62 @@ namespace TimeFlow.Tasks
                 };
 
                 contentPanel.Controls.Add(taskItem);
+                _tasksRendered++;
             }
-            return contentPanel;
+        }
+
+        // ✅ Add "Load more" button
+        private void AddLoadMoreButton(CustomFlowLayoutPanel contentPanel, List<TaskItem> tasks)
+        {
+            var loadMoreButton = new CustomButton
+            {
+                Text = $"⬇ Load {Math.Min(20, tasks.Count - _tasksRendered)} more tasks",
+                BackColor = AppColors.Blue500,
+                ForeColor = Color.White,
+                HoverColor = AppColors.Blue600,
+                BorderRadius = 8,
+                Width = 300,
+                Height = 50,
+                Font = FontBold,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 20, 0, 20),
+                Anchor = AnchorStyles.None
+            };
+
+            loadMoreButton.Click += (s, e) =>
+            {
+                contentPanel.SuspendLayout();
+                
+                // Remove load more button
+                contentPanel.Controls.Remove(loadMoreButton);
+                
+                // Render next batch
+                int nextBatchSize = Math.Min(20, tasks.Count - _tasksRendered);
+                RenderTaskBatch(contentPanel, tasks, _tasksRendered, nextBatchSize);
+                
+                // Add button again if more tasks
+                if (_tasksRendered < tasks.Count)
+                {
+                    AddLoadMoreButton(contentPanel, tasks);
+                }
+                else
+                {
+                    // All tasks loaded
+                    Label allLoadedLabel = new Label
+                    {
+                        Text = $"✓ All {tasks.Count} tasks loaded",
+                        Font = FontRegular,
+                        ForeColor = AppColors.Gray500,
+                        AutoSize = true,
+                        Margin = new Padding(0, 20, 0, 20)
+                    };
+                    contentPanel.Controls.Add(allLoadedLabel);
+                }
+                
+                contentPanel.ResumeLayout();
+            };
+
+            contentPanel.Controls.Add(loadMoreButton);
         }
 
         private Control CreateTaskListItem(int taskId, string name, int assignees, string dueDate, string status, Color statusColor, string priority, Color priorityColor)
@@ -580,36 +735,107 @@ namespace TimeFlow.Tasks
 
         private void OpenTaskDetail(int taskId)
         {
-            var task = TaskManager.GetTaskById(taskId);
+            var task = _currentTasks.FirstOrDefault(t => t.TaskId == taskId);
             if (task != null)
             {
-                FormTaskDetail detailForm = new FormTaskDetail(taskId);
+                // ✅ Pass TaskItem data để render basic info ngay
+                FormTaskDetail detailForm = new FormTaskDetail(task);
+                
+                // ✅ Subscribe to TaskUpdated event
+                detailForm.TaskUpdated += (s, e) =>
+                {
+                    // Update task in local cache
+                    var taskToUpdate = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
+                    if (taskToUpdate != null)
+                    {
+                        taskToUpdate.Status = e.Status;
+                    }
+                    
+                    // ✅ Refresh task list UI
+                    RefreshTaskList();
+                };
+                
+                // ✅ Subscribe to TaskDeleted event
+                detailForm.TaskDeleted += (s, e) =>
+                {
+                    // Remove task from local cache
+                    var taskToRemove = _currentTasks.FirstOrDefault(t => t.TaskId == taskId);
+                    if (taskToRemove != null)
+                    {
+                        _currentTasks.Remove(taskToRemove);
+                    }
+                    
+                    // ✅ Refresh task list UI
+                    RefreshTaskList();
+                };
+                
                 detailForm.FormClosed += (s, e) => this.Show();
                 this.Hide();
                 detailForm.Show();
             }
         }
 
-        private Color GetStatusColor(TaskState status)
+        // ✅ Refresh task list UI
+        private void RefreshTaskList()
+        {
+            if (_contentPanel == null) return;
+            
+            _contentPanel.SuspendLayout();
+            
+            // Clear old task items (keep header and column header)
+            var controlsToRemove = _contentPanel.Controls
+                .OfType<Control>()
+                .Where(c => c is ModernPanel || c is CustomButton || c is Label && c.Text.Contains("All"))
+                .ToList();
+            
+            foreach (var control in controlsToRemove)
+            {
+                _contentPanel.Controls.Remove(control);
+            }
+            
+            // Re-render tasks
+            _tasksRendered = 0;
+            int tasksToRender = Math.Min(INITIAL_TASKS_TO_RENDER, _currentTasks.Count);
+            RenderTaskBatch(_contentPanel, _currentTasks, 0, tasksToRender);
+            
+            // Add "Load more" if needed
+            if (_currentTasks.Count > INITIAL_TASKS_TO_RENDER)
+            {
+                AddLoadMoreButton(_contentPanel, _currentTasks);
+            }
+            
+            // Update active task count
+            int activeTaskCount = _currentTasks.Count(t => t.Status != TimeFlow.Models.TaskStatus.Completed);
+            var activeLabel = _contentPanel.Controls.OfType<TableLayoutPanel>().FirstOrDefault()
+                ?.Controls.OfType<Label>().FirstOrDefault(l => l.Text.Contains("active"));
+            
+            if (activeLabel != null)
+            {
+                activeLabel.Text = $"{activeTaskCount} active tasks";
+            }
+            
+            _contentPanel.ResumeLayout();
+        }
+
+        private Color GetStatusColor(TimeFlow.Models.TaskStatus status)
         {
             return status switch
             {
-                TaskState.Pending => AppColors.Yellow500,
-                TaskState.InProgress => AppColors.Blue500,
-                TaskState.Completed => AppColors.Green500,
-                TaskState.Cancelled => AppColors.Gray400,
+                TimeFlow.Models.TaskStatus.Pending => AppColors.Yellow500,
+                TimeFlow.Models.TaskStatus.InProgress => AppColors.Blue500,
+                TimeFlow.Models.TaskStatus.Completed => AppColors.Green500,
+                TimeFlow.Models.TaskStatus.Cancelled => AppColors.Gray400,
                 _ => AppColors.Gray400
             };
         }
 
-        private Color GetPriorityColor(TaskPriorityLevel priority)
+        private Color GetPriorityColor(TaskPriority priority)
         {
             return priority switch
             {
-                TaskPriorityLevel.Low => AppColors.Green500,
-                TaskPriorityLevel.Medium => AppColors.Orange500,
-                TaskPriorityLevel.High => AppColors.Red500,
-                TaskPriorityLevel.Critical => AppColors.Red700,
+                TaskPriority.Low => AppColors.Green500,
+                TaskPriority.Medium => AppColors.Orange500,
+                TaskPriority.High => AppColors.Red500,
                 _ => AppColors.Gray400
             };
         }

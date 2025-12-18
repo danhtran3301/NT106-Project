@@ -6,11 +6,31 @@ using TimeFlow.UI.Components;
 using TimeFlow.Models;
 using TimeFlow.UI;
 using TimeFlow.Services;
-using TimeFlow.Tasks;
+
 namespace TimeFlow.Tasks
 {
-    public partial class FormTaskDetail : Form
+    partial class FormTaskDetail
     {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
         private void InitializeComponent()
         {
             SuspendLayout();
@@ -19,25 +39,41 @@ namespace TimeFlow.Tasks
             // 
             ClientSize = new Size(1573, 778);
             Name = "FormTaskDetail";
+            Load += FormTaskDetail_Load;
             ResumeLayout(false);
+
+            // KHÔNG gọi SetupLayout ở đây - sẽ gọi sau khi load xong data
         }
 
+        #endregion
+
+        // UI Setup Methods
         private void SetupLayout()
         {
+            this.SuspendLayout(); // ✅ Ngừng layout calculation
+            
             this.Text = "Task Details";
             this.BackColor = AppColors.Gray100;
             this.WindowState = FormWindowState.Maximized;
             this.Padding = new Padding(0);
             this.MinimumSize = new Size(800, 600);
 
+            // Clear existing controls before re-rendering
+            this.Controls.Clear();
+
+            // Check if task loaded
             if (_currentTask == null)
             {
-                _currentTask = Services.TaskManager.GetTaskById(1) ?? Services.TaskManager.GetAllTasks().FirstOrDefault();
-            }
-            if (_currentTask == null)
-            {
-                MessageBox.Show("Không tìm thấy Task nào để hiển thị.", "Lỗi Dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.Close();
+                Label errorLabel = new Label
+                {
+                    Text = "Đang tải thông tin task...",
+                    Font = FontTitle,
+                    ForeColor = AppColors.Gray600,
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter
+                };
+                this.Controls.Add(errorLabel);
+                this.ResumeLayout(); // ✅ Resume layout
                 return;
             }
 
@@ -72,6 +108,8 @@ namespace TimeFlow.Tasks
             mainLayout.Controls.Add(CreateLeftMenu(), 0, 0);
             mainLayout.Controls.Add(CreateCenterContent(), 1, 0);
             mainLayout.Controls.Add(CreateRightSidebar(), 2, 0);
+            
+            this.ResumeLayout(); // ✅ Calculate layout 1 lần duy nhất
         }
 
         private Control CreateHeaderBar()
@@ -103,8 +141,8 @@ namespace TimeFlow.Tasks
                 AutoSize = false,
                 Height = 60
             };
-        
-            TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
+
+            CustomButton arrowButton = new CustomButton
             {
                 Text = "←",
                 Font = new Font("Segoe UI Emoji", 16F),
@@ -117,9 +155,7 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 18, 0, 0)
             };
-            arrowButton.Click += (sender, e) => {
-                this.Close();
-            };
+            arrowButton.Click += (sender, e) => { this.Close(); };
             leftFlow.Controls.Add(arrowButton);
             headerPanel.Controls.Add(leftFlow, 0, 0);
 
@@ -145,24 +181,8 @@ namespace TimeFlow.Tasks
                 Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
                 Margin = new Padding(0)
             };
-            
-            /*TimeFlow.UI.Components.CustomButton closeButton = new TimeFlow.UI.Components.CustomButton
-            {
-                Text = "✕",
-                Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
-                ForeColor = HeaderIconColor,
-                BackColor = Color.Transparent,
-                HoverColor = AppColors.Gray200,
-                BorderRadius = 4,
-                Width = 40,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 18, 0, 0)
-            };
-            closeButton.Click += (sender, e) => { this.Close(); };
-            rightFlow.Controls.Add(closeButton);
-            */
-            TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
+
+            CustomButton optionsButton = new CustomButton
             {
                 Text = "...",
                 Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
@@ -175,33 +195,27 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 16, 0, 0)
             };
-            rightFlow.Controls.Add(optionsButton);
-            headerPanel.Controls.Add(rightFlow, 2, 0);
+
             ContextMenuStrip contextMenu = new ContextMenuStrip();
             ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
             ToolStripMenuItem deleteItem = new ToolStripMenuItem("Xóa Task (Delete)");
             ToolStripMenuItem statusMenu = new ToolStripMenuItem("Thay đổi Trạng thái (Status)");
+
             contextMenu.Items.Add(editItem);
             contextMenu.Items.Add(deleteItem);
             contextMenu.Items.Add(new ToolStripSeparator());
             contextMenu.Items.Add(statusMenu);
+
             optionsButton.Click += (sender, e) =>
             {
                 contextMenu.Show(optionsButton, new Point(optionsButton.Width - contextMenu.Width, optionsButton.Height));
             };
+
             editItem.Click += EditItem_Click;
             deleteItem.Click += DeleteItem_Click;
             CreateStatusSubMenu(statusMenu);
 
-            rightFlow.Controls.Add(optionsButton);
-            Panel separator = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 1,
-                BackColor = AppColors.Gray200
-            };
             bool hasPerm = UserHasPermission();
-
             editItem.Enabled = hasPerm;
             deleteItem.Enabled = hasPerm;
 
@@ -209,6 +223,17 @@ namespace TimeFlow.Tasks
             {
                 editItem.Text += " (Read Only)";
             }
+
+            rightFlow.Controls.Add(optionsButton);
+            headerPanel.Controls.Add(rightFlow, 2, 0);
+
+            Panel separator = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 1,
+                BackColor = AppColors.Gray200
+            };
+
             Panel headerContainer = new Panel { Dock = DockStyle.Top, Height = 81, BackColor = Color.Transparent };
             headerContainer.Controls.Add(headerPanel);
             separator.Location = new Point(0, headerPanel.Height);
@@ -216,67 +241,7 @@ namespace TimeFlow.Tasks
 
             return headerContainer;
         }
-        
-       /* private Control CreateHeaderBar()
-{
-    Panel headerWrapper = new Panel { Dock = DockStyle.Top, Height = 80, BackColor = Color.White };
 
-    TableLayoutPanel headerTable = new TableLayoutPanel
-    {
-        Dock = DockStyle.Fill,
-        ColumnCount = 3,
-        // CỐ ĐỊNH: Cột 0 (Back) và Cột 2 (Options) phải có độ rộng cố định
-        ColumnStyles = {
-            new ColumnStyle(SizeType.Absolute, 60F),  
-            new ColumnStyle(SizeType.Percent, 100F), 
-            new ColumnStyle(SizeType.Absolute, 60F)  
-        },
-        RowCount = 1,
-        RowStyles = { new RowStyle(SizeType.Percent, 100F) },
-        Padding = new Padding(16, 0, 16, 0)
-    };
-
-    // 1. Nút Back (←) - Căn giữa ô trái
-    TimeFlow.UI.Components.CustomButton arrowButton = new TimeFlow.UI.Components.CustomButton
-    {
-        Text = "←",
-        Font = new Font("Segoe UI Emoji", 16F),
-        Size = new Size(40, 40),
-        Anchor = AnchorStyles.None // Giúp icon nằm chính giữa ô 60px
-    };
-    arrowButton.Click += (s, e) => this.Close();
-    headerTable.Controls.Add(arrowButton, 0, 0);
-
-    // 2. Tiêu đề - Luôn chiếm phần giữa
-    Label titleLabel = new Label
-    {
-        Text = "Task Details",
-        Font = FontHeaderTitle,
-        ForeColor = AppColors.Gray800,
-        Dock = DockStyle.Fill,
-        TextAlign = ContentAlignment.MiddleLeft,
-        Margin = new Padding(10, 0, 0, 0)
-    };
-    headerTable.Controls.Add(titleLabel, 1, 0);
-
-    // 3. Nút Options (...) - Căn giữa ô phải
-    TimeFlow.UI.Components.CustomButton optionsButton = new TimeFlow.UI.Components.CustomButton
-    {
-        Text = "...",
-        Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
-        Size = new Size(40, 40),
-        Anchor = AnchorStyles.None
-    };
-    // (Logic ContextMenu của bạn giữ nguyên tại đây)
-    headerTable.Controls.Add(optionsButton, 2, 0);
-
-    Panel separator = new Panel { Dock = DockStyle.Bottom, Height = 1, BackColor = AppColors.Gray200 };
-    headerWrapper.Controls.Add(headerTable);
-    headerWrapper.Controls.Add(separator);
-
-    return headerWrapper;
-}
-       */
         private Control CreateLeftMenu()
         {
             FlowLayoutPanel menuPanel = new FlowLayoutPanel
@@ -294,27 +259,6 @@ namespace TimeFlow.Tasks
             int buttonWidth = 200;
             int buttonHeight = 50;
 
-            FlowLayoutPanel accountHeader = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.LeftToRight,
-                AutoSize = true,
-                Width = buttonWidth,
-                Margin = new Padding(0, 0, 0, 30)
-            };
-            accountHeader.Controls.Add(new Label
-            {
-                Text = "👤",
-                Font = new Font("Segoe UI Emoji", 12F),
-                AutoSize = true,
-                Margin = new Padding(0, 0, 30, 0)
-            });
-            accountHeader.Controls.Add(new Label
-            {
-                Text = "ACCOUNT",
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = AppColors.Gray700,
-                AutoSize = true
-            });
             var btnYourTask = CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight);
             btnYourTask.Click += BtnYourTask_Click;
             menuPanel.Controls.Add(btnYourTask);
@@ -331,29 +275,29 @@ namespace TimeFlow.Tasks
             var btnSubmitTask = CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight, Color.FromArgb(200, submitColor));
             btnSubmitTask.Click += BtnSubmitTask_Click;
             menuPanel.Controls.Add(btnSubmitTask);
+
             MonthCalendar monthCalendar = new MonthCalendar
             {
                 BackColor = Color.White,
                 ForeColor = AppColors.Gray700,
                 Font = FontRegular,
-                SelectionStart = new DateTime(2025, 11, 16),
-                SelectionEnd = new DateTime(2025, 11, 16),
+                SelectionStart = DateTime.Today,
+                SelectionEnd = DateTime.Today,
                 ShowTodayCircle = false,
                 TitleBackColor = Color.White,
                 TitleForeColor = AppColors.Gray800,
                 TrailingForeColor = AppColors.Gray300,
-                CalendarDimensions = new Size(1, 1)
+                CalendarDimensions = new Size(1, 1),
+                Width = 248,
+                Height = 180,
+                Margin = new Padding(0, 30, 0, 0)
             };
-
-            monthCalendar.Width = 248;
-            monthCalendar.Height = 180;
-            monthCalendar.Margin = new Padding(0, 30, 0, 0);
 
             menuPanel.Controls.Add(monthCalendar);
 
             return menuPanel;
         }
-        private ModernPanel _statusBadge;
+
         private Control CreateCenterContent()
         {
             Panel scrollContainer = new Panel
@@ -379,6 +323,7 @@ namespace TimeFlow.Tasks
 
             int centerContentWidth = 800;
 
+            // Header with title and status
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
                 Width = centerContentWidth,
@@ -393,12 +338,10 @@ namespace TimeFlow.Tasks
                 Margin = new Padding(0, 0, 0, 20),
                 BackColor = Color.Transparent
             };
-            headerLayout.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-            headerLayout.AutoSize = true;
 
             Label title = new Label
             {
-                Text = _currentTask.Name,
+                Text = _currentTask.Title,
                 Font = FontTitle,
                 ForeColor = AppColors.Gray800,
                 AutoSize = true,
@@ -407,13 +350,8 @@ namespace TimeFlow.Tasks
             };
             headerLayout.Controls.Add(title, 0, 0);
 
-            Color statusColor = _currentTask.Status switch
-            {
-                TaskState.Pending => AppColors.Yellow500,
-                TaskState.InProgress => AppColors.Blue500,
-                TaskState.Completed => AppColors.Green500,
-                _ => AppColors.Gray400
-            };
+            Color statusColor = GetStatusColor(_currentTask.Status);
+            
             _statusBadge = new ModernPanel
             {
                 Text = _currentTask.StatusText,
@@ -424,27 +362,32 @@ namespace TimeFlow.Tasks
                 Width = 130,
                 Height = 50,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.Right
+                Anchor = AnchorStyles.Right,
+                Margin = new Padding(10, 0, 0, 0)
             };
-            _statusBadge.Margin = new Padding(10, 0, 0, 0);
             headerLayout.Controls.Add(_statusBadge, 1, 0);
 
             contentPanel.Controls.Add(headerLayout);
 
-            Label description = new Label
+            // Description
+            if (!string.IsNullOrEmpty(_currentTask.Description))
             {
-                Text = _currentTask.Description,
-                Font = FontRegular,
-                ForeColor = AppColors.Gray600,
-                MaximumSize = new Size(centerContentWidth, 0),
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 20)
-            };
-            contentPanel.Controls.Add(description);
+                Label description = new Label
+                {
+                    Text = _currentTask.Description,
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray600,
+                    MaximumSize = new Size(centerContentWidth, 0),
+                    AutoSize = true,
+                    Margin = new Padding(0, 0, 0, 20)
+                };
+                contentPanel.Controls.Add(description);
+            }
 
+            // Comments section
             Label commentsTitle = new Label
             {
-                Text = "Comments",
+                Text = _currentTask.HasComments ? $"Comments ({_currentTask.Comments.Count})" : "Comments",
                 Font = FontTitle,
                 ForeColor = AppColors.Gray800,
                 AutoSize = true,
@@ -460,7 +403,7 @@ namespace TimeFlow.Tasks
             };
             contentPanel.Controls.Add(newCommentBox);
 
-            TimeFlow.UI.Components.CustomButton postButton = new TimeFlow.UI.Components.CustomButton
+            CustomButton postButton = new CustomButton
             {
                 Text = "Post",
                 BackColor = AppColors.Blue500,
@@ -476,23 +419,69 @@ namespace TimeFlow.Tasks
             postButton.Click += (s, e) => {
                 if (!string.IsNullOrWhiteSpace(newCommentBox.TextBoxText) && newCommentBox.TextBoxText != "Add a comment...")
                 {
-                    Services.TaskManager.AddComment(_currentTask.Id, "Current User", newCommentBox.TextBoxText);
-                    newCommentBox.TextBoxText = "Add a comment...";
-                    // Refresh to show new comment
-                    this.Controls.Clear();
-                    InitializeComponent();
+                    MessageBox.Show("Comment feature will be implemented soon!", "Info");
+                    // TODO: Implement add comment API
                 }
             };
             contentPanel.Controls.Add(postButton);
 
-            // Display existing comments from task data
-            foreach (var comment in _currentTask.Comments.OrderByDescending(c => c.CreatedDate))
+            // Display existing comments
+            if (_currentTask.HasComments)
             {
-                contentPanel.Controls.Add(CreateComment(comment.Username, comment.Content, comment.TimeAgo));
+                foreach (var comment in _currentTask.Comments.Take(10)) // ✅ Limit initial render
+                {
+                    contentPanel.Controls.Add(CreateComment(
+                        comment.DisplayName, 
+                        comment.Content, 
+                        comment.TimeAgo
+                    ));
+                }
+                
+                // Add "Load more" if needed
+                if (_currentTask.Comments.Count > 10)
+                {
+                    Label loadMoreLabel = new Label
+                    {
+                        Text = $"+ Load {_currentTask.Comments.Count - 10} more comments",
+                        Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                        ForeColor = AppColors.Blue500,
+                        Cursor = Cursors.Hand,
+                        AutoSize = true,
+                        Margin = new Padding(0, 10, 0, 0)
+                    };
+                    loadMoreLabel.Click += (s, e) => LoadMoreComments(contentPanel, 10);
+                    contentPanel.Controls.Add(loadMoreLabel);
+                }
+            }
+            else if (_isLoadingDetails)
+            {
+                // ✅ Show loading skeleton
+                Label loadingComments = new Label
+                {
+                    Text = "⏳ Loading comments...",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 10, 0, 0)
+                };
+                contentPanel.Controls.Add(loadingComments);
+            }
+            else
+            {
+                Label noComments = new Label
+                {
+                    Text = "No comments yet. Be the first to comment!",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 10, 0, 0)
+                };
+                contentPanel.Controls.Add(noComments);
             }
 
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentPanel.Controls.Add(spacer);
+            
             return scrollContainer;
         }
 
@@ -513,7 +502,6 @@ namespace TimeFlow.Tasks
 
             FlowLayoutPanel contentFlow = new FlowLayoutPanel
             {
-
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
@@ -522,25 +510,36 @@ namespace TimeFlow.Tasks
                 BackColor = Color.Transparent
             };
             mainSidebarPanel.Controls.Add(contentFlow);
-            if (_groupTaskDetails != null && _currentGroup != null)
+
+            // Group info (chỉ hiển thị nếu là group task)
+            if (_currentTask.IsGroupTask && _currentTask.HasAssignees)
             {
                 contentFlow.Controls.Add(new Label
                 {
-                    Text = $"Group: {_currentGroup.GroupName}",
+                    Text = $"Group Task",
                     Font = FontBold,
                     ForeColor = AppColors.Blue600,
                     AutoSize = true,
                     Margin = new Padding(0, 0, 0, 5)
                 });
 
+                string assigneeText = string.Join(", ", _currentTask.Assignees.Take(3));
+                if (_currentTask.Assignees.Count > 3)
+                {
+                    assigneeText += $" and {_currentTask.Assignees.Count - 3} more";
+                }
+
                 contentFlow.Controls.Add(new Label
                 {
-                    Text = $"Assigned to: {_groupTaskDetails.AssignedToName}",
+                    Text = $"Assigned to: {assigneeText}",
                     Font = FontRegular,
                     AutoSize = true,
+                    MaximumSize = new Size(contentWidth, 0),
                     Margin = new Padding(0, 0, 0, 15)
                 });
             }
+
+            // Details section
             Label detailsTitle = new Label
             {
                 Text = "Details",
@@ -566,25 +565,7 @@ namespace TimeFlow.Tasks
                 }
             };
 
-            Action<string, Control, int> AddDetailRowToTable = (label, control, row) =>
-            {
-                Label lbl = new Label
-                {
-                    Text = label,
-                    Font = FontRegular,
-                    ForeColor = AppColors.Gray500,
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    Margin = new Padding(0, 10, 0, 10)
-                };
-
-                control.Margin = new Padding(0, 10, 0, 10);
-                control.Anchor = AnchorStyles.Left | AnchorStyles.Top;
-
-                detailsContainer.Controls.Add(lbl, 0, row);
-                detailsContainer.Controls.Add(control, 1, row);
-            };
-
+            // Assignees
             FlowLayoutPanel assigneesValue = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.LeftToRight,
@@ -592,45 +573,47 @@ namespace TimeFlow.Tasks
                 AutoSize = true,
                 Margin = new Padding(0)
             };
-
-            assigneesValue.Controls.Add(new Label { Text = "🧑‍💻", Font = new Font("Segoe UI Emoji", 10F), AutoSize = true, Margin = new Padding(0, 0, 4, 0) });
-            string assigneeNames = _currentTask.Assignees.Count > 0
+            assigneesValue.Controls.Add(new Label { 
+                Text = "🧑‍💻", 
+                Font = new Font("Segoe UI Emoji", 10F), 
+                AutoSize = true, 
+                Margin = new Padding(0, 0, 4, 0) 
+            });
+            
+            string assigneeNames = _currentTask.HasAssignees
                 ? string.Join(", ", _currentTask.Assignees.Take(2))
                 : "Unassigned";
-            assigneesValue.Controls.Add(new Label { Text = assigneeNames, Font = FontRegular, ForeColor = AppColors.Gray800, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+            assigneesValue.Controls.Add(new Label { 
+                Text = assigneeNames, 
+                Font = FontRegular, 
+                ForeColor = AppColors.Gray800, 
+                AutoSize = true 
+            });
+            
             if (_currentTask.Assignees.Count > 2)
             {
-                assigneesValue.Controls.Add(new Label { Text = $"(+{_currentTask.Assignees.Count - 2})", Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft });
+                assigneesValue.Controls.Add(new Label { 
+                    Text = $"(+{_currentTask.Assignees.Count - 2})", 
+                    Font = FontRegular, 
+                    ForeColor = AppColors.Gray500, 
+                    AutoSize = true 
+                });
             }
+            AddDetailRow(detailsContainer, "Assignees", assigneesValue, 0);
 
-            AddDetailRowToTable("Assignees", assigneesValue, 0);
-
+            // Due Date
             Label dueDate = new Label
             {
                 Text = _currentTask.DueDateText,
                 Font = FontRegular,
                 ForeColor = AppColors.Gray800,
-                AutoSize = true,
-                TextAlign = ContentAlignment.MiddleLeft
+                AutoSize = true
             };
-            AddDetailRowToTable("Due Date", dueDate, 1);
+            AddDetailRow(detailsContainer, "Due Date", dueDate, 1);
 
-            FlowLayoutPanel priorityFlow = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.LeftToRight,
-                AutoSize = true,
-                Margin = new Padding(0)
-            };
-
-            Color priorityColor = _currentTask.Priority switch
-            {
-                TaskPriorityLevel.Low => AppColors.Green500,
-                TaskPriorityLevel.Medium => AppColors.Orange500,
-                TaskPriorityLevel.High => AppColors.Red600,
-                TaskPriorityLevel.Critical => AppColors.Red700,
-                _ => AppColors.Gray400
-            };
-
+            // Priority
+            Color priorityColor = GetPriorityColor(_currentTask.Priority);
+            
             ModernPanel priority = new ModernPanel
             {
                 Text = _currentTask.PriorityText,
@@ -642,9 +625,9 @@ namespace TimeFlow.Tasks
                 Height = 40,
                 TextAlign = ContentAlignment.MiddleCenter
             };
-            priorityFlow.Controls.Add(priority);
-            AddDetailRowToTable("Priority", priorityFlow, 2);
+            AddDetailRow(detailsContainer, "Priority", priority, 2);
 
+            // Progress
             FlowLayoutPanel progressValue = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.LeftToRight,
@@ -652,7 +635,7 @@ namespace TimeFlow.Tasks
                 AutoSize = true,
                 Margin = new Padding(0)
             };
-
+            
             ModernPanel progressPanel = new ModernPanel
             {
                 BackColor = AppColors.Gray200,
@@ -672,21 +655,22 @@ namespace TimeFlow.Tasks
             Label progressLabel = new Label
             {
                 Text = $"{_currentTask.Progress}%",
+//# warn: This is probably a bug. Please check if the label should have a specific font or if it can stay as is.
                 Font = FontRegular,
                 ForeColor = AppColors.Gray800,
                 Margin = new Padding(8, -5, 0, 0),
-                TextAlign = ContentAlignment.MiddleLeft,
                 AutoSize = true
             };
             progressValue.Controls.Add(progressPanel);
             progressValue.Controls.Add(progressLabel);
-            AddDetailRowToTable("Progress", progressValue, 3);
+            AddDetailRow(detailsContainer, "Progress", progressValue, 3);
 
             contentFlow.Controls.Add(detailsContainer);
 
+            // Activity section
             Label activityTitle = new Label
             {
-                Text = "Activity",
+                Text = _currentTask.HasActivities ? $"Activity ({_currentTask.Activities.Count})" : "Activity",
                 Font = FontBold,
                 ForeColor = AppColors.Gray800,
                 AutoSize = true,
@@ -694,18 +678,178 @@ namespace TimeFlow.Tasks
             };
             contentFlow.Controls.Add(activityTitle);
 
-            int activityLogWidth = contentWidth;
-
-            // Display activities from task data
-            foreach (var activity in _currentTask.Activities.OrderByDescending(a => a.CreatedDate))
+            // Display activities
+            if (_currentTask.HasActivities)
             {
-                contentFlow.Controls.Add(CreateActivityLog(activity.Description, activity.TimeAgo, activityLogWidth));
+                foreach (var activity in _currentTask.Activities.OrderByDescending(a => a.CreatedAt).Take(10))
+                {
+                    contentFlow.Controls.Add(CreateActivityLog(
+                        activity.Description, 
+                        activity.TimeAgo, 
+                        contentWidth
+                    ));
+                }
+
+                if (_currentTask.Activities.Count > 10)
+                {
+                    Label moreActivities = new Label
+                    {
+                        Text = $"+ {_currentTask.Activities.Count - 10} more activities",
+                        Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                        ForeColor = AppColors.Gray500,
+                        AutoSize = true,
+                        Margin = new Padding(0, 10, 0, 0)
+                    };
+                    contentFlow.Controls.Add(moreActivities);
+                }
+            }
+            else if (_isLoadingDetails)
+            {
+                // ✅ Show loading skeleton
+                Label loadingActivity = new Label
+                {
+                    Text = "⏳ Loading activities...",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true
+                };
+                contentFlow.Controls.Add(loadingActivity);
+            }
+            else
+            {
+                Label noActivity = new Label
+                {
+                    Text = "No activity yet.",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true
+                };
+                contentFlow.Controls.Add(noActivity);
             }
 
             Panel spacer = new Panel { Height = 50, Width = 1, BackColor = Color.Transparent };
             contentFlow.Controls.Add(spacer);
 
             return mainSidebarPanel;
+        }
+
+        // Helper Methods
+        private CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor = null)
+        {
+            return new CustomButton
+            {
+                Text = text,
+                BackColor = backColor,
+                ForeColor = foreColor,
+                HoverColor = hoverColor ?? AppColors.Blue600,
+                BorderRadius = 8,
+                Width = width,
+                Height = height,
+                Font = FontBold,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 0, 12)
+            };
+        }
+
+        private Control CreateComment(string user, string text, string time)
+        {
+            FlowLayoutPanel comment = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = true,
+                Width = 800,
+                Margin = new Padding(0, 0, 0, 16),
+                Padding = new Padding(12),
+                BackColor = AppColors.Gray50,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            FlowLayoutPanel header = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 4)
+            };
+            header.Controls.Add(new Label { Text = user, Font = FontBold, ForeColor = AppColors.Gray800, AutoSize = true, Margin = new Padding(0, 0, 8, 0) });
+            header.Controls.Add(new Label { Text = time, Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true });
+            comment.Controls.Add(header);
+
+            Label content = new Label
+            {
+                Text = text,
+                Font = FontRegular,
+                ForeColor = AppColors.Gray600,
+                MaximumSize = new Size(760, 0),
+                AutoSize = true
+            };
+            comment.Controls.Add(content);
+
+            return comment;
+        }
+
+        private Control CreateActivityLog(string activity, string time, int width)
+        {
+            FlowLayoutPanel logItem = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoSize = true,
+                Width = width,
+                Margin = new Padding(0, 0, 0, 12)
+            };
+
+            Label lblActivity = new Label
+            {
+                Text = activity,
+                Font = FontRegular,
+                ForeColor = AppColors.Gray600,
+                MaximumSize = new Size(width, 0),
+                AutoSize = true
+            };
+            Label lblTime = new Label
+            {
+                Text = time,
+                Font = new Font("Segoe UI", 8F, FontStyle.Regular),
+                ForeColor = AppColors.Gray400,
+                AutoSize = true
+            };
+
+            logItem.Controls.Add(lblActivity);
+            logItem.Controls.Add(lblTime);
+            return logItem;
+        }
+
+        private void AddDetailRow(TableLayoutPanel container, string label, Control control, int row)
+        {
+            Label lbl = new Label
+            {
+                Text = label,
+                Font = FontRegular,
+                ForeColor = AppColors.Gray500,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 10, 0, 10)
+            };
+
+            control.Margin = new Padding(0, 10, 0, 10);
+            control.Anchor = AnchorStyles.Left | AnchorStyles.Top;
+
+            container.Controls.Add(lbl, 0, row);
+            container.Controls.Add(control, 1, row);
+        }
+
+        private void CreateStatusSubMenu(ToolStripMenuItem statusMenu)
+        {
+            System.Array statusValues = System.Enum.GetValues(typeof(TimeFlow.Models.TaskStatus));
+            foreach (TimeFlow.Models.TaskStatus status in statusValues)
+            {
+                ToolStripMenuItem item = new ToolStripMenuItem(status.ToString());
+                if (_currentTask != null && status == _currentTask.Status) 
+                    item.Checked = true;
+                item.Click += (sender, e) => ChangeStatusItem_Click(status);
+                statusMenu.DropDownItems.Add(item);
+            }
         }
     }
 }

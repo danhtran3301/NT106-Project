@@ -15,17 +15,24 @@ namespace TimeFlowServer.ServerCore
         private readonly NetworkStream _stream;
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
+        private readonly TaskRepository _taskRepo;
+        private readonly CategoryRepository _categoryRepo;
+        private readonly CommentRepository _commentRepo;
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
         
         private string? _currentUsername;
+        private int? _currentUserId;
         private readonly string _clientId;
 
         public ClientHandler(
             TcpClient client,
             UserRepository userRepo,
             ActivityLogRepository activityLogRepo,
+            TaskRepository taskRepo,
+            CategoryRepository categoryRepo,
+            CommentRepository commentRepo,
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -34,6 +41,9 @@ namespace TimeFlowServer.ServerCore
             _stream = client.GetStream();
             _userRepo = userRepo;
             _activityLogRepo = activityLogRepo;
+            _taskRepo = taskRepo;
+            _categoryRepo = categoryRepo;
+            _commentRepo = commentRepo;
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -103,6 +113,39 @@ namespace TimeFlowServer.ServerCore
                         await HandleChatAsync(root);
                         break;
 
+                    // Task operations
+                    case "get_tasks":
+                        await HandleGetTasksAsync(root);
+                        break;
+
+                    case "get_task_detail":
+                        await HandleGetTaskDetailAsync(root);
+                        break;
+
+                    case "get_task_detail_full":
+                        await HandleGetTaskDetailFullAsync(root);
+                        break;
+
+                    case "create_task":
+                        await HandleCreateTaskAsync(root);
+                        break;
+
+                    case "update_task":
+                        await HandleUpdateTaskAsync(root);
+                        break;
+
+                    case "delete_task":
+                        await HandleDeleteTaskAsync(root);
+                        break;
+
+                    case "update_task_status":
+                        await HandleUpdateTaskStatusAsync(root);
+                        break;
+
+                    case "get_categories":
+                        await HandleGetCategoriesAsync(root);
+                        break;
+
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");
                         break;
@@ -134,6 +177,7 @@ namespace TimeFlowServer.ServerCore
                 if (user != null && user.IsActive)
                 {
                     _currentUsername = user.Username;
+                    _currentUserId = user.UserId;
 
                     // Cap nhat last login
                     _userRepo.UpdateLastLogin(user.UserId);
@@ -362,6 +406,574 @@ namespace TimeFlowServer.ServerCore
             {
                 Log.Error(ex, $"[{_clientId}] Chat error");
             }
+        }
+
+        // ================== TASK HANDLERS ==================
+
+        private async Task HandleGetTasksAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                // Lấy user info từ username
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int userId = user.UserId;
+
+                Log.Information($"[{_clientId}] Get tasks for user: {userId} ({username})");
+
+                var tasks = _taskRepo.GetByUserId(userId);
+
+                var response = new
+                {
+                    status = "success",
+                    data = tasks.Select(t => new
+                    {
+                        taskId = t.TaskId,
+                        title = t.Title,
+                        description = t.Description,
+                        dueDate = t.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)t.Priority,
+                        status = (int)t.Status,
+                        categoryId = t.CategoryId,
+                        isGroupTask = t.IsGroupTask,
+                        createdAt = t.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                        updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                    })
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {tasks.Count} tasks for {username}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting tasks");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleGetTaskDetailAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Get task detail: {taskId}");
+
+                var task = _taskRepo.GetById(taskId);
+
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                var response = new
+                {
+                    status = "success",
+                    data = new
+                    {
+                        taskId = task.TaskId,
+                        title = task.Title,
+                        description = task.Description,
+                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)task.Priority,
+                        status = (int)task.Status,
+                        categoryId = task.CategoryId,
+                        isGroupTask = task.IsGroupTask,
+                        createdBy = task.CreatedBy,
+                        completedAt = task.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        createdAt = task.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                        updatedAt = task.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                    }
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned task detail for TaskId={taskId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting task detail");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleCreateTaskAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
+                
+                var newTask = new TaskItem
+                {
+                    Title = data.GetProperty("title").GetString() ?? "",
+                    Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : null,
+                    DueDate = data.TryGetProperty("dueDate", out var dueDate) && !string.IsNullOrEmpty(dueDate.GetString()) 
+                        ? DateTime.Parse(dueDate.GetString()!) : null,
+                    Priority = (TaskPriority)data.GetProperty("priority").GetInt32(),
+                    Status = data.TryGetProperty("status", out var statusProp) ? (TimeFlow.Models.TaskStatus)statusProp.GetInt32() : TimeFlow.Models.TaskStatus.Pending,
+                    CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : null,
+                    CreatedBy = user.UserId,
+                    IsGroupTask = data.TryGetProperty("isGroupTask", out var isGroup) && isGroup.GetBoolean()
+                };
+
+                Log.Information($"[{_clientId}] Creating task: {newTask.Title} for user {username}");
+
+                int taskId = _taskRepo.Create(newTask);
+
+                if (taskId > 0)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", taskId = taskId }));
+                    Log.Information($"[{_clientId}] ✓ Task created with ID={taskId}");
+
+                    // Log activity
+                    _activityLogRepo.LogActivity(user.UserId, taskId, "CreateTask", $"Created task: {newTask.Title}");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to create task" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error creating task");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleUpdateTaskAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
+                int taskId = data.GetProperty("taskId").GetInt32();
+
+                Log.Information($"[{_clientId}] Updating task: {taskId}");
+
+                var existingTask = _taskRepo.GetById(taskId);
+                if (existingTask == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (existingTask.CreatedBy != user.UserId && !existingTask.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                // Update fields
+                existingTask.Title = data.GetProperty("title").GetString() ?? existingTask.Title;
+                existingTask.Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : existingTask.Description;
+                existingTask.DueDate = data.TryGetProperty("dueDate", out var dueDate) && !string.IsNullOrEmpty(dueDate.GetString())
+                    ? DateTime.Parse(dueDate.GetString()!) : existingTask.DueDate;
+                existingTask.Priority = (TaskPriority)data.GetProperty("priority").GetInt32();
+                existingTask.Status = (TimeFlow.Models.TaskStatus)data.GetProperty("status").GetInt32();
+                existingTask.CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : existingTask.CategoryId;
+
+                bool success = _taskRepo.Update(existingTask);
+
+                if (success)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                    Log.Information($"[{_clientId}] ✓ Task updated: {taskId}");
+
+                    // Log activity
+                    _activityLogRepo.LogActivity(user.UserId, taskId, "UpdateTask", $"Updated task: {existingTask.Title}");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update task" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error updating task");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleDeleteTaskAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Deleting task: {taskId}");
+
+                var task = _taskRepo.GetById(taskId);
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                bool success = _taskRepo.Delete(taskId);
+
+                if (success)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                    Log.Information($"[{_clientId}] ✓ Task deleted: {taskId}");
+
+                    // Log activity
+                    _activityLogRepo.LogActivity(user.UserId, null, "DeleteTask", $"Deleted task: {task.Title}");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to delete task" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error deleting task");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleUpdateTaskStatusAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                int statusValue = root.GetProperty("status").GetInt32();
+                var newStatus = (TimeFlow.Models.TaskStatus)statusValue;
+
+                Log.Information($"[{_clientId}] Updating task status: TaskId={taskId}, Status={newStatus}");
+
+                var task = _taskRepo.GetById(taskId);
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                bool success = _taskRepo.UpdateStatus(taskId, newStatus);
+
+                if (success)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                    Log.Information($"[{_clientId}] ✓ Task status updated: {taskId} -> {newStatus}");
+
+                    // Log activity
+                    _activityLogRepo.LogActivity(user.UserId, taskId, "UpdateTaskStatus", 
+                        $"Changed task status to {newStatus}");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update status" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error updating task status");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleGetCategoriesAsync(JsonElement root)
+        {
+            try
+            {
+                Log.Information($"[{_clientId}] Get categories");
+
+                var categories = _categoryRepo.GetAll();
+
+                var response = new
+                {
+                    status = "success",
+                    data = categories.Select(c => new
+                    {
+                        categoryId = c.CategoryId,
+                        categoryName = c.CategoryName,
+                        color = c.Color,
+                        iconName = c.IconName,
+                        isDefault = c.IsDefault
+                    })
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {categories.Count} categories");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting categories");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleGetTaskDetailFullAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Get full task detail: {taskId}");
+
+                var task = _taskRepo.GetById(taskId);
+
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                // Get category info
+                var category = task.CategoryId.HasValue ? _categoryRepo.GetById(task.CategoryId.Value) : null;
+
+                // Get comments
+                var comments = _commentRepo.GetByTaskId(taskId);
+
+                // Get activities
+                var activities = _activityLogRepo.GetByTaskId(taskId);
+
+                // Get assignees (nếu là group task)
+                var assignees = new List<string>();
+                if (task.IsGroupTask)
+                {
+                    assignees = GetAssigneeNames(taskId);
+                }
+
+                // Calculate progress based on status
+                int progress = task.Status switch
+                {
+                    TimeFlow.Models.TaskStatus.Pending => 0,
+                    TimeFlow.Models.TaskStatus.InProgress => 50,
+                    TimeFlow.Models.TaskStatus.Completed => 100,
+                    TimeFlow.Models.TaskStatus.Cancelled => 0,
+                    _ => 0
+                };
+
+                var response = new
+                {
+                    status = "success",
+                    data = new
+                    {
+                        // Basic task info
+                        taskId = task.TaskId,
+                        title = task.Title,
+                        description = task.Description,
+                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)task.Priority,
+                        status = (int)task.Status,
+                        isGroupTask = task.IsGroupTask,
+                        createdBy = task.CreatedBy,
+                        completedAt = task.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        createdAt = task.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                        updatedAt = task.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        
+                        // Extended info
+                        categoryName = category?.CategoryName ?? "Other",
+                        categoryColor = category?.Color ?? "#6B7280",
+                        assignees = assignees,
+                        progress = progress,
+                        
+                        // Comments
+                        comments = comments.Select(c => new
+                        {
+                            commentId = c.CommentId,
+                            userId = c.UserId,
+                            username = c.Username,
+                            fullName = c.FullName,
+                            content = c.CommentText,
+                            createdAt = c.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                            isEdited = c.IsEdited
+                        }),
+                        
+                        // Activities
+                        activities = activities.Select(a => new
+                        {
+                            logId = a.LogId,
+                            userId = a.UserId,
+                            activityType = a.ActivityType,
+                            description = a.ActivityDescription,
+                            createdAt = a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                    }
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned full task detail for TaskId={taskId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting full task detail");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private List<string> GetAssigneeNames(int taskId)
+        {
+            var assignees = new List<string>();
+            
+            try
+            {
+                using (var conn = new Microsoft.Data.SqlClient.SqlConnection(TimeFlow.Data.Configuration.DbConfig.GetConnectionString()))
+                {
+                    conn.Open();
+                    var query = @"
+                        SELECT u.Username, u.FullName
+                        FROM GroupTasks gt
+                        INNER JOIN Users u ON gt.AssignedTo = u.UserId
+                        WHERE gt.TaskId = @TaskId AND gt.AssignedTo IS NOT NULL
+                    ";
+                    
+                    using (var cmd = new Microsoft.Data.SqlClient.SqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@TaskId", taskId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string fullName = reader.IsDBNull(1) ? null : reader.GetString(1);
+                                string username = reader.GetString(0);
+                                assignees.Add(!string.IsNullOrEmpty(fullName) ? fullName : username);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to get assignee names");
+            }
+            
+            return assignees;
         }
 
         private async Task SendResponseAsync(string response)

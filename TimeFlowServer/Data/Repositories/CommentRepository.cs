@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
@@ -43,9 +43,21 @@ namespace TimeFlow.Data.Repositories
         // Lay tat ca comments cua task
         public List<Comment> GetByTaskId(int taskId)
         {
-            var query = @"SELECT * FROM Comments 
-                         WHERE TaskId = @taskId
-                         ORDER BY CreatedAt ASC";
+            var query = @"
+                SELECT 
+                    c.CommentId,
+                    c.TaskId,
+                    c.UserId,
+                    c.CommentText,
+                    c.CreatedAt,
+                    c.UpdatedAt,
+                    c.IsEdited,
+                    u.Username,
+                    u.FullName
+                FROM Comments c
+                INNER JOIN Users u ON c.UserId = u.UserId
+                WHERE c.TaskId = @taskId
+                ORDER BY c.CreatedAt ASC";
             
             var parameters = CreateParameters(("@taskId", taskId));
             var rows = GetRows(query, parameters);
@@ -53,7 +65,10 @@ namespace TimeFlow.Data.Repositories
             var comments = new List<Comment>();
             foreach (DataRow row in rows)
             {
-                comments.Add(MapToComment(row));
+                var comment = MapToComment(row);
+                comment.Username = GetValue<string>(row, "Username", string.Empty);
+                comment.FullName = row.IsNull("FullName") ? null : row["FullName"].ToString();
+                comments.Add(comment);
             }
             return comments;
         }
