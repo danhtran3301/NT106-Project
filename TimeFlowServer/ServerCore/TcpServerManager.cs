@@ -27,10 +27,11 @@ namespace TimeFlowServer.ServerCore
         private readonly object _clientsLock = new object();
         private readonly MessageRepository _messageRepo;
 
-        public TcpServerManager(string connectionString, int port)
+        public TcpServerManager(string connectionString, int port, string secretKey)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _port = port;
+            _jwtManager = new JwtManager(secretKey);
             _cancellationTokenSource = new CancellationTokenSource();
             _onlineClients = new Dictionary<string, TcpClient>();
 
@@ -42,8 +43,6 @@ namespace TimeFlowServer.ServerCore
             // Khoi tao JWT manager (lay secret tu config)
             _jwtManager = new JwtManager("your_super_secret_jwt_key_change_in_production_minimum_32_characters_long_for_security");
             _messageRepo = new MessageRepository(dbHelper.ToString());
-
-            _jwtManager = new JwtManager("...");
         }
 
         // Khoi dong TCP server

@@ -15,12 +15,6 @@ namespace TimeFlow.Server
 {
     public partial class FormTCPServer : Form
     {
-        public FormTCPServer()
-        {
-            InitializeComponent();
-            _messageRepo = new MessageRepository(connectionString);
-        }
-
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
         private readonly MessageRepository _messageRepo;
@@ -31,17 +25,21 @@ namespace TimeFlow.Server
         private static object _lock = new object();
 
         // Chuỗi kết nối Database
-        private string connectionString = "Server=localhost,1433;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;"; 
+        private string connectionString = "Server=localhost,1433;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;";
+
         // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
         private static readonly Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
 
+        // --- CONSTRUCTOR DUY NHẤT (Đã gộp) ---
         public FormTCPServer()
         {
             InitializeComponent();
-            
-            // Khoi tao Repositories
+
+            // Khởi tạo tất cả Repositories tại đây
+            // Lưu ý: Nếu UserRepository cần connectionString, bạn hãy sửa thành new UserRepository(connectionString)
             _userRepo = new UserRepository();
             _activityLogRepo = new ActivityLogRepository();
+            _messageRepo = new MessageRepository(connectionString);
         }
 
         // --- CAC CLASS DU LIEU (DTO) ---
@@ -60,7 +58,8 @@ namespace TimeFlow.Server
             try
             {
                 AppendLog("Testing database connection...");
-                var testDb = new Data.DatabaseHelper();
+                // Cần đảm bảo DatabaseHelper nhận chuỗi kết nối đúng
+                var testDb = new Data.DatabaseHelper(connectionString);
                 if (testDb.TestConnection())
                 {
                     AppendLog("✓ Database connection successful!");
@@ -463,14 +462,14 @@ namespace TimeFlow.Server
                 };
 
                 int userId = _userRepo.Create(newUser);
-                
+
                 if (userId > 0)
                 {
                     AppendLog($"[DEBUG] ✓ User registered successfully: {username} (ID: {userId})");
-                    
+
                     // Log activity
                     _activityLogRepo.LogActivity(userId, null, "Register", $"New user registered: {username}");
-                    
+
                     return true;
                 }
                 else
@@ -481,14 +480,8 @@ namespace TimeFlow.Server
             }
             catch (Exception ex)
             {
-                // Your logic to get email by username should be here
-                // For now, return an empty string or a valid email string
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
                 AppendLog("Register Error: " + ex.Message);
-                return string.Empty;
+                return false;
             }
         }
 

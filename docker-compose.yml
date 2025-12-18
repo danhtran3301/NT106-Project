@@ -1,7 +1,7 @@
 ﻿version: '3.8'
 
 services:
-  timeflow-db:
+  timeflow-database:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: timeflow-database
     hostname: timeflow-db
@@ -20,7 +20,7 @@ services:
     image: mcr.microsoft.com/mssql-tools
     container_name: timeflow-db-init
     depends_on:
-      - timeflow-db
+      - timeflow-database
     networks:
       - timeflow-network
     volumes:
@@ -43,13 +43,13 @@ services:
       dockerfile: TimeFlowServer/Dockerfile
     container_name: timeflow-server
     depends_on:
-      timeflow-db:
+      timeflow-database:
         condition: service_started
       timeflow-db-init:
         condition: service_completed_successfully
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
-      - ConnectionStrings__Default=Server=timeflow-db;Database=TimeFlowDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__Default=Server=timeflow-database;Database=TimeFlowDB;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
       - ServerSettings__Port=1010
       - ServerSettings__MaxConnections=100
     ports:

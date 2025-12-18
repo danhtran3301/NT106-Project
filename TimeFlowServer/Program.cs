@@ -36,6 +36,16 @@ namespace TimeFlowServer
                 var port = configuration.GetValue<int>("ServerSettings:Port", 1010);
                 var maxConnections = configuration.GetValue<int>("ServerSettings:MaxConnections", 100);
 
+                // --- THÊM ĐOẠN NÀY ĐỂ LẤY KEY TỪ APPSETTINGS ---
+                var jwtKey = configuration.GetValue<string>("ServerSettings:JwtSecretKey");
+
+                // Kiểm tra an toàn
+                if (string.IsNullOrEmpty(jwtKey) || jwtKey.Length < 32)
+                {
+                    // Fallback nếu quên config hoặc key quá ngắn
+                    Log.Warning("JWT Key trong config bị thiếu hoặc quá ngắn. Đang sử dụng Key mặc định an toàn.");
+                    jwtKey = "Key_Mac_Dinh_Nay_Phai_Dai_Hon_32_Ky_Tu_De_Tranh_Bi_Crash_Server_Khi_Khoi_Tao_JWT_123456";
+                }
                 if (string.IsNullOrEmpty(connectionString))
                 {
                     Log.Fatal("Connection string is not configured!");
@@ -45,9 +55,10 @@ namespace TimeFlowServer
                 Log.Information($"Server Port: {port}");
                 Log.Information($"Max Connections: {maxConnections}");
                 Log.Information($"Database: {GetDatabaseInfo(connectionString)}");
+                Log.Information($"[DEBUG] KEY HIEN TAI: '{jwtKey}' - DO DAI: {jwtKey?.Length ?? 0}");
 
                 // Initialize and start server
-                var server = new TcpServerManager(connectionString, port);
+                var server = new TcpServerManager(connectionString, port, jwtKey);
 
                 // Setup graceful shutdown
                 var cancellationTokenSource = new CancellationTokenSource();
