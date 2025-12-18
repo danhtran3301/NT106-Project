@@ -72,6 +72,7 @@
             passwordTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
             passwordTxtbox.Location = new Point(381, 393);
             passwordTxtbox.Name = "passwordTxtbox";
+            this.passwordTxtbox.UseSystemPasswordChar = true;
             passwordTxtbox.Size = new Size(301, 38);
             passwordTxtbox.TabIndex = 7;
             // 
@@ -80,8 +81,25 @@
             confirmTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
             confirmTxtbox.Location = new Point(381, 501);
             confirmTxtbox.Name = "confirmTxtbox";
+            this.confirmTxtbox.UseSystemPasswordChar = true;
             confirmTxtbox.Size = new Size(301, 38);
             confirmTxtbox.TabIndex = 8;
+            //
+            // checkShowPassword
+            //
+            this.checkShowPassword = new CheckBox();
+            this.checkShowPassword.AutoSize = true;
+            this.checkShowPassword.BackColor = SystemColors.HotTrack; 
+            this.checkShowPassword.ForeColor = Color.White;
+            this.checkShowPassword.Location = new Point(381, 545); 
+            this.checkShowPassword.Name = "checkShowPassword";
+            this.checkShowPassword.Size = new Size(132, 24);
+            this.checkShowPassword.TabIndex = 16;
+            this.checkShowPassword.Text = "Hiện mật khẩu";
+            this.checkShowPassword.UseVisualStyleBackColor = false;
+            this.checkShowPassword.CheckedChanged += new EventHandler(this.checkShowPassword_CheckedChanged);
+            this.Controls.Add(checkShowPassword);
+            this.checkShowPassword.BringToFront();
             // 
             // btnSignup
             // 
@@ -252,6 +270,7 @@
         private TextBox emailTextbox;
         private TextBox passwordTxtbox;
         private TextBox confirmTxtbox;
+        private CheckBox checkShowPassword;
         private Button btnSignup;
         private Button btnLogin;
         private Label label6;

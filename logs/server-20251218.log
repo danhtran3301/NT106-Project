@@ -1,0 +1,1116 @@
+[2025-12-18 13:42:58.913 +07:00 INF] === TimeFlow Server Starting ===
+[2025-12-18 13:42:59.029 +07:00 INF] Environment: Docker
+[2025-12-18 13:42:59.031 +07:00 INF] Machine Name: f88fd99b4019
+[2025-12-18 13:42:59.032 +07:00 INF] OS: Unix 6.6.87.2
+[2025-12-18 13:42:59.034 +07:00 INF] .NET Version: 8.0.22
+[2025-12-18 13:42:59.035 +07:00 INF] Working Directory: /app
+[2025-12-18 13:42:59.052 +07:00 INF] Server Port: 1010
+[2025-12-18 13:42:59.053 +07:00 INF] Max Connections: 100
+[2025-12-18 13:42:59.087 +07:00 INF] Database: timeflow-db/TimeFlowDB
+[2025-12-18 13:42:59.096 +07:00 INF] Testing database connection...
+[2025-12-18 13:42:59.862 +07:00 INF] ✓ Database connection successful!
+[2025-12-18 13:42:59.864 +07:00 INF] ✓ Connection: timeflow-db/TimeFlowDB
+[2025-12-18 13:42:59.915 +07:00 INF] ✓ Users table accessible with 3 users
+[2025-12-18 13:42:59.918 +07:00 INF] ✓ Server started successfully on port 1010
+[2025-12-18 13:42:59.919 +07:00 INF] ✓ Listening on all network interfaces (0.0.0.0:1010)
+[2025-12-18 13:42:59.920 +07:00 INF] Waiting for client connections...
+[2025-12-18 13:43:03.420 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49456
+[2025-12-18 13:43:03.430 +07:00 INF] [127.0.0.1:49456] Client disconnected (zero bytes)
+[2025-12-18 13:43:03.434 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49456 disconnected
+[2025-12-18 13:43:33.689 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45080
+[2025-12-18 13:43:33.692 +07:00 INF] [127.0.0.1:45080] Client disconnected (zero bytes)
+[2025-12-18 13:43:33.694 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45080 disconnected
+[2025-12-18 13:43:51.485 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:48164
+[2025-12-18 13:43:51.494 +07:00 INF] [172.18.0.1:48164] Register attempt for user: thi12345
+[2025-12-18 13:43:51.586 +07:00 INF] [172.18.0.1:48164] ✓ User 'thi12345' registered successfully (ID: 4)
+[2025-12-18 13:43:51.599 +07:00 INF] [172.18.0.1:48164] Client disconnected (zero bytes)
+[2025-12-18 13:43:51.603 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:48164 disconnected
+[2025-12-18 13:43:56.660 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:35720
+[2025-12-18 13:43:56.717 +07:00 WRN] [172.18.0.1:35720] ✗ Auto-login failed: Invalid token
+[2025-12-18 13:43:56.725 +07:00 INF] [172.18.0.1:35720] Client disconnected (zero bytes)
+[2025-12-18 13:43:56.727 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:35720 disconnected
+[2025-12-18 13:44:03.813 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53616
+[2025-12-18 13:44:03.815 +07:00 INF] [127.0.0.1:53616] Client disconnected (zero bytes)
+[2025-12-18 13:44:03.816 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53616 disconnected
+[2025-12-18 13:44:33.977 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45658
+[2025-12-18 13:44:33.981 +07:00 INF] [127.0.0.1:45658] Client disconnected (zero bytes)
+[2025-12-18 13:44:33.984 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45658 disconnected
+[2025-12-18 13:45:04.224 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59468
+[2025-12-18 13:45:04.226 +07:00 INF] [127.0.0.1:59468] Client disconnected (zero bytes)
+[2025-12-18 13:45:04.227 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59468 disconnected
+[2025-12-18 13:45:33.221 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36244
+[2025-12-18 13:45:33.222 +07:00 INF] [127.0.0.1:36244] Client disconnected (zero bytes)
+[2025-12-18 13:45:33.224 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36244 disconnected
+[2025-12-18 13:46:00.598 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:45292
+[2025-12-18 13:46:00.599 +07:00 INF] [172.18.0.1:45292] Register attempt for user: thi12345
+[2025-12-18 13:46:00.602 +07:00 WRN] [172.18.0.1:45292] ✗ Registration failed: Username or email already exists
+[2025-12-18 13:46:00.605 +07:00 INF] [172.18.0.1:45292] Client disconnected (zero bytes)
+[2025-12-18 13:46:00.606 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:45292 disconnected
+[2025-12-18 13:46:02.670 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53464
+[2025-12-18 13:46:02.673 +07:00 INF] [127.0.0.1:53464] Client disconnected (zero bytes)
+[2025-12-18 13:46:02.679 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53464 disconnected
+[2025-12-18 13:46:16.494 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:50026
+[2025-12-18 13:46:16.499 +07:00 INF] [172.18.0.1:50026] Login attempt for user: thi12345
+[2025-12-18 13:46:16.562 +07:00 WRN] [172.18.0.1:50026] ✗ Login failed for user: thi12345
+[2025-12-18 13:46:16.569 +07:00 INF] [172.18.0.1:50026] Client disconnected (zero bytes)
+[2025-12-18 13:46:16.570 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:50026 disconnected
+[2025-12-18 13:46:32.681 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60986
+[2025-12-18 13:46:32.683 +07:00 INF] [127.0.0.1:60986] Client disconnected (zero bytes)
+[2025-12-18 13:46:32.688 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60986 disconnected
+[2025-12-18 13:46:38.495 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:49530
+[2025-12-18 13:46:38.497 +07:00 INF] [172.18.0.1:49530] Register attempt for user: thi2506
+[2025-12-18 13:46:38.551 +07:00 INF] [172.18.0.1:49530] ✓ User 'thi2506' registered successfully (ID: 5)
+[2025-12-18 13:46:38.560 +07:00 INF] [172.18.0.1:49530] Client disconnected (zero bytes)
+[2025-12-18 13:46:38.561 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:49530 disconnected
+[2025-12-18 13:46:45.982 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:47922
+[2025-12-18 13:46:45.983 +07:00 INF] [172.18.0.1:47922] Login attempt for user: thi2506
+[2025-12-18 13:46:46.049 +07:00 INF] [172.18.0.1:47922] ✓ User 'thi2506' logged in successfully
+[2025-12-18 13:46:46.059 +07:00 INF] [172.18.0.1:47922] Client disconnected (zero bytes)
+[2025-12-18 13:46:46.061 +07:00 INF] [172.18.0.1:47922] User 'thi2506' removed from online list
+[2025-12-18 13:46:46.078 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:47922 disconnected
+[2025-12-18 13:47:02.790 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55656
+[2025-12-18 13:47:02.791 +07:00 INF] [127.0.0.1:55656] Client disconnected (zero bytes)
+[2025-12-18 13:47:02.792 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55656 disconnected
+[2025-12-18 13:47:24.231 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:49286
+[2025-12-18 13:47:24.267 +07:00 INF] [172.18.0.1:49286] Get tasks for user: 5 (thi2506)
+[2025-12-18 13:47:24.314 +07:00 INF] [172.18.0.1:49286] ✓ Returned 0 tasks for thi2506
+[2025-12-18 13:47:24.468 +07:00 INF] [172.18.0.1:49286] Client disconnected (zero bytes)
+[2025-12-18 13:47:24.470 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:49286 disconnected
+[2025-12-18 13:47:32.912 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57636
+[2025-12-18 13:47:32.914 +07:00 INF] [127.0.0.1:57636] Client disconnected (zero bytes)
+[2025-12-18 13:47:32.920 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57636 disconnected
+[2025-12-18 13:47:57.333 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:39636
+[2025-12-18 13:47:57.576 +07:00 INF] [172.18.0.1:39636] Get tasks for user: 5 (thi2506)
+[2025-12-18 13:47:57.580 +07:00 INF] [172.18.0.1:39636] ✓ Returned 0 tasks for thi2506
+[2025-12-18 13:47:57.592 +07:00 INF] [172.18.0.1:39636] Client disconnected (zero bytes)
+[2025-12-18 13:47:57.594 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:39636 disconnected
+[2025-12-18 13:48:03.014 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58490
+[2025-12-18 13:48:03.015 +07:00 INF] [127.0.0.1:58490] Client disconnected (zero bytes)
+[2025-12-18 13:48:03.016 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58490 disconnected
+[2025-12-18 13:48:33.163 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50902
+[2025-12-18 13:48:33.165 +07:00 INF] [127.0.0.1:50902] Client disconnected (zero bytes)
+[2025-12-18 13:48:33.167 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50902 disconnected
+[2025-12-18 13:49:03.249 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51880
+[2025-12-18 13:49:03.250 +07:00 INF] [127.0.0.1:51880] Client disconnected (zero bytes)
+[2025-12-18 13:49:03.253 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51880 disconnected
+[2025-12-18 13:49:33.355 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33188
+[2025-12-18 13:49:33.356 +07:00 INF] [127.0.0.1:33188] Client disconnected (zero bytes)
+[2025-12-18 13:49:33.357 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33188 disconnected
+[2025-12-18 13:50:03.473 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49020
+[2025-12-18 13:50:03.474 +07:00 INF] [127.0.0.1:49020] Client disconnected (zero bytes)
+[2025-12-18 13:50:03.476 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49020 disconnected
+[2025-12-18 13:50:33.640 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46122
+[2025-12-18 13:50:33.641 +07:00 INF] [127.0.0.1:46122] Client disconnected (zero bytes)
+[2025-12-18 13:50:33.643 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46122 disconnected
+[2025-12-18 13:51:03.769 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35270
+[2025-12-18 13:51:03.771 +07:00 INF] [127.0.0.1:35270] Client disconnected (zero bytes)
+[2025-12-18 13:51:03.776 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35270 disconnected
+[2025-12-18 13:51:33.901 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:41822
+[2025-12-18 13:51:33.902 +07:00 INF] [127.0.0.1:41822] Client disconnected (zero bytes)
+[2025-12-18 13:51:33.904 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:41822 disconnected
+[2025-12-18 13:52:03.996 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42836
+[2025-12-18 13:52:03.999 +07:00 INF] [127.0.0.1:42836] Client disconnected (zero bytes)
+[2025-12-18 13:52:04.000 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42836 disconnected
+[2025-12-18 13:52:34.105 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52382
+[2025-12-18 13:52:34.107 +07:00 INF] [127.0.0.1:52382] Client disconnected (zero bytes)
+[2025-12-18 13:52:34.109 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52382 disconnected
+[2025-12-18 13:53:04.276 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54086
+[2025-12-18 13:53:04.279 +07:00 INF] [127.0.0.1:54086] Client disconnected (zero bytes)
+[2025-12-18 13:53:04.280 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54086 disconnected
+[2025-12-18 13:53:34.389 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52880
+[2025-12-18 13:53:34.390 +07:00 INF] [127.0.0.1:52880] Client disconnected (zero bytes)
+[2025-12-18 13:53:34.391 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52880 disconnected
+[2025-12-18 13:54:04.358 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:37920
+[2025-12-18 13:54:04.359 +07:00 INF] [127.0.0.1:37920] Client disconnected (zero bytes)
+[2025-12-18 13:54:04.361 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:37920 disconnected
+[2025-12-18 13:54:34.458 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60552
+[2025-12-18 13:54:34.460 +07:00 INF] [127.0.0.1:60552] Client disconnected (zero bytes)
+[2025-12-18 13:54:34.461 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60552 disconnected
+[2025-12-18 13:55:04.581 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54100
+[2025-12-18 13:55:04.582 +07:00 INF] [127.0.0.1:54100] Client disconnected (zero bytes)
+[2025-12-18 13:55:04.583 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54100 disconnected
+[2025-12-18 13:55:34.704 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36614
+[2025-12-18 13:55:34.705 +07:00 INF] [127.0.0.1:36614] Client disconnected (zero bytes)
+[2025-12-18 13:55:34.706 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36614 disconnected
+[2025-12-18 13:56:04.841 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44492
+[2025-12-18 13:56:04.842 +07:00 INF] [127.0.0.1:44492] Client disconnected (zero bytes)
+[2025-12-18 13:56:04.846 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44492 disconnected
+[2025-12-18 13:56:35.000 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49242
+[2025-12-18 13:56:35.002 +07:00 INF] [127.0.0.1:49242] Client disconnected (zero bytes)
+[2025-12-18 13:56:35.003 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49242 disconnected
+[2025-12-18 13:57:04.166 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58156
+[2025-12-18 13:57:04.167 +07:00 INF] [127.0.0.1:58156] Client disconnected (zero bytes)
+[2025-12-18 13:57:04.168 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58156 disconnected
+[2025-12-18 13:57:36.461 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46840
+[2025-12-18 13:57:36.463 +07:00 INF] [127.0.0.1:46840] Client disconnected (zero bytes)
+[2025-12-18 13:57:36.463 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46840 disconnected
+[2025-12-18 13:58:06.451 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52148
+[2025-12-18 13:58:06.452 +07:00 INF] [127.0.0.1:52148] Client disconnected (zero bytes)
+[2025-12-18 13:58:06.453 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52148 disconnected
+[2025-12-18 13:58:36.526 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42974
+[2025-12-18 13:58:36.528 +07:00 INF] [127.0.0.1:42974] Client disconnected (zero bytes)
+[2025-12-18 13:58:36.529 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42974 disconnected
+[2025-12-18 13:59:07.496 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34404
+[2025-12-18 13:59:07.498 +07:00 INF] [127.0.0.1:34404] Client disconnected (zero bytes)
+[2025-12-18 13:59:07.500 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34404 disconnected
+[2025-12-18 13:59:38.350 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44720
+[2025-12-18 13:59:38.352 +07:00 INF] [127.0.0.1:44720] Client disconnected (zero bytes)
+[2025-12-18 13:59:38.353 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44720 disconnected
+[2025-12-18 14:00:08.346 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34342
+[2025-12-18 14:00:08.347 +07:00 INF] [127.0.0.1:34342] Client disconnected (zero bytes)
+[2025-12-18 14:00:08.347 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34342 disconnected
+[2025-12-18 14:00:39.885 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36860
+[2025-12-18 14:00:39.886 +07:00 INF] [127.0.0.1:36860] Client disconnected (zero bytes)
+[2025-12-18 14:00:39.887 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36860 disconnected
+[2025-12-18 14:01:09.936 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60088
+[2025-12-18 14:01:09.937 +07:00 INF] [127.0.0.1:60088] Client disconnected (zero bytes)
+[2025-12-18 14:01:09.939 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60088 disconnected
+[2025-12-18 14:01:42.895 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43806
+[2025-12-18 14:01:42.896 +07:00 INF] [127.0.0.1:43806] Client disconnected (zero bytes)
+[2025-12-18 14:01:42.898 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43806 disconnected
+[2025-12-18 14:02:15.172 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35674
+[2025-12-18 14:02:15.173 +07:00 INF] [127.0.0.1:35674] Client disconnected (zero bytes)
+[2025-12-18 14:02:15.174 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35674 disconnected
+[2025-12-18 14:02:47.639 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47666
+[2025-12-18 14:02:47.643 +07:00 INF] [127.0.0.1:47666] Client disconnected (zero bytes)
+[2025-12-18 14:02:47.645 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47666 disconnected
+[2025-12-18 14:03:20.105 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60754
+[2025-12-18 14:03:20.106 +07:00 INF] [127.0.0.1:60754] Client disconnected (zero bytes)
+[2025-12-18 14:03:20.108 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60754 disconnected
+[2025-12-18 14:03:52.782 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51844
+[2025-12-18 14:03:52.783 +07:00 INF] [127.0.0.1:51844] Client disconnected (zero bytes)
+[2025-12-18 14:03:52.784 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51844 disconnected
+[2025-12-18 14:04:25.409 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44856
+[2025-12-18 14:04:25.411 +07:00 INF] [127.0.0.1:44856] Client disconnected (zero bytes)
+[2025-12-18 14:04:25.414 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44856 disconnected
+[2025-12-18 14:04:55.782 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39156
+[2025-12-18 14:04:55.784 +07:00 INF] [127.0.0.1:39156] Client disconnected (zero bytes)
+[2025-12-18 14:04:55.785 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39156 disconnected
+[2025-12-18 14:05:26.893 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60514
+[2025-12-18 14:05:26.895 +07:00 INF] [127.0.0.1:60514] Client disconnected (zero bytes)
+[2025-12-18 14:05:26.896 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60514 disconnected
+[2025-12-18 14:05:56.384 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59118
+[2025-12-18 14:05:56.385 +07:00 INF] [127.0.0.1:59118] Client disconnected (zero bytes)
+[2025-12-18 14:05:56.386 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59118 disconnected
+[2025-12-18 14:06:27.784 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47416
+[2025-12-18 14:06:27.786 +07:00 INF] [127.0.0.1:47416] Client disconnected (zero bytes)
+[2025-12-18 14:06:27.790 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47416 disconnected
+[2025-12-18 14:06:57.953 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40006
+[2025-12-18 14:06:57.954 +07:00 INF] [127.0.0.1:40006] Client disconnected (zero bytes)
+[2025-12-18 14:06:57.955 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40006 disconnected
+[2025-12-18 14:07:28.055 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39762
+[2025-12-18 14:07:28.056 +07:00 INF] [127.0.0.1:39762] Client disconnected (zero bytes)
+[2025-12-18 14:07:28.057 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39762 disconnected
+[2025-12-18 14:08:01.259 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40058
+[2025-12-18 14:08:01.261 +07:00 INF] [127.0.0.1:40058] Client disconnected (zero bytes)
+[2025-12-18 14:08:01.263 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40058 disconnected
+[2025-12-18 14:08:30.384 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52908
+[2025-12-18 14:08:30.385 +07:00 INF] [127.0.0.1:52908] Client disconnected (zero bytes)
+[2025-12-18 14:08:30.387 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52908 disconnected
+[2025-12-18 14:09:02.867 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45276
+[2025-12-18 14:09:02.869 +07:00 INF] [127.0.0.1:45276] Client disconnected (zero bytes)
+[2025-12-18 14:09:02.870 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45276 disconnected
+[2025-12-18 14:09:31.461 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54966
+[2025-12-18 14:09:31.465 +07:00 INF] [127.0.0.1:54966] Client disconnected (zero bytes)
+[2025-12-18 14:09:31.467 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54966 disconnected
+[2025-12-18 14:10:02.348 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47580
+[2025-12-18 14:10:02.350 +07:00 INF] [127.0.0.1:47580] Client disconnected (zero bytes)
+[2025-12-18 14:10:02.353 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47580 disconnected
+[2025-12-18 14:10:35.059 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33424
+[2025-12-18 14:10:35.062 +07:00 INF] [127.0.0.1:33424] Client disconnected (zero bytes)
+[2025-12-18 14:10:35.064 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33424 disconnected
+[2025-12-18 14:11:05.556 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45174
+[2025-12-18 14:11:05.557 +07:00 INF] [127.0.0.1:45174] Client disconnected (zero bytes)
+[2025-12-18 14:11:05.558 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45174 disconnected
+[2025-12-18 14:11:35.981 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43140
+[2025-12-18 14:11:35.983 +07:00 INF] [127.0.0.1:43140] Client disconnected (zero bytes)
+[2025-12-18 14:11:35.984 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43140 disconnected
+[2025-12-18 14:12:09.359 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52880
+[2025-12-18 14:12:09.360 +07:00 INF] [127.0.0.1:52880] Client disconnected (zero bytes)
+[2025-12-18 14:12:09.361 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52880 disconnected
+[2025-12-18 14:12:39.897 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43914
+[2025-12-18 14:12:39.898 +07:00 INF] [127.0.0.1:43914] Client disconnected (zero bytes)
+[2025-12-18 14:12:39.899 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43914 disconnected
+[2025-12-18 14:13:10.114 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47596
+[2025-12-18 14:13:10.115 +07:00 INF] [127.0.0.1:47596] Client disconnected (zero bytes)
+[2025-12-18 14:13:10.117 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47596 disconnected
+[2025-12-18 14:13:40.250 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56092
+[2025-12-18 14:13:40.251 +07:00 INF] [127.0.0.1:56092] Client disconnected (zero bytes)
+[2025-12-18 14:13:40.252 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56092 disconnected
+[2025-12-18 14:14:12.892 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52682
+[2025-12-18 14:14:12.893 +07:00 INF] [127.0.0.1:52682] Client disconnected (zero bytes)
+[2025-12-18 14:14:12.894 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52682 disconnected
+[2025-12-18 14:14:43.386 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52756
+[2025-12-18 14:14:43.393 +07:00 INF] [127.0.0.1:52756] Client disconnected (zero bytes)
+[2025-12-18 14:14:43.394 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52756 disconnected
+[2025-12-18 14:15:13.596 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40868
+[2025-12-18 14:15:13.597 +07:00 INF] [127.0.0.1:40868] Client disconnected (zero bytes)
+[2025-12-18 14:15:13.598 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40868 disconnected
+[2025-12-18 14:15:46.957 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39168
+[2025-12-18 14:15:46.958 +07:00 INF] [127.0.0.1:39168] Client disconnected (zero bytes)
+[2025-12-18 14:15:46.959 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39168 disconnected
+[2025-12-18 14:16:20.109 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34622
+[2025-12-18 14:16:20.109 +07:00 INF] [127.0.0.1:34622] Client disconnected (zero bytes)
+[2025-12-18 14:16:20.110 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34622 disconnected
+[2025-12-18 14:16:52.251 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55004
+[2025-12-18 14:16:52.252 +07:00 INF] [127.0.0.1:55004] Client disconnected (zero bytes)
+[2025-12-18 14:16:52.253 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55004 disconnected
+[2025-12-18 14:17:24.843 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46372
+[2025-12-18 14:17:24.846 +07:00 INF] [127.0.0.1:46372] Client disconnected (zero bytes)
+[2025-12-18 14:17:24.846 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46372 disconnected
+[2025-12-18 14:17:57.376 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43512
+[2025-12-18 14:17:57.377 +07:00 INF] [127.0.0.1:43512] Client disconnected (zero bytes)
+[2025-12-18 14:17:57.380 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43512 disconnected
+[2025-12-18 14:18:29.961 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39152
+[2025-12-18 14:18:29.962 +07:00 INF] [127.0.0.1:39152] Client disconnected (zero bytes)
+[2025-12-18 14:18:29.963 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39152 disconnected
+[2025-12-18 14:19:02.251 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59910
+[2025-12-18 14:19:02.252 +07:00 INF] [127.0.0.1:59910] Client disconnected (zero bytes)
+[2025-12-18 14:19:02.253 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59910 disconnected
+[2025-12-18 14:19:35.230 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35840
+[2025-12-18 14:19:35.231 +07:00 INF] [127.0.0.1:35840] Client disconnected (zero bytes)
+[2025-12-18 14:19:35.232 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35840 disconnected
+[2025-12-18 14:20:07.413 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53354
+[2025-12-18 14:20:07.414 +07:00 INF] [127.0.0.1:53354] Client disconnected (zero bytes)
+[2025-12-18 14:20:07.415 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53354 disconnected
+[2025-12-18 14:20:39.755 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48594
+[2025-12-18 14:20:39.756 +07:00 INF] [127.0.0.1:48594] Client disconnected (zero bytes)
+[2025-12-18 14:20:39.757 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48594 disconnected
+[2025-12-18 14:21:12.188 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48086
+[2025-12-18 14:21:12.189 +07:00 INF] [127.0.0.1:48086] Client disconnected (zero bytes)
+[2025-12-18 14:21:12.189 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48086 disconnected
+[2025-12-18 14:21:44.683 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40224
+[2025-12-18 14:21:44.684 +07:00 INF] [127.0.0.1:40224] Client disconnected (zero bytes)
+[2025-12-18 14:21:44.685 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40224 disconnected
+[2025-12-18 14:22:17.170 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52082
+[2025-12-18 14:22:17.172 +07:00 INF] [127.0.0.1:52082] Client disconnected (zero bytes)
+[2025-12-18 14:22:17.174 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52082 disconnected
+[2025-12-18 14:22:49.743 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42582
+[2025-12-18 14:22:49.744 +07:00 INF] [127.0.0.1:42582] Client disconnected (zero bytes)
+[2025-12-18 14:22:49.745 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42582 disconnected
+[2025-12-18 14:23:22.303 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39916
+[2025-12-18 14:23:22.305 +07:00 INF] [127.0.0.1:39916] Client disconnected (zero bytes)
+[2025-12-18 14:23:22.306 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39916 disconnected
+[2025-12-18 14:23:55.064 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44028
+[2025-12-18 14:23:55.065 +07:00 INF] [127.0.0.1:44028] Client disconnected (zero bytes)
+[2025-12-18 14:23:55.065 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44028 disconnected
+[2025-12-18 14:24:27.666 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55466
+[2025-12-18 14:24:27.667 +07:00 INF] [127.0.0.1:55466] Client disconnected (zero bytes)
+[2025-12-18 14:24:27.669 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55466 disconnected
+[2025-12-18 14:25:00.255 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59792
+[2025-12-18 14:25:00.256 +07:00 INF] [127.0.0.1:59792] Client disconnected (zero bytes)
+[2025-12-18 14:25:00.257 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59792 disconnected
+[2025-12-18 14:25:32.773 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42646
+[2025-12-18 14:25:32.775 +07:00 INF] [127.0.0.1:42646] Client disconnected (zero bytes)
+[2025-12-18 14:25:32.776 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42646 disconnected
+[2025-12-18 14:26:05.861 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35132
+[2025-12-18 14:26:05.862 +07:00 INF] [127.0.0.1:35132] Client disconnected (zero bytes)
+[2025-12-18 14:26:05.863 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35132 disconnected
+[2025-12-18 14:26:38.164 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40396
+[2025-12-18 14:26:38.165 +07:00 INF] [127.0.0.1:40396] Client disconnected (zero bytes)
+[2025-12-18 14:26:38.166 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40396 disconnected
+[2025-12-18 14:27:10.957 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51228
+[2025-12-18 14:27:10.959 +07:00 INF] [127.0.0.1:51228] Client disconnected (zero bytes)
+[2025-12-18 14:27:10.959 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51228 disconnected
+[2025-12-18 14:27:41.124 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53096
+[2025-12-18 14:27:41.125 +07:00 INF] [127.0.0.1:53096] Client disconnected (zero bytes)
+[2025-12-18 14:27:41.126 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53096 disconnected
+[2025-12-18 14:28:14.037 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49844
+[2025-12-18 14:28:14.038 +07:00 INF] [127.0.0.1:49844] Client disconnected (zero bytes)
+[2025-12-18 14:28:14.039 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49844 disconnected
+[2025-12-18 14:29:36.125 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52098
+[2025-12-18 14:29:36.126 +07:00 INF] [127.0.0.1:52098] Client disconnected (zero bytes)
+[2025-12-18 14:29:36.127 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52098 disconnected
+[2025-12-18 14:30:05.485 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42132
+[2025-12-18 14:30:05.493 +07:00 INF] [127.0.0.1:42132] Client disconnected (zero bytes)
+[2025-12-18 14:30:05.495 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42132 disconnected
+[2025-12-18 14:30:38.679 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38754
+[2025-12-18 14:30:38.680 +07:00 INF] [127.0.0.1:38754] Client disconnected (zero bytes)
+[2025-12-18 14:30:38.681 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38754 disconnected
+[2025-12-18 14:31:10.696 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39362
+[2025-12-18 14:31:10.698 +07:00 INF] [127.0.0.1:39362] Client disconnected (zero bytes)
+[2025-12-18 14:31:10.698 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39362 disconnected
+[2025-12-18 14:31:41.592 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50308
+[2025-12-18 14:31:41.593 +07:00 INF] [127.0.0.1:50308] Client disconnected (zero bytes)
+[2025-12-18 14:31:41.594 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50308 disconnected
+[2025-12-18 14:32:13.627 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:32798
+[2025-12-18 14:32:13.629 +07:00 INF] [127.0.0.1:32798] Client disconnected (zero bytes)
+[2025-12-18 14:32:13.630 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:32798 disconnected
+[2025-12-18 14:32:43.277 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35614
+[2025-12-18 14:32:43.279 +07:00 INF] [127.0.0.1:35614] Client disconnected (zero bytes)
+[2025-12-18 14:32:43.280 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35614 disconnected
+[2025-12-18 14:33:16.449 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:37092
+[2025-12-18 14:33:16.451 +07:00 INF] [127.0.0.1:37092] Client disconnected (zero bytes)
+[2025-12-18 14:33:16.452 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:37092 disconnected
+[2025-12-18 14:33:48.934 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35986
+[2025-12-18 14:33:48.936 +07:00 INF] [127.0.0.1:35986] Client disconnected (zero bytes)
+[2025-12-18 14:33:48.937 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35986 disconnected
+[2025-12-18 14:34:18.234 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49056
+[2025-12-18 14:34:18.236 +07:00 INF] [127.0.0.1:49056] Client disconnected (zero bytes)
+[2025-12-18 14:34:18.237 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49056 disconnected
+[2025-12-18 14:34:50.236 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39658
+[2025-12-18 14:34:50.238 +07:00 INF] [127.0.0.1:39658] Client disconnected (zero bytes)
+[2025-12-18 14:34:50.239 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39658 disconnected
+[2025-12-18 14:35:21.223 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33204
+[2025-12-18 14:35:21.225 +07:00 INF] [127.0.0.1:33204] Client disconnected (zero bytes)
+[2025-12-18 14:35:21.226 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33204 disconnected
+[2025-12-18 14:35:53.543 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47516
+[2025-12-18 14:35:53.544 +07:00 INF] [127.0.0.1:47516] Client disconnected (zero bytes)
+[2025-12-18 14:35:53.546 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47516 disconnected
+[2025-12-18 14:36:22.481 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54652
+[2025-12-18 14:36:22.482 +07:00 INF] [127.0.0.1:54652] Client disconnected (zero bytes)
+[2025-12-18 14:36:22.483 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54652 disconnected
+[2025-12-18 14:36:55.448 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:32782
+[2025-12-18 14:36:55.449 +07:00 INF] [127.0.0.1:32782] Client disconnected (zero bytes)
+[2025-12-18 14:36:55.450 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:32782 disconnected
+[2025-12-18 14:37:26.926 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49286
+[2025-12-18 14:37:26.927 +07:00 INF] [127.0.0.1:49286] Client disconnected (zero bytes)
+[2025-12-18 14:37:26.928 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49286 disconnected
+[2025-12-18 14:37:59.336 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36824
+[2025-12-18 14:37:59.337 +07:00 INF] [127.0.0.1:36824] Client disconnected (zero bytes)
+[2025-12-18 14:37:59.338 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36824 disconnected
+[2025-12-18 14:38:17.546 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:45058
+[2025-12-18 14:38:18.233 +07:00 INF] [172.18.0.1:45058] ✓ User 'thi2506' auto-logged in successfully
+[2025-12-18 14:38:18.263 +07:00 INF] [172.18.0.1:45058] Client disconnected (zero bytes)
+[2025-12-18 14:38:18.264 +07:00 INF] [172.18.0.1:45058] User 'thi2506' removed from online list
+[2025-12-18 14:38:18.276 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:45058 disconnected
+[2025-12-18 14:38:26.044 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:51194
+[2025-12-18 14:38:26.056 +07:00 INF] [172.18.0.1:51194] ✓ User 'thi2506' auto-logged in successfully
+[2025-12-18 14:38:26.069 +07:00 INF] [172.18.0.1:51194] Client disconnected (zero bytes)
+[2025-12-18 14:38:26.070 +07:00 INF] [172.18.0.1:51194] User 'thi2506' removed from online list
+[2025-12-18 14:38:26.078 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:51194 disconnected
+[2025-12-18 14:38:30.041 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35082
+[2025-12-18 14:38:30.042 +07:00 INF] [127.0.0.1:35082] Client disconnected (zero bytes)
+[2025-12-18 14:38:30.043 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35082 disconnected
+[2025-12-18 14:38:54.916 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:51624
+[2025-12-18 14:38:54.988 +07:00 ERR] [172.18.0.1:51624] Error creating task
+System.InvalidOperationException: The requested operation requires an element of type 'Number', but the target element has type 'Null'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetValue(Int32 index, Int32& value)
+   at System.Text.Json.JsonElement.GetInt32()
+   at TimeFlowServer.ServerCore.ClientHandler.HandleCreateTaskAsync(JsonElement root) in /src/TimeFlowServer/ServerCore/ClientHandler.cs:line 558
+[2025-12-18 14:38:55.089 +07:00 INF] [172.18.0.1:51624] Client disconnected (zero bytes)
+[2025-12-18 14:38:55.090 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:51624 disconnected
+[2025-12-18 14:39:02.362 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49730
+[2025-12-18 14:39:02.364 +07:00 INF] [127.0.0.1:49730] Client disconnected (zero bytes)
+[2025-12-18 14:39:02.365 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49730 disconnected
+[2025-12-18 14:39:30.062 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:44002
+[2025-12-18 14:39:30.238 +07:00 INF] [172.18.0.1:44002] Get tasks for user: 5 (thi2506)
+[2025-12-18 14:39:30.247 +07:00 INF] [172.18.0.1:44002] ✓ Returned 0 tasks for thi2506
+[2025-12-18 14:39:30.260 +07:00 INF] [172.18.0.1:44002] Client disconnected (zero bytes)
+[2025-12-18 14:39:30.261 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:44002 disconnected
+[2025-12-18 14:39:34.561 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40596
+[2025-12-18 14:39:34.562 +07:00 INF] [127.0.0.1:40596] Client disconnected (zero bytes)
+[2025-12-18 14:39:34.563 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40596 disconnected
+[2025-12-18 14:40:07.152 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48786
+[2025-12-18 14:40:07.155 +07:00 INF] [127.0.0.1:48786] Client disconnected (zero bytes)
+[2025-12-18 14:40:07.166 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48786 disconnected
+[2025-12-18 14:40:37.369 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60706
+[2025-12-18 14:40:37.370 +07:00 INF] [127.0.0.1:60706] Client disconnected (zero bytes)
+[2025-12-18 14:40:37.371 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60706 disconnected
+[2025-12-18 14:41:09.470 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58340
+[2025-12-18 14:41:09.475 +07:00 INF] [127.0.0.1:58340] Client disconnected (zero bytes)
+[2025-12-18 14:41:09.477 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58340 disconnected
+[2025-12-18 14:41:38.919 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36352
+[2025-12-18 14:41:38.920 +07:00 INF] [127.0.0.1:36352] Client disconnected (zero bytes)
+[2025-12-18 14:41:38.922 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36352 disconnected
+[2025-12-18 14:42:10.219 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52872
+[2025-12-18 14:42:10.221 +07:00 INF] [127.0.0.1:52872] Client disconnected (zero bytes)
+[2025-12-18 14:42:10.222 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52872 disconnected
+[2025-12-18 14:42:40.603 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:37536
+[2025-12-18 14:42:40.605 +07:00 INF] [127.0.0.1:37536] Client disconnected (zero bytes)
+[2025-12-18 14:42:40.606 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:37536 disconnected
+[2025-12-18 14:43:11.551 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46680
+[2025-12-18 14:43:11.552 +07:00 INF] [127.0.0.1:46680] Client disconnected (zero bytes)
+[2025-12-18 14:43:11.553 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46680 disconnected
+[2025-12-18 14:43:41.186 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60910
+[2025-12-18 14:43:41.188 +07:00 INF] [127.0.0.1:60910] Client disconnected (zero bytes)
+[2025-12-18 14:43:41.189 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60910 disconnected
+[2025-12-18 14:44:11.831 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:41272
+[2025-12-18 14:44:11.833 +07:00 INF] [127.0.0.1:41272] Client disconnected (zero bytes)
+[2025-12-18 14:44:11.833 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:41272 disconnected
+[2025-12-18 14:44:44.862 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51232
+[2025-12-18 14:44:44.863 +07:00 INF] [127.0.0.1:51232] Client disconnected (zero bytes)
+[2025-12-18 14:44:44.865 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51232 disconnected
+[2025-12-18 14:45:17.109 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46622
+[2025-12-18 14:45:17.111 +07:00 INF] [127.0.0.1:46622] Client disconnected (zero bytes)
+[2025-12-18 14:45:17.112 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46622 disconnected
+[2025-12-18 14:45:49.076 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50138
+[2025-12-18 14:45:49.077 +07:00 INF] [127.0.0.1:50138] Client disconnected (zero bytes)
+[2025-12-18 14:45:49.078 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50138 disconnected
+[2025-12-18 14:46:21.399 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52526
+[2025-12-18 14:46:21.400 +07:00 INF] [127.0.0.1:52526] Client disconnected (zero bytes)
+[2025-12-18 14:46:21.401 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52526 disconnected
+[2025-12-18 14:46:53.672 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42514
+[2025-12-18 14:46:53.673 +07:00 INF] [127.0.0.1:42514] Client disconnected (zero bytes)
+[2025-12-18 14:46:53.674 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42514 disconnected
+[2025-12-18 14:47:26.191 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58506
+[2025-12-18 14:47:26.193 +07:00 INF] [127.0.0.1:58506] Client disconnected (zero bytes)
+[2025-12-18 14:47:26.194 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58506 disconnected
+[2025-12-18 14:47:59.131 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50746
+[2025-12-18 14:47:59.133 +07:00 INF] [127.0.0.1:50746] Client disconnected (zero bytes)
+[2025-12-18 14:47:59.133 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50746 disconnected
+[2025-12-18 14:48:31.101 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54058
+[2025-12-18 14:48:31.103 +07:00 INF] [127.0.0.1:54058] Client disconnected (zero bytes)
+[2025-12-18 14:48:31.104 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54058 disconnected
+[2025-12-18 14:49:01.850 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44574
+[2025-12-18 14:49:01.852 +07:00 INF] [127.0.0.1:44574] Client disconnected (zero bytes)
+[2025-12-18 14:49:01.852 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44574 disconnected
+[2025-12-18 14:49:32.067 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59170
+[2025-12-18 14:49:32.069 +07:00 INF] [127.0.0.1:59170] Client disconnected (zero bytes)
+[2025-12-18 14:49:32.070 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59170 disconnected
+[2025-12-18 14:50:02.183 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50862
+[2025-12-18 14:50:02.184 +07:00 INF] [127.0.0.1:50862] Client disconnected (zero bytes)
+[2025-12-18 14:50:02.185 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50862 disconnected
+[2025-12-18 14:50:32.290 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46748
+[2025-12-18 14:50:32.292 +07:00 INF] [127.0.0.1:46748] Client disconnected (zero bytes)
+[2025-12-18 14:50:32.292 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46748 disconnected
+[2025-12-18 14:51:04.392 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33902
+[2025-12-18 14:51:04.394 +07:00 INF] [127.0.0.1:33902] Client disconnected (zero bytes)
+[2025-12-18 14:51:04.394 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33902 disconnected
+[2025-12-18 14:51:35.740 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43360
+[2025-12-18 14:51:35.741 +07:00 INF] [127.0.0.1:43360] Client disconnected (zero bytes)
+[2025-12-18 14:51:35.742 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43360 disconnected
+[2025-12-18 14:52:08.422 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59992
+[2025-12-18 14:52:08.423 +07:00 INF] [127.0.0.1:59992] Client disconnected (zero bytes)
+[2025-12-18 14:52:08.423 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59992 disconnected
+[2025-12-18 14:52:40.188 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45100
+[2025-12-18 14:52:40.189 +07:00 INF] [127.0.0.1:45100] Client disconnected (zero bytes)
+[2025-12-18 14:52:40.189 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45100 disconnected
+[2025-12-18 14:53:10.757 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54942
+[2025-12-18 14:53:10.758 +07:00 INF] [127.0.0.1:54942] Client disconnected (zero bytes)
+[2025-12-18 14:53:10.759 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54942 disconnected
+[2025-12-18 14:53:41.444 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46824
+[2025-12-18 14:53:41.445 +07:00 INF] [127.0.0.1:46824] Client disconnected (zero bytes)
+[2025-12-18 14:53:41.446 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46824 disconnected
+[2025-12-18 14:54:11.619 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35896
+[2025-12-18 14:54:11.620 +07:00 INF] [127.0.0.1:35896] Client disconnected (zero bytes)
+[2025-12-18 14:54:11.621 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35896 disconnected
+[2025-12-18 14:54:43.850 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42652
+[2025-12-18 14:54:43.850 +07:00 INF] [127.0.0.1:42652] Client disconnected (zero bytes)
+[2025-12-18 14:54:43.851 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42652 disconnected
+[2025-12-18 14:55:16.015 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52286
+[2025-12-18 14:55:16.017 +07:00 INF] [127.0.0.1:52286] Client disconnected (zero bytes)
+[2025-12-18 14:55:16.019 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52286 disconnected
+[2025-12-18 14:55:48.352 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55220
+[2025-12-18 14:55:48.353 +07:00 INF] [127.0.0.1:55220] Client disconnected (zero bytes)
+[2025-12-18 14:55:48.354 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55220 disconnected
+[2025-12-18 14:56:21.115 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52268
+[2025-12-18 14:56:21.116 +07:00 INF] [127.0.0.1:52268] Client disconnected (zero bytes)
+[2025-12-18 14:56:21.119 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52268 disconnected
+[2025-12-18 14:56:50.981 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48936
+[2025-12-18 14:56:50.983 +07:00 INF] [127.0.0.1:48936] Client disconnected (zero bytes)
+[2025-12-18 14:56:50.985 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48936 disconnected
+[2025-12-18 14:57:22.051 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38688
+[2025-12-18 14:57:22.055 +07:00 INF] [127.0.0.1:38688] Client disconnected (zero bytes)
+[2025-12-18 14:57:22.056 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38688 disconnected
+[2025-12-18 14:57:52.344 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48800
+[2025-12-18 14:57:52.345 +07:00 INF] [127.0.0.1:48800] Client disconnected (zero bytes)
+[2025-12-18 14:57:52.346 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48800 disconnected
+[2025-12-18 14:58:23.432 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49572
+[2025-12-18 14:58:23.434 +07:00 INF] [127.0.0.1:49572] Client disconnected (zero bytes)
+[2025-12-18 14:58:23.435 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49572 disconnected
+[2025-12-18 14:58:53.871 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52252
+[2025-12-18 14:58:53.872 +07:00 INF] [127.0.0.1:52252] Client disconnected (zero bytes)
+[2025-12-18 14:58:53.873 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52252 disconnected
+[2025-12-18 14:59:26.483 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35116
+[2025-12-18 14:59:26.486 +07:00 INF] [127.0.0.1:35116] Client disconnected (zero bytes)
+[2025-12-18 14:59:26.487 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35116 disconnected
+[2025-12-18 15:04:48.970 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53422
+[2025-12-18 15:04:48.972 +07:00 INF] [127.0.0.1:53422] Client disconnected (zero bytes)
+[2025-12-18 15:04:48.973 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53422 disconnected
+[2025-12-18 15:05:21.038 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48826
+[2025-12-18 15:05:21.039 +07:00 INF] [127.0.0.1:48826] Client disconnected (zero bytes)
+[2025-12-18 15:05:21.041 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48826 disconnected
+[2025-12-18 15:05:53.111 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54546
+[2025-12-18 15:05:53.114 +07:00 INF] [127.0.0.1:54546] Client disconnected (zero bytes)
+[2025-12-18 15:05:53.116 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54546 disconnected
+[2025-12-18 15:06:21.348 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35534
+[2025-12-18 15:06:21.350 +07:00 INF] [127.0.0.1:35534] Client disconnected (zero bytes)
+[2025-12-18 15:06:21.351 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35534 disconnected
+[2025-12-18 15:06:54.054 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36762
+[2025-12-18 15:06:54.055 +07:00 INF] [127.0.0.1:36762] Client disconnected (zero bytes)
+[2025-12-18 15:06:54.056 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36762 disconnected
+[2025-12-18 15:07:23.741 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56498
+[2025-12-18 15:07:23.745 +07:00 INF] [127.0.0.1:56498] Client disconnected (zero bytes)
+[2025-12-18 15:07:23.745 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56498 disconnected
+[2025-12-18 15:07:55.718 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45578
+[2025-12-18 15:07:55.719 +07:00 INF] [127.0.0.1:45578] Client disconnected (zero bytes)
+[2025-12-18 15:07:55.720 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45578 disconnected
+[2025-12-18 15:08:27.918 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40234
+[2025-12-18 15:08:27.919 +07:00 INF] [127.0.0.1:40234] Client disconnected (zero bytes)
+[2025-12-18 15:08:27.921 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40234 disconnected
+[2025-12-18 15:09:00.294 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38676
+[2025-12-18 15:09:00.296 +07:00 INF] [127.0.0.1:38676] Client disconnected (zero bytes)
+[2025-12-18 15:09:00.297 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38676 disconnected
+[2025-12-18 15:09:31.147 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52802
+[2025-12-18 15:09:31.150 +07:00 INF] [127.0.0.1:52802] Client disconnected (zero bytes)
+[2025-12-18 15:09:31.150 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52802 disconnected
+[2025-12-18 15:10:03.055 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55384
+[2025-12-18 15:10:03.059 +07:00 INF] [127.0.0.1:55384] Client disconnected (zero bytes)
+[2025-12-18 15:10:03.060 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55384 disconnected
+[2025-12-18 15:10:35.517 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53116
+[2025-12-18 15:10:35.518 +07:00 INF] [127.0.0.1:53116] Client disconnected (zero bytes)
+[2025-12-18 15:10:35.519 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53116 disconnected
+[2025-12-18 15:11:07.142 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45632
+[2025-12-18 15:11:07.144 +07:00 INF] [127.0.0.1:45632] Client disconnected (zero bytes)
+[2025-12-18 15:11:07.147 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45632 disconnected
+[2025-12-18 15:11:39.148 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:45648
+[2025-12-18 15:11:39.151 +07:00 INF] [127.0.0.1:45648] Client disconnected (zero bytes)
+[2025-12-18 15:11:39.152 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:45648 disconnected
+[2025-12-18 15:12:11.063 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48372
+[2025-12-18 15:12:11.065 +07:00 INF] [127.0.0.1:48372] Client disconnected (zero bytes)
+[2025-12-18 15:12:11.065 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48372 disconnected
+[2025-12-18 15:12:43.706 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48316
+[2025-12-18 15:12:43.707 +07:00 INF] [127.0.0.1:48316] Client disconnected (zero bytes)
+[2025-12-18 15:12:43.707 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48316 disconnected
+[2025-12-18 15:13:15.758 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47924
+[2025-12-18 15:13:15.763 +07:00 INF] [127.0.0.1:47924] Client disconnected (zero bytes)
+[2025-12-18 15:13:15.764 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47924 disconnected
+[2025-12-18 15:13:46.346 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36080
+[2025-12-18 15:13:46.347 +07:00 INF] [127.0.0.1:36080] Client disconnected (zero bytes)
+[2025-12-18 15:13:46.348 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36080 disconnected
+[2025-12-18 15:14:16.595 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38484
+[2025-12-18 15:14:16.597 +07:00 INF] [127.0.0.1:38484] Client disconnected (zero bytes)
+[2025-12-18 15:14:16.599 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38484 disconnected
+[2025-12-18 15:14:46.751 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52808
+[2025-12-18 15:14:46.753 +07:00 INF] [127.0.0.1:52808] Client disconnected (zero bytes)
+[2025-12-18 15:14:46.756 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52808 disconnected
+[2025-12-18 15:15:16.920 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36322
+[2025-12-18 15:15:16.923 +07:00 INF] [127.0.0.1:36322] Client disconnected (zero bytes)
+[2025-12-18 15:15:16.929 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36322 disconnected
+[2025-12-18 15:15:47.071 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59308
+[2025-12-18 15:15:47.072 +07:00 INF] [127.0.0.1:59308] Client disconnected (zero bytes)
+[2025-12-18 15:15:47.074 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59308 disconnected
+[2025-12-18 15:16:19.543 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44110
+[2025-12-18 15:16:19.546 +07:00 INF] [127.0.0.1:44110] Client disconnected (zero bytes)
+[2025-12-18 15:16:19.547 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44110 disconnected
+[2025-12-18 15:16:52.512 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42994
+[2025-12-18 15:16:52.514 +07:00 INF] [127.0.0.1:42994] Client disconnected (zero bytes)
+[2025-12-18 15:16:52.516 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42994 disconnected
+[2025-12-18 15:17:23.965 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52102
+[2025-12-18 15:17:23.971 +07:00 INF] [127.0.0.1:52102] Client disconnected (zero bytes)
+[2025-12-18 15:17:23.974 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52102 disconnected
+[2025-12-18 15:17:54.564 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43966
+[2025-12-18 15:17:54.567 +07:00 INF] [127.0.0.1:43966] Client disconnected (zero bytes)
+[2025-12-18 15:17:54.568 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43966 disconnected
+[2025-12-18 15:18:25.999 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46126
+[2025-12-18 15:18:26.008 +07:00 INF] [127.0.0.1:46126] Client disconnected (zero bytes)
+[2025-12-18 15:18:26.009 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46126 disconnected
+[2025-12-18 15:18:58.315 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35960
+[2025-12-18 15:18:58.316 +07:00 INF] [127.0.0.1:35960] Client disconnected (zero bytes)
+[2025-12-18 15:18:58.318 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35960 disconnected
+[2025-12-18 15:19:30.388 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57152
+[2025-12-18 15:19:30.390 +07:00 INF] [127.0.0.1:57152] Client disconnected (zero bytes)
+[2025-12-18 15:19:30.391 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57152 disconnected
+[2025-12-18 15:20:03.091 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43184
+[2025-12-18 15:20:03.099 +07:00 INF] [127.0.0.1:43184] Client disconnected (zero bytes)
+[2025-12-18 15:20:03.100 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43184 disconnected
+[2025-12-18 15:20:34.724 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53342
+[2025-12-18 15:20:34.726 +07:00 INF] [127.0.0.1:53342] Client disconnected (zero bytes)
+[2025-12-18 15:20:34.729 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53342 disconnected
+[2025-12-18 15:21:06.619 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47812
+[2025-12-18 15:21:06.621 +07:00 INF] [127.0.0.1:47812] Client disconnected (zero bytes)
+[2025-12-18 15:21:06.622 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47812 disconnected
+[2025-12-18 15:21:36.901 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56238
+[2025-12-18 15:21:36.903 +07:00 INF] [127.0.0.1:56238] Client disconnected (zero bytes)
+[2025-12-18 15:21:36.905 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56238 disconnected
+[2025-12-18 15:22:08.828 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48292
+[2025-12-18 15:22:08.836 +07:00 INF] [127.0.0.1:48292] Client disconnected (zero bytes)
+[2025-12-18 15:22:08.838 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48292 disconnected
+[2025-12-18 15:22:40.750 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44684
+[2025-12-18 15:22:40.751 +07:00 INF] [127.0.0.1:44684] Client disconnected (zero bytes)
+[2025-12-18 15:22:40.753 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44684 disconnected
+[2025-12-18 15:23:13.176 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38250
+[2025-12-18 15:23:13.181 +07:00 INF] [127.0.0.1:38250] Client disconnected (zero bytes)
+[2025-12-18 15:23:13.184 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38250 disconnected
+[2025-12-18 15:23:45.860 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48008
+[2025-12-18 15:23:45.862 +07:00 INF] [127.0.0.1:48008] Client disconnected (zero bytes)
+[2025-12-18 15:23:45.864 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48008 disconnected
+[2025-12-18 15:24:17.944 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34366
+[2025-12-18 15:24:17.947 +07:00 INF] [127.0.0.1:34366] Client disconnected (zero bytes)
+[2025-12-18 15:24:17.949 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34366 disconnected
+[2025-12-18 15:24:49.108 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57514
+[2025-12-18 15:24:49.108 +07:00 INF] [127.0.0.1:57514] Client disconnected (zero bytes)
+[2025-12-18 15:24:49.109 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57514 disconnected
+[2025-12-18 15:25:21.846 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54418
+[2025-12-18 15:25:21.847 +07:00 INF] [127.0.0.1:54418] Client disconnected (zero bytes)
+[2025-12-18 15:25:21.848 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54418 disconnected
+[2025-12-18 15:25:55.089 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39544
+[2025-12-18 15:25:55.091 +07:00 INF] [127.0.0.1:39544] Client disconnected (zero bytes)
+[2025-12-18 15:25:55.093 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39544 disconnected
+[2025-12-18 15:26:26.858 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58196
+[2025-12-18 15:26:26.860 +07:00 INF] [127.0.0.1:58196] Client disconnected (zero bytes)
+[2025-12-18 15:26:26.861 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58196 disconnected
+[2025-12-18 15:26:59.452 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52000
+[2025-12-18 15:26:59.454 +07:00 INF] [127.0.0.1:52000] Client disconnected (zero bytes)
+[2025-12-18 15:26:59.455 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52000 disconnected
+[2025-12-18 15:27:30.170 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38214
+[2025-12-18 15:27:30.173 +07:00 INF] [127.0.0.1:38214] Client disconnected (zero bytes)
+[2025-12-18 15:27:30.175 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38214 disconnected
+[2025-12-18 15:28:02.594 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51098
+[2025-12-18 15:28:02.595 +07:00 INF] [127.0.0.1:51098] Client disconnected (zero bytes)
+[2025-12-18 15:28:02.597 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51098 disconnected
+[2025-12-18 15:28:34.908 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50884
+[2025-12-18 15:28:34.910 +07:00 INF] [127.0.0.1:50884] Client disconnected (zero bytes)
+[2025-12-18 15:28:34.912 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50884 disconnected
+[2025-12-18 15:29:06.996 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52490
+[2025-12-18 15:29:06.997 +07:00 INF] [127.0.0.1:52490] Client disconnected (zero bytes)
+[2025-12-18 15:29:06.998 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52490 disconnected
+[2025-12-18 15:29:39.200 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46200
+[2025-12-18 15:29:39.201 +07:00 INF] [127.0.0.1:46200] Client disconnected (zero bytes)
+[2025-12-18 15:29:39.202 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46200 disconnected
+[2025-12-18 15:30:11.686 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48504
+[2025-12-18 15:30:11.687 +07:00 INF] [127.0.0.1:48504] Client disconnected (zero bytes)
+[2025-12-18 15:30:11.688 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48504 disconnected
+[2025-12-18 15:30:44.726 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51916
+[2025-12-18 15:30:44.728 +07:00 INF] [127.0.0.1:51916] Client disconnected (zero bytes)
+[2025-12-18 15:30:44.731 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51916 disconnected
+[2025-12-18 15:31:16.683 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36784
+[2025-12-18 15:31:16.686 +07:00 INF] [127.0.0.1:36784] Client disconnected (zero bytes)
+[2025-12-18 15:31:16.687 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36784 disconnected
+[2025-12-18 15:31:46.381 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:50508
+[2025-12-18 15:31:46.426 +07:00 WRN] [172.18.0.1:50508] ✗ Auto-login failed: Invalid token
+[2025-12-18 15:31:46.434 +07:00 INF] [172.18.0.1:50508] Client disconnected (zero bytes)
+[2025-12-18 15:31:46.436 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:50508 disconnected
+[2025-12-18 15:31:49.424 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56790
+[2025-12-18 15:31:49.426 +07:00 INF] [127.0.0.1:56790] Client disconnected (zero bytes)
+[2025-12-18 15:31:49.427 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56790 disconnected
+[2025-12-18 15:31:58.828 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:50858
+[2025-12-18 15:31:58.830 +07:00 INF] [172.18.0.1:50858] Login attempt for user: thi2506
+[2025-12-18 15:31:59.405 +07:00 INF] [172.18.0.1:50858] ✓ User 'thi2506' logged in successfully
+[2025-12-18 15:31:59.428 +07:00 INF] [172.18.0.1:50858] Client disconnected (zero bytes)
+[2025-12-18 15:31:59.429 +07:00 INF] [172.18.0.1:50858] User 'thi2506' removed from online list
+[2025-12-18 15:31:59.451 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:50858 disconnected
+[2025-12-18 15:32:15.054 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:51804
+[2025-12-18 15:32:15.106 +07:00 INF] [172.18.0.1:51804] Get tasks for user: 5 (thi2506)
+[2025-12-18 15:32:15.119 +07:00 INF] [172.18.0.1:51804] ✓ Returned 0 tasks for thi2506
+[2025-12-18 15:32:15.195 +07:00 INF] [172.18.0.1:51804] Client disconnected (zero bytes)
+[2025-12-18 15:32:15.196 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:51804 disconnected
+[2025-12-18 15:32:21.731 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33916
+[2025-12-18 15:32:21.732 +07:00 INF] [127.0.0.1:33916] Client disconnected (zero bytes)
+[2025-12-18 15:32:21.733 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33916 disconnected
+[2025-12-18 15:32:54.742 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46564
+[2025-12-18 15:32:54.745 +07:00 INF] [127.0.0.1:46564] Client disconnected (zero bytes)
+[2025-12-18 15:32:54.747 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46564 disconnected
+[2025-12-18 15:33:26.993 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35180
+[2025-12-18 15:33:26.995 +07:00 INF] [127.0.0.1:35180] Client disconnected (zero bytes)
+[2025-12-18 15:33:26.996 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35180 disconnected
+[2025-12-18 15:34:00.048 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43324
+[2025-12-18 15:34:00.049 +07:00 INF] [127.0.0.1:43324] Client disconnected (zero bytes)
+[2025-12-18 15:34:00.051 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43324 disconnected
+[2025-12-18 15:34:32.300 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34790
+[2025-12-18 15:34:32.302 +07:00 INF] [127.0.0.1:34790] Client disconnected (zero bytes)
+[2025-12-18 15:34:32.303 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34790 disconnected
+[2025-12-18 15:34:36.589 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:48978
+[2025-12-18 15:34:36.671 +07:00 INF] [172.18.0.1:48978] ✓ User 'thi2506' auto-logged in successfully
+[2025-12-18 15:34:36.689 +07:00 INF] [172.18.0.1:48978] Client disconnected (zero bytes)
+[2025-12-18 15:34:36.690 +07:00 INF] [172.18.0.1:48978] User 'thi2506' removed from online list
+[2025-12-18 15:34:36.705 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:48978 disconnected
+[2025-12-18 15:35:04.665 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57762
+[2025-12-18 15:35:04.667 +07:00 INF] [127.0.0.1:57762] Client disconnected (zero bytes)
+[2025-12-18 15:35:04.668 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57762 disconnected
+[2025-12-18 15:35:05.903 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:52884
+[2025-12-18 15:35:05.905 +07:00 INF] [172.18.0.1:52884] Login attempt for user: admin
+[2025-12-18 15:35:06.018 +07:00 INF] [172.18.0.1:52884] ✓ User 'admin' logged in successfully
+[2025-12-18 15:35:06.031 +07:00 INF] [172.18.0.1:52884] Client disconnected (zero bytes)
+[2025-12-18 15:35:06.033 +07:00 INF] [172.18.0.1:52884] User 'admin' removed from online list
+[2025-12-18 15:35:06.051 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:52884 disconnected
+[2025-12-18 15:35:09.030 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:52898
+[2025-12-18 15:35:09.061 +07:00 INF] [172.18.0.1:52898] Get tasks for user: 1 (admin)
+[2025-12-18 15:35:09.116 +07:00 INF] [172.18.0.1:52898] ✓ Returned 9 tasks for admin
+[2025-12-18 15:35:09.211 +07:00 INF] [172.18.0.1:52898] Client disconnected (zero bytes)
+[2025-12-18 15:35:09.212 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:52898 disconnected
+[2025-12-18 15:35:37.350 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56436
+[2025-12-18 15:35:37.353 +07:00 INF] [127.0.0.1:56436] Client disconnected (zero bytes)
+[2025-12-18 15:35:37.355 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56436 disconnected
+[2025-12-18 15:36:09.913 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58628
+[2025-12-18 15:36:09.914 +07:00 INF] [127.0.0.1:58628] Client disconnected (zero bytes)
+[2025-12-18 15:36:09.916 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58628 disconnected
+[2025-12-18 15:36:14.599 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:47026
+[2025-12-18 15:36:14.958 +07:00 INF] [172.18.0.1:47026] Get full task detail: 0
+[2025-12-18 15:36:15.157 +07:00 INF] [172.18.0.1:47026] ✓ Returned full task detail for TaskId=0
+[2025-12-18 15:36:15.160 +07:00 INF] [172.18.0.1:47026] Client disconnected (zero bytes)
+[2025-12-18 15:36:15.161 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:47026 disconnected
+[2025-12-18 15:36:18.209 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:45614
+[2025-12-18 15:36:18.226 +07:00 INF] [172.18.0.1:45614] Updating task status: TaskId=0, Status=Completed
+[2025-12-18 15:36:18.281 +07:00 INF] [172.18.0.1:45614] ✓ Task status updated: 0 -> Completed
+[2025-12-18 15:36:18.303 +07:00 INF] [172.18.0.1:45614] Client disconnected (zero bytes)
+[2025-12-18 15:36:18.304 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:45614 disconnected
+[2025-12-18 15:36:26.117 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:45616
+[2025-12-18 15:36:26.124 +07:00 INF] [172.18.0.1:45616] Updating task status: TaskId=0, Status=Cancelled
+[2025-12-18 15:36:26.172 +07:00 INF] [172.18.0.1:45616] ✓ Task status updated: 0 -> Cancelled
+[2025-12-18 15:36:26.179 +07:00 INF] [172.18.0.1:45616] Client disconnected (zero bytes)
+[2025-12-18 15:36:26.180 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:45616 disconnected
+[2025-12-18 15:36:41.774 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49898
+[2025-12-18 15:36:41.776 +07:00 INF] [127.0.0.1:49898] Client disconnected (zero bytes)
+[2025-12-18 15:36:41.778 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49898 disconnected
+[2025-12-18 15:37:00.066 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:52310
+[2025-12-18 15:37:00.085 +07:00 INF] [172.18.0.1:52310] ✓ User 'admin' auto-logged in successfully
+[2025-12-18 15:37:00.098 +07:00 INF] [172.18.0.1:52310] Client disconnected (zero bytes)
+[2025-12-18 15:37:00.099 +07:00 INF] [172.18.0.1:52310] User 'admin' removed from online list
+[2025-12-18 15:37:00.110 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:52310 disconnected
+[2025-12-18 15:37:14.825 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:58130
+[2025-12-18 15:37:14.827 +07:00 INF] [127.0.0.1:58130] Client disconnected (zero bytes)
+[2025-12-18 15:37:14.828 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:58130 disconnected
+[2025-12-18 15:37:18.703 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:37480
+[2025-12-18 15:37:18.714 +07:00 INF] [172.18.0.1:37480] ✓ User 'admin' auto-logged in successfully
+[2025-12-18 15:37:18.724 +07:00 INF] [172.18.0.1:37480] Client disconnected (zero bytes)
+[2025-12-18 15:37:18.725 +07:00 INF] [172.18.0.1:37480] User 'admin' removed from online list
+[2025-12-18 15:37:18.734 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:37480 disconnected
+[2025-12-18 15:37:39.500 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:56582
+[2025-12-18 15:37:39.501 +07:00 INF] [172.18.0.1:56582] Login attempt for user: testuser
+[2025-12-18 15:37:39.549 +07:00 INF] [172.18.0.1:56582] ✓ User 'testuser' logged in successfully
+[2025-12-18 15:37:39.559 +07:00 INF] [172.18.0.1:56582] Client disconnected (zero bytes)
+[2025-12-18 15:37:39.561 +07:00 INF] [172.18.0.1:56582] User 'testuser' removed from online list
+[2025-12-18 15:37:39.587 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:56582 disconnected
+[2025-12-18 15:37:46.959 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33426
+[2025-12-18 15:37:46.961 +07:00 INF] [127.0.0.1:33426] Client disconnected (zero bytes)
+[2025-12-18 15:37:46.961 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33426 disconnected
+[2025-12-18 15:37:51.377 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:36214
+[2025-12-18 15:37:51.424 +07:00 ERR] [172.18.0.1:36214] Error creating task
+System.InvalidOperationException: The requested operation requires an element of type 'Number', but the target element has type 'Null'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetValue(Int32 index, Int32& value)
+   at System.Text.Json.JsonElement.GetInt32()
+   at TimeFlowServer.ServerCore.ClientHandler.HandleCreateTaskAsync(JsonElement root) in /src/TimeFlowServer/ServerCore/ClientHandler.cs:line 558
+[2025-12-18 15:37:51.436 +07:00 INF] [172.18.0.1:36214] Client disconnected (zero bytes)
+[2025-12-18 15:37:51.437 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:36214 disconnected
+[2025-12-18 15:37:56.028 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:57034
+[2025-12-18 15:37:56.164 +07:00 INF] [172.18.0.1:57034] Get tasks for user: 2 (testuser)
+[2025-12-18 15:37:56.172 +07:00 INF] [172.18.0.1:57034] ✓ Returned 3 tasks for testuser
+[2025-12-18 15:37:56.182 +07:00 INF] [172.18.0.1:57034] Client disconnected (zero bytes)
+[2025-12-18 15:37:56.184 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:57034 disconnected
+[2025-12-18 15:38:07.197 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:34878
+[2025-12-18 15:38:07.402 +07:00 INF] [172.18.0.1:34878] Get full task detail: 6
+[2025-12-18 15:38:07.412 +07:00 INF] [172.18.0.1:34878] ✓ Returned full task detail for TaskId=6
+[2025-12-18 15:38:07.415 +07:00 INF] [172.18.0.1:34878] Client disconnected (zero bytes)
+[2025-12-18 15:38:07.416 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:34878 disconnected
+[2025-12-18 15:38:14.919 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:34892
+[2025-12-18 15:38:15.104 +07:00 INF] [172.18.0.1:34892] Get full task detail: 6
+[2025-12-18 15:38:15.118 +07:00 INF] [172.18.0.1:34892] ✓ Returned full task detail for TaskId=6
+[2025-12-18 15:38:15.121 +07:00 INF] [172.18.0.1:34892] Client disconnected (zero bytes)
+[2025-12-18 15:38:15.122 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:34892 disconnected
+[2025-12-18 15:38:18.269 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:36048
+[2025-12-18 15:38:18.279 +07:00 INF] [172.18.0.1:36048] Updating task status: TaskId=6, Status=Completed
+[2025-12-18 15:38:18.290 +07:00 INF] [172.18.0.1:36048] ✓ Task status updated: 6 -> Completed
+[2025-12-18 15:38:18.297 +07:00 INF] [172.18.0.1:36048] Client disconnected (zero bytes)
+[2025-12-18 15:38:18.298 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:36048 disconnected
+[2025-12-18 15:38:19.526 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:36054
+[2025-12-18 15:38:19.532 +07:00 INF] [172.18.0.1:36054] Get full task detail: 6
+[2025-12-18 15:38:19.542 +07:00 INF] [172.18.0.1:36054] ✓ Returned full task detail for TaskId=6
+[2025-12-18 15:38:19.545 +07:00 INF] [172.18.0.1:36054] Client disconnected (zero bytes)
+[2025-12-18 15:38:19.545 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:36054 disconnected
+[2025-12-18 15:38:19.882 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40390
+[2025-12-18 15:38:19.883 +07:00 INF] [127.0.0.1:40390] Client disconnected (zero bytes)
+[2025-12-18 15:38:19.884 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40390 disconnected
+[2025-12-18 15:38:49.094 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:59222
+[2025-12-18 15:38:49.125 +07:00 INF] [172.18.0.1:59222] ✓ User 'testuser' auto-logged in successfully
+[2025-12-18 15:38:49.132 +07:00 INF] [172.18.0.1:59222] Client disconnected (zero bytes)
+[2025-12-18 15:38:49.133 +07:00 INF] [172.18.0.1:59222] User 'testuser' removed from online list
+[2025-12-18 15:38:49.142 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:59222 disconnected
+[2025-12-18 15:38:52.771 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38552
+[2025-12-18 15:38:52.772 +07:00 INF] [127.0.0.1:38552] Client disconnected (zero bytes)
+[2025-12-18 15:38:52.773 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38552 disconnected
+[2025-12-18 15:39:17.422 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:54436
+[2025-12-18 15:39:17.453 +07:00 INF] [172.18.0.1:54436] Get tasks for user: 2 (testuser)
+[2025-12-18 15:39:17.458 +07:00 INF] [172.18.0.1:54436] ✓ Returned 3 tasks for testuser
+[2025-12-18 15:39:17.581 +07:00 INF] [172.18.0.1:54436] Client disconnected (zero bytes)
+[2025-12-18 15:39:17.582 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:54436 disconnected
+[2025-12-18 15:39:24.730 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60444
+[2025-12-18 15:39:24.732 +07:00 INF] [127.0.0.1:60444] Client disconnected (zero bytes)
+[2025-12-18 15:39:24.733 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60444 disconnected
+[2025-12-18 15:39:33.146 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:58146
+[2025-12-18 15:39:33.418 +07:00 INF] [172.18.0.1:58146] Get full task detail: 6
+[2025-12-18 15:39:33.429 +07:00 INF] [172.18.0.1:58146] ✓ Returned full task detail for TaskId=6
+[2025-12-18 15:39:33.435 +07:00 INF] [172.18.0.1:58146] Client disconnected (zero bytes)
+[2025-12-18 15:39:33.436 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:58146 disconnected
+[2025-12-18 15:39:57.518 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44904
+[2025-12-18 15:39:57.521 +07:00 INF] [127.0.0.1:44904] Client disconnected (zero bytes)
+[2025-12-18 15:39:57.522 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44904 disconnected
+[2025-12-18 15:40:30.317 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47744
+[2025-12-18 15:40:30.319 +07:00 INF] [127.0.0.1:47744] Client disconnected (zero bytes)
+[2025-12-18 15:40:30.319 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47744 disconnected
+[2025-12-18 15:41:02.638 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55518
+[2025-12-18 15:41:02.639 +07:00 INF] [127.0.0.1:55518] Client disconnected (zero bytes)
+[2025-12-18 15:41:02.641 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55518 disconnected
+[2025-12-18 15:41:35.163 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44708
+[2025-12-18 15:41:35.163 +07:00 INF] [127.0.0.1:44708] Client disconnected (zero bytes)
+[2025-12-18 15:41:35.164 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44708 disconnected
+[2025-12-18 15:42:06.539 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51402
+[2025-12-18 15:42:06.540 +07:00 INF] [127.0.0.1:51402] Client disconnected (zero bytes)
+[2025-12-18 15:42:06.541 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51402 disconnected
+[2025-12-18 15:42:40.266 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43498
+[2025-12-18 15:42:40.269 +07:00 INF] [127.0.0.1:43498] Client disconnected (zero bytes)
+[2025-12-18 15:42:40.270 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43498 disconnected
+[2025-12-18 15:43:12.023 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55796
+[2025-12-18 15:43:12.025 +07:00 INF] [127.0.0.1:55796] Client disconnected (zero bytes)
+[2025-12-18 15:43:12.026 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55796 disconnected
+[2025-12-18 15:43:44.008 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48166
+[2025-12-18 15:43:44.009 +07:00 INF] [127.0.0.1:48166] Client disconnected (zero bytes)
+[2025-12-18 15:43:44.009 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48166 disconnected
+[2025-12-18 15:44:17.035 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:52652
+[2025-12-18 15:44:17.037 +07:00 INF] [127.0.0.1:52652] Client disconnected (zero bytes)
+[2025-12-18 15:44:17.038 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:52652 disconnected
+[2025-12-18 15:44:49.498 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34328
+[2025-12-18 15:44:49.499 +07:00 INF] [127.0.0.1:34328] Client disconnected (zero bytes)
+[2025-12-18 15:44:49.505 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34328 disconnected
+[2025-12-18 15:45:22.283 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56028
+[2025-12-18 15:45:22.283 +07:00 INF] [127.0.0.1:56028] Client disconnected (zero bytes)
+[2025-12-18 15:45:22.285 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56028 disconnected
+[2025-12-18 15:45:54.521 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:54840
+[2025-12-18 15:45:54.522 +07:00 INF] [127.0.0.1:54840] Client disconnected (zero bytes)
+[2025-12-18 15:45:54.525 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:54840 disconnected
+[2025-12-18 15:46:27.708 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:56368
+[2025-12-18 15:46:27.709 +07:00 INF] [127.0.0.1:56368] Client disconnected (zero bytes)
+[2025-12-18 15:46:27.710 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:56368 disconnected
+[2025-12-18 15:47:00.973 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51512
+[2025-12-18 15:47:00.976 +07:00 INF] [127.0.0.1:51512] Client disconnected (zero bytes)
+[2025-12-18 15:47:00.977 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51512 disconnected
+[2025-12-18 15:47:33.741 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38878
+[2025-12-18 15:47:33.742 +07:00 INF] [127.0.0.1:38878] Client disconnected (zero bytes)
+[2025-12-18 15:47:33.743 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38878 disconnected
+[2025-12-18 15:48:06.979 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60572
+[2025-12-18 15:48:06.981 +07:00 INF] [127.0.0.1:60572] Client disconnected (zero bytes)
+[2025-12-18 15:48:06.981 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60572 disconnected
+[2025-12-18 15:48:38.452 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55940
+[2025-12-18 15:48:38.454 +07:00 INF] [127.0.0.1:55940] Client disconnected (zero bytes)
+[2025-12-18 15:48:38.455 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55940 disconnected
+[2025-12-18 15:49:12.042 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40788
+[2025-12-18 15:49:12.046 +07:00 INF] [127.0.0.1:40788] Client disconnected (zero bytes)
+[2025-12-18 15:49:12.047 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40788 disconnected
+[2025-12-18 15:49:45.225 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36482
+[2025-12-18 15:49:45.226 +07:00 INF] [127.0.0.1:36482] Client disconnected (zero bytes)
+[2025-12-18 15:49:45.226 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36482 disconnected
+[2025-12-18 15:50:18.204 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57810
+[2025-12-18 15:50:18.205 +07:00 INF] [127.0.0.1:57810] Client disconnected (zero bytes)
+[2025-12-18 15:50:18.206 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57810 disconnected
+[2025-12-18 15:50:51.920 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:41122
+[2025-12-18 15:50:51.922 +07:00 INF] [127.0.0.1:41122] Client disconnected (zero bytes)
+[2025-12-18 15:50:51.923 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:41122 disconnected
+[2025-12-18 15:51:23.657 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57032
+[2025-12-18 15:51:23.659 +07:00 INF] [127.0.0.1:57032] Client disconnected (zero bytes)
+[2025-12-18 15:51:23.659 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57032 disconnected
+[2025-12-18 15:51:56.948 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:35086
+[2025-12-18 15:51:56.950 +07:00 INF] [127.0.0.1:35086] Client disconnected (zero bytes)
+[2025-12-18 15:51:56.950 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:35086 disconnected
+[2025-12-18 15:52:29.745 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47612
+[2025-12-18 15:52:29.746 +07:00 INF] [127.0.0.1:47612] Client disconnected (zero bytes)
+[2025-12-18 15:52:29.747 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47612 disconnected
+[2025-12-18 15:53:02.820 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50622
+[2025-12-18 15:53:02.821 +07:00 INF] [127.0.0.1:50622] Client disconnected (zero bytes)
+[2025-12-18 15:53:02.822 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50622 disconnected
+[2025-12-18 15:53:35.937 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40424
+[2025-12-18 15:53:35.938 +07:00 INF] [127.0.0.1:40424] Client disconnected (zero bytes)
+[2025-12-18 15:53:35.939 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40424 disconnected
+[2025-12-18 15:54:09.016 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42112
+[2025-12-18 15:54:09.017 +07:00 INF] [127.0.0.1:42112] Client disconnected (zero bytes)
+[2025-12-18 15:54:09.018 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42112 disconnected
+[2025-12-18 15:54:43.598 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36328
+[2025-12-18 15:54:43.600 +07:00 INF] [127.0.0.1:36328] Client disconnected (zero bytes)
+[2025-12-18 15:54:43.601 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36328 disconnected
+[2025-12-18 15:55:15.148 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:48416
+[2025-12-18 15:55:15.150 +07:00 INF] [127.0.0.1:48416] Client disconnected (zero bytes)
+[2025-12-18 15:55:15.150 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:48416 disconnected
+[2025-12-18 15:55:47.499 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39568
+[2025-12-18 15:55:47.500 +07:00 INF] [127.0.0.1:39568] Client disconnected (zero bytes)
+[2025-12-18 15:55:47.501 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39568 disconnected
+[2025-12-18 15:56:20.213 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43440
+[2025-12-18 15:56:20.215 +07:00 INF] [127.0.0.1:43440] Client disconnected (zero bytes)
+[2025-12-18 15:56:20.217 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43440 disconnected
+[2025-12-18 15:56:53.529 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40668
+[2025-12-18 15:56:53.530 +07:00 INF] [127.0.0.1:40668] Client disconnected (zero bytes)
+[2025-12-18 15:56:53.531 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40668 disconnected
+[2025-12-18 15:57:26.808 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55300
+[2025-12-18 15:57:26.811 +07:00 INF] [127.0.0.1:55300] Client disconnected (zero bytes)
+[2025-12-18 15:57:26.812 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55300 disconnected
+[2025-12-18 15:57:59.801 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53292
+[2025-12-18 15:57:59.802 +07:00 INF] [127.0.0.1:53292] Client disconnected (zero bytes)
+[2025-12-18 15:57:59.803 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53292 disconnected
+[2025-12-18 15:58:32.715 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50920
+[2025-12-18 15:58:32.716 +07:00 INF] [127.0.0.1:50920] Client disconnected (zero bytes)
+[2025-12-18 15:58:32.717 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50920 disconnected
+[2025-12-18 15:59:05.806 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46886
+[2025-12-18 15:59:05.807 +07:00 INF] [127.0.0.1:46886] Client disconnected (zero bytes)
+[2025-12-18 15:59:05.808 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46886 disconnected
+[2025-12-18 15:59:38.702 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34586
+[2025-12-18 15:59:38.704 +07:00 INF] [127.0.0.1:34586] Client disconnected (zero bytes)
+[2025-12-18 15:59:38.706 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34586 disconnected
+[2025-12-18 16:00:11.599 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43928
+[2025-12-18 16:00:11.600 +07:00 INF] [127.0.0.1:43928] Client disconnected (zero bytes)
+[2025-12-18 16:00:11.600 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43928 disconnected
+[2025-12-18 16:00:44.833 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42464
+[2025-12-18 16:00:44.834 +07:00 INF] [127.0.0.1:42464] Client disconnected (zero bytes)
+[2025-12-18 16:00:44.835 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42464 disconnected
+[2025-12-18 16:01:18.096 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57170
+[2025-12-18 16:01:18.097 +07:00 INF] [127.0.0.1:57170] Client disconnected (zero bytes)
+[2025-12-18 16:01:18.098 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57170 disconnected
+[2025-12-18 16:01:50.757 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:38344
+[2025-12-18 16:01:50.758 +07:00 INF] [127.0.0.1:38344] Client disconnected (zero bytes)
+[2025-12-18 16:01:50.758 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:38344 disconnected
+[2025-12-18 16:02:23.677 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:44774
+[2025-12-18 16:02:23.678 +07:00 INF] [127.0.0.1:44774] Client disconnected (zero bytes)
+[2025-12-18 16:02:23.679 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:44774 disconnected
+[2025-12-18 16:02:56.896 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60646
+[2025-12-18 16:02:56.897 +07:00 INF] [127.0.0.1:60646] Client disconnected (zero bytes)
+[2025-12-18 16:02:56.898 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60646 disconnected
+[2025-12-18 16:03:30.008 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36974
+[2025-12-18 16:03:30.009 +07:00 INF] [127.0.0.1:36974] Client disconnected (zero bytes)
+[2025-12-18 16:03:30.010 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36974 disconnected
+[2025-12-18 16:04:03.320 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:41520
+[2025-12-18 16:04:03.321 +07:00 INF] [127.0.0.1:41520] Client disconnected (zero bytes)
+[2025-12-18 16:04:03.322 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:41520 disconnected
+[2025-12-18 16:04:36.402 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:50982
+[2025-12-18 16:04:36.403 +07:00 INF] [127.0.0.1:50982] Client disconnected (zero bytes)
+[2025-12-18 16:04:36.404 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:50982 disconnected
+[2025-12-18 16:05:09.385 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57304
+[2025-12-18 16:05:09.386 +07:00 INF] [127.0.0.1:57304] Client disconnected (zero bytes)
+[2025-12-18 16:05:09.386 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57304 disconnected
+[2025-12-18 16:05:42.874 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:57300
+[2025-12-18 16:05:42.875 +07:00 INF] [127.0.0.1:57300] Client disconnected (zero bytes)
+[2025-12-18 16:05:42.875 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:57300 disconnected
+[2025-12-18 16:05:45.923 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:42060
+[2025-12-18 16:05:46.297 +07:00 INF] [172.18.0.1:42060] ✓ User 'testuser' auto-logged in successfully
+[2025-12-18 16:05:46.305 +07:00 INF] [172.18.0.1:42060] Client disconnected (zero bytes)
+[2025-12-18 16:05:46.306 +07:00 INF] [172.18.0.1:42060] User 'testuser' removed from online list
+[2025-12-18 16:05:46.316 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:42060 disconnected
+[2025-12-18 16:05:49.997 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:42070
+[2025-12-18 16:05:50.014 +07:00 INF] [172.18.0.1:42070] Get tasks for user: 2 (testuser)
+[2025-12-18 16:05:50.019 +07:00 INF] [172.18.0.1:42070] ✓ Returned 3 tasks for testuser
+[2025-12-18 16:05:50.141 +07:00 INF] [172.18.0.1:42070] Client disconnected (zero bytes)
+[2025-12-18 16:05:50.143 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:42070 disconnected
+[2025-12-18 16:06:12.035 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:37302
+[2025-12-18 16:06:12.072 +07:00 ERR] [172.18.0.1:37302] Error creating task
+System.InvalidOperationException: The requested operation requires an element of type 'Number', but the target element has type 'Null'.
+   at System.Text.Json.ThrowHelper.ThrowJsonElementWrongTypeException(JsonTokenType expectedType, JsonTokenType actualType)
+   at System.Text.Json.JsonDocument.TryGetValue(Int32 index, Int32& value)
+   at System.Text.Json.JsonElement.GetInt32()
+   at TimeFlowServer.ServerCore.ClientHandler.HandleCreateTaskAsync(JsonElement root) in /src/TimeFlowServer/ServerCore/ClientHandler.cs:line 558
+[2025-12-18 16:06:12.084 +07:00 INF] [172.18.0.1:37302] Client disconnected (zero bytes)
+[2025-12-18 16:06:12.084 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:37302 disconnected
+[2025-12-18 16:06:13.012 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:39276
+[2025-12-18 16:06:13.014 +07:00 INF] [127.0.0.1:39276] Client disconnected (zero bytes)
+[2025-12-18 16:06:13.015 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:39276 disconnected
+[2025-12-18 16:06:15.355 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:42510
+[2025-12-18 16:06:15.506 +07:00 INF] [172.18.0.1:42510] Get tasks for user: 2 (testuser)
+[2025-12-18 16:06:15.509 +07:00 INF] [172.18.0.1:42510] ✓ Returned 3 tasks for testuser
+[2025-12-18 16:06:15.512 +07:00 INF] [172.18.0.1:42510] Client disconnected (zero bytes)
+[2025-12-18 16:06:15.513 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:42510 disconnected
+[2025-12-18 16:06:47.220 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60998
+[2025-12-18 16:06:47.221 +07:00 INF] [127.0.0.1:60998] Client disconnected (zero bytes)
+[2025-12-18 16:06:47.222 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60998 disconnected
+[2025-12-18 16:06:48.075 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:60346
+[2025-12-18 16:06:48.272 +07:00 INF] [172.18.0.1:60346] Get full task detail: 6
+[2025-12-18 16:06:48.281 +07:00 INF] [172.18.0.1:60346] ✓ Returned full task detail for TaskId=6
+[2025-12-18 16:06:48.293 +07:00 INF] [172.18.0.1:60346] Client disconnected (zero bytes)
+[2025-12-18 16:06:48.294 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:60346 disconnected
+[2025-12-18 16:07:08.963 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:33160
+[2025-12-18 16:07:08.972 +07:00 INF] [172.18.0.1:33160] Updating task status: TaskId=6, Status=Cancelled
+[2025-12-18 16:07:09.020 +07:00 INF] [172.18.0.1:33160] ✓ Task status updated: 6 -> Cancelled
+[2025-12-18 16:07:09.028 +07:00 INF] [172.18.0.1:33160] Client disconnected (zero bytes)
+[2025-12-18 16:07:09.029 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:33160 disconnected
+[2025-12-18 16:07:10.121 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:33174
+[2025-12-18 16:07:10.125 +07:00 INF] [172.18.0.1:33174] Get full task detail: 6
+[2025-12-18 16:07:10.132 +07:00 INF] [172.18.0.1:33174] ✓ Returned full task detail for TaskId=6
+[2025-12-18 16:07:10.135 +07:00 INF] [172.18.0.1:33174] Client disconnected (zero bytes)
+[2025-12-18 16:07:10.136 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:33174 disconnected
+[2025-12-18 16:07:12.622 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:48856
+[2025-12-18 16:07:12.625 +07:00 INF] [172.18.0.1:48856] Updating task status: TaskId=6, Status=Pending
+[2025-12-18 16:07:12.634 +07:00 INF] [172.18.0.1:48856] ✓ Task status updated: 6 -> Pending
+[2025-12-18 16:07:12.685 +07:00 INF] [172.18.0.1:48856] Client disconnected (zero bytes)
+[2025-12-18 16:07:12.686 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:48856 disconnected
+[2025-12-18 16:07:13.755 +07:00 INF] [NEW CONNECTION] Client connected from 172.18.0.1:48866
+[2025-12-18 16:07:13.761 +07:00 INF] [172.18.0.1:48866] Get full task detail: 6
+[2025-12-18 16:07:13.768 +07:00 INF] [172.18.0.1:48866] ✓ Returned full task detail for TaskId=6
+[2025-12-18 16:07:13.770 +07:00 INF] [172.18.0.1:48866] Client disconnected (zero bytes)
+[2025-12-18 16:07:13.771 +07:00 INF] [DISCONNECTED] Client 172.18.0.1:48866 disconnected
+[2025-12-18 16:07:20.264 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:34740
+[2025-12-18 16:07:20.266 +07:00 INF] [127.0.0.1:34740] Client disconnected (zero bytes)
+[2025-12-18 16:07:20.266 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:34740 disconnected
+[2025-12-18 16:07:53.034 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:37136
+[2025-12-18 16:07:53.035 +07:00 INF] [127.0.0.1:37136] Client disconnected (zero bytes)
+[2025-12-18 16:07:53.035 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:37136 disconnected
+[2025-12-18 16:08:25.947 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53786
+[2025-12-18 16:08:25.949 +07:00 INF] [127.0.0.1:53786] Client disconnected (zero bytes)
+[2025-12-18 16:08:25.950 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53786 disconnected
+[2025-12-18 16:08:59.085 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46456
+[2025-12-18 16:08:59.086 +07:00 INF] [127.0.0.1:46456] Client disconnected (zero bytes)
+[2025-12-18 16:08:59.087 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46456 disconnected
+[2025-12-18 16:09:31.934 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47452
+[2025-12-18 16:09:31.935 +07:00 INF] [127.0.0.1:47452] Client disconnected (zero bytes)
+[2025-12-18 16:09:31.935 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47452 disconnected
+[2025-12-18 16:10:04.739 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43282
+[2025-12-18 16:10:04.740 +07:00 INF] [127.0.0.1:43282] Client disconnected (zero bytes)
+[2025-12-18 16:10:04.741 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43282 disconnected
+[2025-12-18 16:10:37.725 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:53798
+[2025-12-18 16:10:37.726 +07:00 INF] [127.0.0.1:53798] Client disconnected (zero bytes)
+[2025-12-18 16:10:37.727 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:53798 disconnected
+[2025-12-18 16:11:10.735 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46630
+[2025-12-18 16:11:10.737 +07:00 INF] [127.0.0.1:46630] Client disconnected (zero bytes)
+[2025-12-18 16:11:10.739 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46630 disconnected
+[2025-12-18 16:11:43.619 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:42952
+[2025-12-18 16:11:43.620 +07:00 INF] [127.0.0.1:42952] Client disconnected (zero bytes)
+[2025-12-18 16:11:43.621 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:42952 disconnected
+[2025-12-18 16:12:16.547 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46566
+[2025-12-18 16:12:16.548 +07:00 INF] [127.0.0.1:46566] Client disconnected (zero bytes)
+[2025-12-18 16:12:16.550 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46566 disconnected
+[2025-12-18 16:12:48.356 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:60886
+[2025-12-18 16:12:48.358 +07:00 INF] [127.0.0.1:60886] Client disconnected (zero bytes)
+[2025-12-18 16:12:48.360 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:60886 disconnected
+[2025-12-18 16:13:23.223 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33238
+[2025-12-18 16:13:23.224 +07:00 INF] [127.0.0.1:33238] Client disconnected (zero bytes)
+[2025-12-18 16:13:23.225 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33238 disconnected
+[2025-12-18 16:13:53.514 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:37556
+[2025-12-18 16:13:53.516 +07:00 INF] [127.0.0.1:37556] Client disconnected (zero bytes)
+[2025-12-18 16:13:53.517 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:37556 disconnected
+[2025-12-18 16:14:27.079 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36612
+[2025-12-18 16:14:27.080 +07:00 INF] [127.0.0.1:36612] Client disconnected (zero bytes)
+[2025-12-18 16:14:27.081 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36612 disconnected
+[2025-12-18 16:14:59.990 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46836
+[2025-12-18 16:14:59.991 +07:00 INF] [127.0.0.1:46836] Client disconnected (zero bytes)
+[2025-12-18 16:14:59.992 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46836 disconnected
+[2025-12-18 16:15:33.125 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:51344
+[2025-12-18 16:15:33.126 +07:00 INF] [127.0.0.1:51344] Client disconnected (zero bytes)
+[2025-12-18 16:15:33.127 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:51344 disconnected
+[2025-12-18 16:16:05.903 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:47638
+[2025-12-18 16:16:05.904 +07:00 INF] [127.0.0.1:47638] Client disconnected (zero bytes)
+[2025-12-18 16:16:05.905 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:47638 disconnected
+[2025-12-18 16:16:38.781 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46394
+[2025-12-18 16:16:38.783 +07:00 INF] [127.0.0.1:46394] Client disconnected (zero bytes)
+[2025-12-18 16:16:38.783 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46394 disconnected
+[2025-12-18 16:17:11.677 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:40086
+[2025-12-18 16:17:11.680 +07:00 INF] [127.0.0.1:40086] Client disconnected (zero bytes)
+[2025-12-18 16:17:11.684 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:40086 disconnected
+[2025-12-18 16:17:44.588 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36290
+[2025-12-18 16:17:44.590 +07:00 INF] [127.0.0.1:36290] Client disconnected (zero bytes)
+[2025-12-18 16:17:44.592 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36290 disconnected
+[2025-12-18 16:18:17.405 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:55116
+[2025-12-18 16:18:17.406 +07:00 INF] [127.0.0.1:55116] Client disconnected (zero bytes)
+[2025-12-18 16:18:17.406 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:55116 disconnected
+[2025-12-18 16:18:49.953 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:41178
+[2025-12-18 16:18:49.955 +07:00 INF] [127.0.0.1:41178] Client disconnected (zero bytes)
+[2025-12-18 16:18:49.956 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:41178 disconnected
+[2025-12-18 16:19:22.885 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:46198
+[2025-12-18 16:19:22.888 +07:00 INF] [127.0.0.1:46198] Client disconnected (zero bytes)
+[2025-12-18 16:19:22.889 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:46198 disconnected
+[2025-12-18 16:19:55.788 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49906
+[2025-12-18 16:19:55.790 +07:00 INF] [127.0.0.1:49906] Client disconnected (zero bytes)
+[2025-12-18 16:19:55.791 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49906 disconnected
+[2025-12-18 16:20:28.917 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:36046
+[2025-12-18 16:20:28.918 +07:00 INF] [127.0.0.1:36046] Client disconnected (zero bytes)
+[2025-12-18 16:20:28.918 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:36046 disconnected
+[2025-12-18 16:21:01.759 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:43198
+[2025-12-18 16:21:01.762 +07:00 INF] [127.0.0.1:43198] Client disconnected (zero bytes)
+[2025-12-18 16:21:01.763 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:43198 disconnected
+[2025-12-18 16:21:34.771 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49494
+[2025-12-18 16:21:34.773 +07:00 INF] [127.0.0.1:49494] Client disconnected (zero bytes)
+[2025-12-18 16:21:34.774 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49494 disconnected
+[2025-12-18 16:22:07.657 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:33618
+[2025-12-18 16:22:07.658 +07:00 INF] [127.0.0.1:33618] Client disconnected (zero bytes)
+[2025-12-18 16:22:07.658 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:33618 disconnected
+[2025-12-18 16:22:40.625 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:59462
+[2025-12-18 16:22:40.626 +07:00 INF] [127.0.0.1:59462] Client disconnected (zero bytes)
+[2025-12-18 16:22:40.627 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:59462 disconnected
+[2025-12-18 16:23:13.043 +07:00 INF] [NEW CONNECTION] Client connected from 127.0.0.1:49590
+[2025-12-18 16:23:13.045 +07:00 INF] [127.0.0.1:49590] Client disconnected (zero bytes)
+[2025-12-18 16:23:13.045 +07:00 INF] [DISCONNECTED] Client 127.0.0.1:49590 disconnected
