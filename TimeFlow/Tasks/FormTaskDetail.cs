@@ -183,6 +183,42 @@ namespace TimeFlow.Tasks
                 this.Close();
             }
         }
+        private void FilterComments(string keyword)
+        {
+            if (_currentTask == null) return;
+
+            // Tìm Panel chứa danh sách bình luận
+            var centerPanel = FindCenterContentPanel();
+            if (centerPanel == null) return;
+
+            centerPanel.SuspendLayout(); // Tối ưu hiệu năng khi vẽ lại
+
+            // 1. Lấy danh sách bình luận cũ để xóa (trừ ô Search và nút Post)
+            var controlsToRemove = centerPanel.Controls.OfType<FlowLayoutPanel>()
+                .Where(c => c.Tag != null && c.Tag.ToString() == "CommentItem").ToList();
+
+            foreach (var ctrl in controlsToRemove) centerPanel.Controls.Remove(ctrl);
+
+            // 2. Dùng LINQ để lọc dữ liệu trong bộ nhớ
+            var filteredList = _currentTask.Comments
+                .Where(c => string.IsNullOrEmpty(keyword) ||
+                            c.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                            c.DisplayName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // 3. Hiển thị kết quả lọc
+            int spacerIndex = centerPanel.Controls.Count - 1;
+            foreach (var comment in filteredList)
+            {
+                var commentControl = CreateComment(comment.DisplayName, comment.Content, comment.TimeAgo);
+                commentControl.Tag = "CommentItem"; // Đánh dấu để dễ xóa lần sau
+
+                centerPanel.Controls.Add(commentControl);
+                centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
+            }
+
+            centerPanel.ResumeLayout();
+        }
 
         private bool UserHasPermission()
         {

@@ -383,6 +383,31 @@ namespace TimeFlow.Tasks
                 };
                 contentPanel.Controls.Add(description);
             }
+            // 1. Tạo ô tìm kiếm
+            CustomTextBoxWrapper txtSearchComments = new CustomTextBoxWrapper
+            {
+                Width = centerContentWidth,
+                Height = 40,
+                TextBoxText = "🔍 Search comments...",
+                Margin = new Padding(0, 10, 0, 10)
+            };
+            txtSearchComments.Enter += (s, e) => {
+                this.BeginInvoke((MethodInvoker)delegate {
+                 txtSearchComments.SelectAll();
+                });
+            };
+            // 2. Thêm sự kiện khi người dùng gõ chữ
+            txtSearchComments.TextChanged += (s, e) => {
+
+                string keyword = txtSearchComments.TextBoxText.Trim();
+                if (keyword == "Search comments...") keyword = "";
+
+                // Gọi hàm lọc dữ liệu
+                FilterComments(keyword);
+            };
+
+            // 3. Thêm vào contentPanel trước phần tiêu đề Comments
+            contentPanel.Controls.Add(txtSearchComments);
 
             // Comments section
             Label commentsTitle = new Label
@@ -402,7 +427,11 @@ namespace TimeFlow.Tasks
                 Margin = new Padding(0, 0, 0, 10)
             };
             contentPanel.Controls.Add(newCommentBox);
-
+            newCommentBox.Enter += (s, e) => {
+                this.BeginInvoke((MethodInvoker)delegate {
+                    newCommentBox.SelectAll();
+                });
+            };
             CustomButton postButton = new CustomButton
             {
                 Text = "Post",
@@ -763,6 +792,7 @@ namespace TimeFlow.Tasks
                 Padding = new Padding(12),
                 BackColor = AppColors.Gray50,
                 BorderStyle = BorderStyle.FixedSingle
+
             };
 
             FlowLayoutPanel header = new FlowLayoutPanel
@@ -787,6 +817,7 @@ namespace TimeFlow.Tasks
 
             return comment;
         }
+
 
         private Control CreateActivityLog(string activity, string time, int width)
         {
