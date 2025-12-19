@@ -8,6 +8,7 @@ namespace TimeFlow.Data.Repositories
     {
         public string Sender { get; set; }
         public string Receiver { get; set; }
+        public int? GroupId { get; set; }
         public string Content { get; set; }
         public DateTime Time { get; set; }
     }
