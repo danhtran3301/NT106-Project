@@ -216,12 +216,26 @@ namespace TimeFlow.Tasks
             CreateStatusSubMenu(statusMenu);
 
             bool hasPerm = UserHasPermission();
-            editItem.Enabled = hasPerm;
+            bool isCompleted = _currentTask?.Status == TimeFlow.Models.TaskStatus.Completed;
+            
+            // ✅ Edit: disabled nếu completed hoặc không có quyền
+            editItem.Enabled = hasPerm && !isCompleted;
+            
+            // ✅ Delete: chỉ cần có quyền, không quan tâm completed
             deleteItem.Enabled = hasPerm;
+            
+            // ✅ Status: disabled nếu completed
+            statusMenu.Enabled = !isCompleted;
 
-            if (!hasPerm)
+            if (isCompleted)
+            {
+                editItem.Text += " (Completed)";
+                statusMenu.Text += " (Completed)";
+            }
+            else if (!hasPerm)
             {
                 editItem.Text += " (Read Only)";
+                deleteItem.Text += " (Read Only)";
             }
 
             rightFlow.Controls.Add(optionsButton);
@@ -259,22 +273,48 @@ namespace TimeFlow.Tasks
             int buttonWidth = 200;
             int buttonHeight = 50;
 
-            var btnYourTask = CreateMenuButton("Your Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight);
-            btnYourTask.Click += BtnYourTask_Click;
-            menuPanel.Controls.Add(btnYourTask);
+            // ✅ Create buttons and cache references
+            _btnEditTask = CreateMenuButton("✏️ Edit Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight, AppColors.Blue600);
+            _btnEditTask.Click += EditItem_Click;
+            menuPanel.Controls.Add(_btnEditTask);
 
-            var btnGroup = CreateMenuButton("Group", AppColors.Green500, Color.White, buttonWidth, buttonHeight);
-            btnGroup.Click += BtnGroup_Click;
-            menuPanel.Controls.Add(btnGroup);
+            _btnChangeStatus = CreateMenuButton("🔄 Change Status", AppColors.Orange500, Color.White, buttonWidth, buttonHeight, AppColors.Orange600);
+            _btnChangeStatus.Click += (sender, e) =>
+            {
+                if (_currentTask == null) return;
+                ContextMenuStrip statusMenu = new ContextMenuStrip();
+                foreach (TimeFlow.Models.TaskStatus status in System.Enum.GetValues(typeof(TimeFlow.Models.TaskStatus)))
+                {
+                    // ✅ Skip "Completed" - chỉ được set qua nút Submit
+                    if (status == TimeFlow.Models.TaskStatus.Completed)
+                        continue;
+                    
+                    ToolStripMenuItem item = new ToolStripMenuItem
+                    {
+                        Text = status switch
+                        {
+                            TimeFlow.Models.TaskStatus.Pending => "⏳ Pending",
+                            TimeFlow.Models.TaskStatus.InProgress => "🔵 In Progress",
+                            TimeFlow.Models.TaskStatus.Cancelled => "❌ Cancelled",
+                            _ => status.ToString()
+                        },
+                        Checked = (status == _currentTask.Status),
+                        Font = (status == _currentTask.Status) ? new Font(statusMenu.Font, FontStyle.Bold) : statusMenu.Font
+                    };
+                    item.Click += (s, args) => ChangeStatusItem_Click(status);
+                    statusMenu.Items.Add(item);
+                }
+                statusMenu.Show(_btnChangeStatus, new Point(_btnChangeStatus.Width, 0));
+            };
+            menuPanel.Controls.Add(_btnChangeStatus);
 
-            var btnNewTask = CreateMenuButton("New task", AppColors.Orange500, Color.White, buttonWidth, buttonHeight);
-            btnNewTask.Click += BtnNewTask_Click;
-            menuPanel.Controls.Add(btnNewTask);
+            _btnDeleteTask = CreateMenuButton("🗑️ Delete Task", AppColors.Red600, Color.White, buttonWidth, buttonHeight, Color.FromArgb(220, 38, 38));
+            _btnDeleteTask.Click += DeleteItem_Click;
+            menuPanel.Controls.Add(_btnDeleteTask);
 
-            Color submitColor = AppColors.Purple500;
-            var btnSubmitTask = CreateMenuButton("Submit task", submitColor, Color.White, buttonWidth, buttonHeight, Color.FromArgb(200, submitColor));
-            btnSubmitTask.Click += BtnSubmitTask_Click;
-            menuPanel.Controls.Add(btnSubmitTask);
+            _btnSubmitTask = CreateMenuButton("Submit task", AppColors.Purple500, Color.White, buttonWidth, buttonHeight, Color.FromArgb(147, 51, 234));
+            _btnSubmitTask.Click += BtnSubmitTask_Click;
+            menuPanel.Controls.Add(_btnSubmitTask);
 
             MonthCalendar monthCalendar = new MonthCalendar
             {
@@ -294,6 +334,9 @@ namespace TimeFlow.Tasks
             };
 
             menuPanel.Controls.Add(monthCalendar);
+
+            // ✅ Update button states sau khi tạo xong
+            UpdateButtonStates();
 
             return menuPanel;
         }
@@ -875,6 +918,10 @@ namespace TimeFlow.Tasks
             System.Array statusValues = System.Enum.GetValues(typeof(TimeFlow.Models.TaskStatus));
             foreach (TimeFlow.Models.TaskStatus status in statusValues)
             {
+                // ✅ Skip "Completed" - chỉ được set qua nút Submit
+                if (status == TimeFlow.Models.TaskStatus.Completed)
+                    continue;
+                
                 ToolStripMenuItem item = new ToolStripMenuItem(status.ToString());
                 if (_currentTask != null && status == _currentTask.Status) 
                     item.Checked = true;
