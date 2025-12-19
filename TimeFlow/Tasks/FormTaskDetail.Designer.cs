@@ -181,64 +181,7 @@ namespace TimeFlow.Tasks
                 Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
                 Margin = new Padding(0)
             };
-
-            CustomButton optionsButton = new CustomButton
-            {
-                Text = "...",
-                Font = new Font("Segoe UI Emoji", 14F, FontStyle.Bold),
-                ForeColor = HeaderIconColor,
-                BackColor = Color.Transparent,
-                HoverColor = AppColors.Gray200,
-                BorderRadius = 4,
-                Width = 40,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 16, 0, 0)
-            };
-
-            ContextMenuStrip contextMenu = new ContextMenuStrip();
-            ToolStripMenuItem editItem = new ToolStripMenuItem("Chỉnh sửa (Edit)");
-            ToolStripMenuItem deleteItem = new ToolStripMenuItem("Xóa Task (Delete)");
-            ToolStripMenuItem statusMenu = new ToolStripMenuItem("Thay đổi Trạng thái (Status)");
-
-            contextMenu.Items.Add(editItem);
-            contextMenu.Items.Add(deleteItem);
-            contextMenu.Items.Add(new ToolStripSeparator());
-            contextMenu.Items.Add(statusMenu);
-
-            optionsButton.Click += (sender, e) =>
-            {
-                contextMenu.Show(optionsButton, new Point(optionsButton.Width - contextMenu.Width, optionsButton.Height));
-            };
-
-            editItem.Click += EditItem_Click;
-            deleteItem.Click += DeleteItem_Click;
-            CreateStatusSubMenu(statusMenu);
-
-            bool hasPerm = UserHasPermission();
-            bool isCompleted = _currentTask?.Status == TimeFlow.Models.TaskStatus.Completed;
-            
-            // ✅ Edit: disabled nếu completed hoặc không có quyền
-            editItem.Enabled = hasPerm && !isCompleted;
-            
-            // ✅ Delete: chỉ cần có quyền, không quan tâm completed
-            deleteItem.Enabled = hasPerm;
-            
-            // ✅ Status: disabled nếu completed
-            statusMenu.Enabled = !isCompleted;
-
-            if (isCompleted)
-            {
-                editItem.Text += " (Completed)";
-                statusMenu.Text += " (Completed)";
-            }
-            else if (!hasPerm)
-            {
-                editItem.Text += " (Read Only)";
-                deleteItem.Text += " (Read Only)";
-            }
-
-            rightFlow.Controls.Add(optionsButton);
+                  
             headerPanel.Controls.Add(rightFlow, 2, 0);
 
             Panel separator = new Panel
@@ -400,10 +343,10 @@ namespace TimeFlow.Tasks
                 Text = _currentTask.StatusText,
                 BackColor = statusColor,
                 ForeColor = statusColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White,
-                Font = FontBold,
-                BorderRadius = 6,
-                Width = 130,
-                Height = 50,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                BorderRadius = 12,
+                Width = 150,
+                Height = 45,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Anchor = AnchorStyles.Right,
                 Margin = new Padding(10, 0, 0, 0)
@@ -583,7 +526,6 @@ namespace TimeFlow.Tasks
             };
             mainSidebarPanel.Controls.Add(contentFlow);
 
-            // Group info (chỉ hiển thị nếu là group task)
             if (_currentTask.IsGroupTask && _currentTask.HasAssignees)
             {
                 contentFlow.Controls.Add(new Label
@@ -611,7 +553,6 @@ namespace TimeFlow.Tasks
                 });
             }
 
-            // Details section
             Label detailsTitle = new Label
             {
                 Text = "Details",
@@ -625,7 +566,7 @@ namespace TimeFlow.Tasks
             TableLayoutPanel detailsContainer = new TableLayoutPanel
             {
                 ColumnCount = 2,
-                RowCount = 4,
+                RowCount = 3,
                 Width = contentWidth,
                 AutoSize = true,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.None,
@@ -698,44 +639,6 @@ namespace TimeFlow.Tasks
                 TextAlign = ContentAlignment.MiddleCenter
             };
             AddDetailRow(detailsContainer, "Priority", priority, 2);
-
-            // Progress
-            FlowLayoutPanel progressValue = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                AutoSize = true,
-                Margin = new Padding(0)
-            };
-            
-            ModernPanel progressPanel = new ModernPanel
-            {
-                BackColor = AppColors.Gray200,
-                BorderRadius = 4,
-                Height = 8,
-                Width = 150
-            };
-            ModernPanel progressBar = new ModernPanel
-            {
-                BackColor = AppColors.Blue500,
-                BorderRadius = 4,
-                Height = 8,
-                Width = (int)(150 * (_currentTask.Progress / 100.0))
-            };
-            progressPanel.Controls.Add(progressBar);
-
-            Label progressLabel = new Label
-            {
-                Text = $"{_currentTask.Progress}%",
-//# warn: This is probably a bug. Please check if the label should have a specific font or if it can stay as is.
-                Font = FontRegular,
-                ForeColor = AppColors.Gray800,
-                Margin = new Padding(8, -5, 0, 0),
-                AutoSize = true
-            };
-            progressValue.Controls.Add(progressPanel);
-            progressValue.Controls.Add(progressLabel);
-            AddDetailRow(detailsContainer, "Progress", progressValue, 3);
 
             contentFlow.Controls.Add(detailsContainer);
 
