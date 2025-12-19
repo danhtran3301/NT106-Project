@@ -131,7 +131,7 @@ namespace TimeFlow.UI
             }
 
             // Check authentication
-            if (!SessionManager.IsAuthenticated)
+            if (!SessionManager.IsAuthenticated || !SessionManager.UserId.HasValue)
             {
                 MessageBox.Show("Vui lòng đăng nhập để thực hiện thao tác này!", "Lỗi",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -147,6 +147,16 @@ namespace TimeFlow.UI
                 DateTime dueDate = dateTimePicker1.Value.Date;
                 string description = richTextBox1.Text.Trim();
 
+                // ✅ Validate DueDate before sending
+                if (dueDate < DateTime.Now.Date.AddHours(-24))
+                {
+                    MessageBox.Show("Ngày hết hạn không thể quá 24 giờ trong quá khứ!", "Dữ liệu không hợp lệ",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    button2.Enabled = true;
+                    button2.Text = "Submit";
+                    return;
+                }
+
                 if (_taskIdToEdit.HasValue)
                 {
                     // Update existing task
@@ -158,8 +168,46 @@ namespace TimeFlow.UI
                     await CreateTaskAsync(title, description, dueDate);
                 }
             }
+            catch (Data.Exceptions.ValidationException ex)
+            {
+                // ✅ Handle validation errors with field info
+                string fieldName = ex.Field switch
+                {
+                    "Title" => "Tên nhiệm vụ",
+                    "DueDate" => "Ngày hết hạn",
+                    "Description" => "Mô tả",
+                    "Priority" => "Độ ưu tiên",
+                    "Status" => "Trạng thái",
+                    "CreatedBy" => "Người tạo",
+                    "CategoryId" => "Danh mục",
+                    _ => ex.Field
+                };
+
+                MessageBox.Show(
+                    $"Lỗi xác thực dữ liệu:\n\nTrường: {fieldName}\nLỗi: {ex.Message}",
+                    "Dữ liệu không hợp lệ",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning
+                );
+                button2.Enabled = true;
+                button2.Text = "Submit";
+            }
+            catch (Data.Exceptions.UnauthorizedException ex)
+            {
+                // ✅ Handle authorization errors
+                MessageBox.Show(
+                    $"Lỗi xác thực:\n{ex.Message}\n\nVui lòng đăng nhập lại.",
+                    "Không có quyền",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                // Redirect to login
+                this.DialogResult = DialogResult.Cancel;
+                this.Close();
+            }
             catch (Exception ex)
             {
+                // Generic errors
                 MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 button2.Enabled = true;
@@ -169,6 +217,12 @@ namespace TimeFlow.UI
 
         private async System.Threading.Tasks.Task CreateTaskAsync(string title, string description, DateTime dueDate)
         {
+            // ✅ Validate UserId
+            if (!SessionManager.UserId.HasValue || SessionManager.UserId.Value <= 0)
+            {
+                throw new Exception("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
+            }
+
             var newTask = new TaskItem
             {
                 Title = title,
@@ -176,7 +230,7 @@ namespace TimeFlow.UI
                 DueDate = dueDate,
                 Priority = TaskPriority.Medium, // Default
                 Status = TimeFlow.Models.TaskStatus.Pending,
-                CreatedBy = SessionManager.UserId ?? 0,
+                CreatedBy = SessionManager.UserId.Value, // ✅ Use .Value
                 IsGroupTask = false,
                 CreatedAt = DateTime.Now
             };

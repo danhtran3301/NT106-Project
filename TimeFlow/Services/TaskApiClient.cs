@@ -136,15 +136,35 @@ namespace TimeFlow.Services
                 var root = doc.RootElement;
 
                 string status = root.GetProperty("status").GetString();
+                
                 if (status == "success")
                 {
                     return root.GetProperty("taskId").GetInt32();
+                }
+                else if (status == "validation_error")
+                {
+                    string field = root.TryGetProperty("field", out var f) ? f.GetString() : "";
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.ValidationException(field, message);
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
                 }
                 else
                 {
                     string errorMsg = GetErrorMessage(root);
                     throw new Exception("Server error: " + errorMsg);
                 }
+            }
+            catch (Data.Exceptions.ValidationException)
+            {
+                throw; // Re-throw to preserve exception type
+            }
+            catch (Data.Exceptions.UnauthorizedException)
+            {
+                throw; // Re-throw to preserve exception type
             }
             catch (Exception ex)
             {
@@ -178,7 +198,34 @@ namespace TimeFlow.Services
                 var root = doc.RootElement;
 
                 string status = root.GetProperty("status").GetString();
-                return status == "success";
+                
+                if (status == "success")
+                {
+                    return true;
+                }
+                else if (status == "validation_error")
+                {
+                    string field = root.TryGetProperty("field", out var f) ? f.GetString() : "";
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.ValidationException(field, message);
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Data.Exceptions.ValidationException)
+            {
+                throw;
+            }
+            catch (Data.Exceptions.UnauthorizedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -202,7 +249,24 @@ namespace TimeFlow.Services
                 var root = doc.RootElement;
 
                 string status = root.GetProperty("status").GetString();
-                return status == "success";
+                
+                if (status == "success")
+                {
+                    return true;
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Data.Exceptions.UnauthorizedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -228,7 +292,34 @@ namespace TimeFlow.Services
                 var root = doc.RootElement;
 
                 string status = root.GetProperty("status").GetString();
-                return status == "success";
+                
+                if (status == "success")
+                {
+                    return true;
+                }
+                else if (status == "validation_error")
+                {
+                    string field = root.TryGetProperty("field", out var f) ? f.GetString() : "";
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.ValidationException(field, message);
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Data.Exceptions.ValidationException)
+            {
+                throw;
+            }
+            catch (Data.Exceptions.UnauthorizedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

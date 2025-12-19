@@ -564,29 +564,50 @@ namespace TimeFlowServer.ServerCore
                     Priority = (TaskPriority)data.GetProperty("priority").GetInt32(),
                     Status = data.TryGetProperty("status", out var statusProp) ? (TimeFlow.Models.TaskStatus)statusProp.GetInt32() : TimeFlow.Models.TaskStatus.Pending,
                     CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : null,
-                    CreatedBy = user.UserId,
+                    CreatedBy = user.UserId, // ✅ Always use authenticated user's ID
                     IsGroupTask = data.TryGetProperty("isGroupTask", out var isGroup) && isGroup.GetBoolean()
                 };
 
                 Log.Information($"[{_clientId}] Creating task: {newTask.Title} for user {username}");
 
+                // ✅ Create task (validation + activity logging done inside transaction)
                 int taskId = _taskRepo.Create(newTask);
 
                 if (taskId > 0)
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", taskId = taskId }));
                     Log.Information($"[{_clientId}] ✓ Task created with ID={taskId}");
-
-                    // Log activity
-                    _activityLogRepo.LogActivity(user.UserId, taskId, "CreateTask", $"Created task: {newTask.Title}");
+                    
+                    // ✅ REMOVED: Duplicate activity log (already logged in TaskRepository.Create)
                 }
                 else
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to create task" }));
+                    Log.Warning($"[{_clientId}] ✗ Task creation returned 0");
                 }
+            }
+            catch (TimeFlow.Data.Exceptions.ValidationException ex)
+            {
+                // ✅ Handle validation errors with detailed info
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "validation_error",
+                    field = ex.Field,
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Validation error creating task: Field={ex.Field}, Message={ex.Message}");
+            }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                // ✅ Handle authorization errors
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized task creation: {ex.Message}");
             }
             catch (Exception ex)
             {
+                // Generic errors
                 Log.Error(ex, $"[{_clientId}] Error creating task");
                 await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
@@ -624,13 +645,6 @@ namespace TimeFlowServer.ServerCore
                     return;
                 }
 
-                // Check ownership
-                if (existingTask.CreatedBy != user.UserId && !existingTask.IsGroupTask)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
-                    return;
-                }
-
                 // Update fields
                 existingTask.Title = data.GetProperty("title").GetString() ?? existingTask.Title;
                 existingTask.Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : existingTask.Description;
@@ -640,20 +654,35 @@ namespace TimeFlowServer.ServerCore
                 existingTask.Status = (TimeFlow.Models.TaskStatus)data.GetProperty("status").GetInt32();
                 existingTask.CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : existingTask.CategoryId;
 
-                bool success = _taskRepo.Update(existingTask);
+                // ✅ Use Update with authorization (validation + activity logging done inside)
+                bool success = _taskRepo.Update(existingTask, user.UserId);
 
                 if (success)
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
                     Log.Information($"[{_clientId}] ✓ Task updated: {taskId}");
-
-                    // Log activity
-                    _activityLogRepo.LogActivity(user.UserId, taskId, "UpdateTask", $"Updated task: {existingTask.Title}");
                 }
                 else
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update task" }));
                 }
+            }
+            catch (TimeFlow.Data.Exceptions.ValidationException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "validation_error",
+                    field = ex.Field,
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Validation error updating task: {ex.Message}");
+            }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized task update: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -685,34 +714,29 @@ namespace TimeFlowServer.ServerCore
                 int taskId = root.GetProperty("taskId").GetInt32();
                 Log.Information($"[{_clientId}] Deleting task: {taskId}");
 
-                var task = _taskRepo.GetById(taskId);
-                if (task == null)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
-                    return;
-                }
-
-                // Check ownership
-                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
-                    return;
-                }
-
-                bool success = _taskRepo.Delete(taskId);
+                // ✅ Use DeleteWithCascade (handles authorization, cascade delete, activity logging)
+                bool success = _taskRepo.DeleteWithCascade(taskId, user.UserId);
 
                 if (success)
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
-                    Log.Information($"[{_clientId}] ✓ Task deleted: {taskId}");
-
-                    // Log activity
-                    _activityLogRepo.LogActivity(user.UserId, null, "DeleteTask", $"Deleted task: {task.Title}");
+                    Log.Information($"[{_clientId}] ✓ Task deleted with cascade: {taskId}");
+                    
+                    // ✅ REMOVED: Activity log (already logged in DeleteWithCascade)
                 }
                 else
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to delete task" }));
+                    Log.Warning($"[{_clientId}] ✗ Task deletion failed: {taskId}");
                 }
+            }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized task deletion: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -747,35 +771,35 @@ namespace TimeFlowServer.ServerCore
 
                 Log.Information($"[{_clientId}] Updating task status: TaskId={taskId}, Status={newStatus}");
 
-                var task = _taskRepo.GetById(taskId);
-                if (task == null)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
-                    return;
-                }
-
-                // Check ownership
-                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
-                    return;
-                }
-
-                bool success = _taskRepo.UpdateStatus(taskId, newStatus);
+                // ✅ Use UpdateStatus with authorization (validation + activity logging done inside)
+                bool success = _taskRepo.UpdateStatus(taskId, newStatus, user.UserId);
 
                 if (success)
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
                     Log.Information($"[{_clientId}] ✓ Task status updated: {taskId} -> {newStatus}");
-
-                    // Log activity
-                    _activityLogRepo.LogActivity(user.UserId, taskId, "UpdateTaskStatus", 
-                        $"Changed task status to {newStatus}");
                 }
                 else
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update status" }));
                 }
+            }
+            catch (TimeFlow.Data.Exceptions.ValidationException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "validation_error",
+                    field = ex.Field,
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Validation error updating status: {ex.Message}");
+            }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized status update: {ex.Message}");
             }
             catch (Exception ex)
             {

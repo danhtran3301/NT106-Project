@@ -355,8 +355,9 @@ namespace TimeFlow
 
         private void button2_Click(object sender, EventArgs e)
         {
-            FormChatBox chatForm = new FormChatBox();
-            chatForm.Show();
+            // Open Group Tasks form
+            FormGroupTaskList groupTasksForm = new FormGroupTaskList();
+            groupTasksForm.Show();
         }
 
         private void button4_Click(object sender, EventArgs e)

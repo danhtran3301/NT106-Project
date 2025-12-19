@@ -293,7 +293,9 @@ namespace TimeFlow.Tasks
 
         private void BtnGroup_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Group list feature coming soon!", "Info");
+            // Mở form group tasks
+            FormGroupTaskList groupTasksForm = new FormGroupTaskList();
+            groupTasksForm.Show();
         }
 
         private void EditItem_Click(object sender, EventArgs e)
