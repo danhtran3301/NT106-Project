@@ -49,7 +49,18 @@ namespace TimeFlow.UI.Components
             get => base.BorderColor;
             set { base.BorderColor = value; _originalBorderColor = value; }
         }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            
+            if (this.Parent != null)
+            {
+                e.Graphics.Clear(this.Parent.BackColor);
+            }
 
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            base.OnPaint(e);
+
+        }
         protected override void OnMouseEnter(EventArgs e)
         {
             base.OnMouseEnter(e);

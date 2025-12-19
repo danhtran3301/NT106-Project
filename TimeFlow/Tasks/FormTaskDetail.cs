@@ -40,17 +40,17 @@ namespace TimeFlow.Tasks
         public FormTaskDetail()
         {
             InitializeComponent();
+            this.DoubleBuffered = true;
             _taskApi = new TaskApiClient();
-            this.SetStyle(ControlStyles.DoubleBuffer |
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.DoubleBuffer |
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
+
             this.UpdateStyles();
             
-            // ✅ Update buttons khi form được activated
             this.Activated += (s, e) => UpdateButtonStates();
         }
 
-        // ✅ NEW: Constructor nhận TaskItem data
         public FormTaskDetail(TaskItem basicTask) : this()
         {
             _basicTaskData = basicTask;
@@ -257,7 +257,6 @@ namespace TimeFlow.Tasks
             }
         }
 
-        // ✅ NEW: Update button states without full refresh
         private void UpdateButtonStates()
         {
             if (_currentTask == null) return;
@@ -265,76 +264,24 @@ namespace TimeFlow.Tasks
             bool isCompleted = _currentTask.Status == TimeFlow.Models.TaskStatus.Completed;
             bool hasPerm = UserHasPermission();
 
-            // Update Edit button
             if (_btnEditTask != null)
             {
                 _btnEditTask.Enabled = hasPerm && !isCompleted;
-                if (isCompleted || !hasPerm)
-                {
-                    _btnEditTask.BackColor = AppColors.Gray400;
-                    _btnEditTask.HoverColor = AppColors.Gray400;
-                    _btnEditTask.Text = isCompleted ? "✏️ Edit (Completed)" : "✏️ Edit (Read Only)";
-                }
-                else
-                {
-                    _btnEditTask.BackColor = AppColors.Blue500;
-                    _btnEditTask.HoverColor = AppColors.Blue600;
-                    _btnEditTask.Text = "✏️ Edit Task";
-                }
+                _btnEditTask.BackColor = AppColors.Blue500; // Cố định màu gốc
+                _btnEditTask.Text = isCompleted ? "✏️ Edit (Done)" : "✏️ Edit Task";
             }
 
-            // Update Change Status button
             if (_btnChangeStatus != null)
             {
                 _btnChangeStatus.Enabled = !isCompleted;
-                if (isCompleted)
-                {
-                    _btnChangeStatus.BackColor = AppColors.Gray400;
-                    _btnChangeStatus.HoverColor = AppColors.Gray400;
-                    _btnChangeStatus.Text = "🔄 Status (Completed)";
-                }
-                else
-                {
-                    _btnChangeStatus.BackColor = AppColors.Orange500;
-                    _btnChangeStatus.HoverColor = AppColors.Orange600;
-                    _btnChangeStatus.Text = "🔄 Change Status";
-                }
+                _btnChangeStatus.BackColor = AppColors.Orange500; // Cố định màu gốc
             }
 
-            // Update Delete button - ✅ CHO PHÉP xóa task completed
-            if (_btnDeleteTask != null)
-            {
-                _btnDeleteTask.Enabled = hasPerm; // ✅ Chỉ cần có permission, không check completed
-                if (!hasPerm)
-                {
-                    _btnDeleteTask.BackColor = AppColors.Gray400;
-                    _btnDeleteTask.HoverColor = AppColors.Gray400;
-                    _btnDeleteTask.Text = "🗑️ Delete (Read Only)";
-                }
-                else
-                {
-                    _btnDeleteTask.BackColor = AppColors.Red600;
-                    _btnDeleteTask.HoverColor = Color.FromArgb(220, 38, 38);
-                    _btnDeleteTask.Text = "🗑️ Delete Task";
-                }
-            }
-
-            // Update Submit button
             if (_btnSubmitTask != null)
             {
                 _btnSubmitTask.Enabled = !isCompleted;
-                if (isCompleted)
-                {
-                    _btnSubmitTask.BackColor = AppColors.Gray400;
-                    _btnSubmitTask.HoverColor = AppColors.Gray400;
-                    _btnSubmitTask.Text = "✓ Submitted";
-                }
-                else
-                {
-                    _btnSubmitTask.BackColor = AppColors.Purple500;
-                    _btnSubmitTask.HoverColor = Color.FromArgb(147, 51, 234);
-                    _btnSubmitTask.Text = "Submit task";
-                }
+                _btnSubmitTask.BackColor = AppColors.Purple500; // Cố định màu gốc
+                _btnSubmitTask.Text = isCompleted ? "✓ Finished" : "Submit task";
             }
         }
         // Event Handlers
@@ -516,7 +463,8 @@ namespace TimeFlow.Tasks
                     _statusBadge.Text = _currentTask.StatusText;
                     _statusBadge.BackColor = newColor;
                     _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
-
+                    _statusBadge.Text = _currentTask.StatusText;
+                    _statusBadge.Invalidate();
                     // ✅ Update button states (instead of full refresh)
                     UpdateButtonStates();
 
