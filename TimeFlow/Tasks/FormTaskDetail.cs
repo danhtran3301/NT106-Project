@@ -26,6 +26,12 @@ namespace TimeFlow.Tasks
         private int _taskId;
         private bool _isLoadingDetails = false;
 
+        // ✅ Cache button references để update sau
+        private CustomButton _btnEditTask;
+        private CustomButton _btnChangeStatus;
+        private CustomButton _btnDeleteTask;
+        private CustomButton _btnSubmitTask;
+
         // ✅ Event để notify parent form
         public event EventHandler<TaskUpdateEventArgs> TaskUpdated;
         public event EventHandler TaskDeleted;
@@ -39,6 +45,9 @@ namespace TimeFlow.Tasks
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
             this.UpdateStyles();
+            
+            // ✅ Update buttons khi form được activated
+            this.Activated += (s, e) => UpdateButtonStates();
         }
 
         // ✅ NEW: Constructor nhận TaskItem data
@@ -139,6 +148,9 @@ namespace TimeFlow.Tasks
                             RenderActivities();
                         }
                         
+                        // ✅ Update button states sau khi load xong
+                        UpdateButtonStates();
+                        
                         _isLoadingDetails = false;
                     });
                 }
@@ -171,6 +183,10 @@ namespace TimeFlow.Tasks
                 this.Invoke((MethodInvoker)delegate
                 {
                     SetupLayout();
+                    
+                    // ✅ Update button states sau khi setup xong
+                    UpdateButtonStates();
+                    
                     this.Text = "Task Details";
                     this.Cursor = Cursors.Default;
                 });
@@ -241,6 +257,86 @@ namespace TimeFlow.Tasks
             }
         }
 
+        // ✅ NEW: Update button states without full refresh
+        private void UpdateButtonStates()
+        {
+            if (_currentTask == null) return;
+
+            bool isCompleted = _currentTask.Status == TimeFlow.Models.TaskStatus.Completed;
+            bool hasPerm = UserHasPermission();
+
+            // Update Edit button
+            if (_btnEditTask != null)
+            {
+                _btnEditTask.Enabled = hasPerm && !isCompleted;
+                if (isCompleted || !hasPerm)
+                {
+                    _btnEditTask.BackColor = AppColors.Gray400;
+                    _btnEditTask.HoverColor = AppColors.Gray400;
+                    _btnEditTask.Text = isCompleted ? "✏️ Edit (Completed)" : "✏️ Edit (Read Only)";
+                }
+                else
+                {
+                    _btnEditTask.BackColor = AppColors.Blue500;
+                    _btnEditTask.HoverColor = AppColors.Blue600;
+                    _btnEditTask.Text = "✏️ Edit Task";
+                }
+            }
+
+            // Update Change Status button
+            if (_btnChangeStatus != null)
+            {
+                _btnChangeStatus.Enabled = !isCompleted;
+                if (isCompleted)
+                {
+                    _btnChangeStatus.BackColor = AppColors.Gray400;
+                    _btnChangeStatus.HoverColor = AppColors.Gray400;
+                    _btnChangeStatus.Text = "🔄 Status (Completed)";
+                }
+                else
+                {
+                    _btnChangeStatus.BackColor = AppColors.Orange500;
+                    _btnChangeStatus.HoverColor = AppColors.Orange600;
+                    _btnChangeStatus.Text = "🔄 Change Status";
+                }
+            }
+
+            // Update Delete button - ✅ CHO PHÉP xóa task completed
+            if (_btnDeleteTask != null)
+            {
+                _btnDeleteTask.Enabled = hasPerm; // ✅ Chỉ cần có permission, không check completed
+                if (!hasPerm)
+                {
+                    _btnDeleteTask.BackColor = AppColors.Gray400;
+                    _btnDeleteTask.HoverColor = AppColors.Gray400;
+                    _btnDeleteTask.Text = "🗑️ Delete (Read Only)";
+                }
+                else
+                {
+                    _btnDeleteTask.BackColor = AppColors.Red600;
+                    _btnDeleteTask.HoverColor = Color.FromArgb(220, 38, 38);
+                    _btnDeleteTask.Text = "🗑️ Delete Task";
+                }
+            }
+
+            // Update Submit button
+            if (_btnSubmitTask != null)
+            {
+                _btnSubmitTask.Enabled = !isCompleted;
+                if (isCompleted)
+                {
+                    _btnSubmitTask.BackColor = AppColors.Gray400;
+                    _btnSubmitTask.HoverColor = AppColors.Gray400;
+                    _btnSubmitTask.Text = "✓ Submitted";
+                }
+                else
+                {
+                    _btnSubmitTask.BackColor = AppColors.Purple500;
+                    _btnSubmitTask.HoverColor = Color.FromArgb(147, 51, 234);
+                    _btnSubmitTask.Text = "Submit task";
+                }
+            }
+        }
         // Event Handlers
         private void BtnYourTask_Click(object sender, EventArgs e)
         {
@@ -269,25 +365,72 @@ namespace TimeFlow.Tasks
         private async void BtnSubmitTask_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
-            if (_currentTask.Progress < 100)
+            
+            // ✅ Kiểm tra task đã completed chưa
+            if (_currentTask.Status == TimeFlow.Models.TaskStatus.Completed)
             {
-                MessageBox.Show("Vui lòng hoàn thành 100% tiến độ trước khi nộp Task.", "Cảnh báo");
+                MessageBox.Show("Task này đã được nộp rồi!", "Thông báo", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // ✅ Xác nhận submit
+            var confirmResult = MessageBox.Show(
+                "Bạn có chắc chắn muốn nộp task này?\n\n" +
+                "⚠️ Lưu ý: Sau khi nộp, task sẽ chuyển sang trạng thái HOÀN THÀNH và không thể chỉnh sửa nữa. " +
+                "Bạn chỉ có thể xem thông tin.",
+                "Xác nhận nộp Task",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirmResult != DialogResult.Yes)
+            {
                 return;
             }
 
             try
             {
-                bool success = await _taskApi.UpdateTaskStatusAsync(_currentTask.TaskId, TimeFlow.Models.TaskStatus.Completed);
+                this.Cursor = Cursors.WaitCursor;
+                
+                bool success = await _taskApi.UpdateTaskStatusAsync(
+                    _currentTask.TaskId, 
+                    TimeFlow.Models.TaskStatus.Completed
+                );
                 
                 if (success)
                 {
+                    // ✅ Raise event để parent form refresh
+                    TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
+                    {
+                        TaskId = _currentTask.TaskId,
+                        Status = TimeFlow.Models.TaskStatus.Completed
+                    });
+                    
+                    MessageBox.Show(
+                        "✓ Task đã được nộp thành công!\n\n" +
+                        "Task hiện đã chuyển sang trạng thái HOÀN THÀNH.\n" +
+                        "Bạn không thể chỉnh sửa task này nữa, chỉ có thể xem thông tin.",
+                        "Nộp Task Thành Công",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    
+                    // Refresh để cập nhật UI với trạng thái mới
                     RefreshTaskDetail();
-                    MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
+                }
+                else
+                {
+                    MessageBox.Show("Không thể nộp task. Vui lòng thử lại!", "Lỗi",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi cập nhật task: {ex.Message}", "Lỗi");
+                MessageBox.Show($"Lỗi khi nộp task: {ex.Message}", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
 
@@ -348,8 +491,18 @@ namespace TimeFlow.Tasks
         {
             if (_currentTask == null || _statusBadge == null) return;
 
+            // ✅ FIX: Kiểm tra status có thay đổi không
+            if (_currentTask.Status == newStatus)
+            {
+                MessageBox.Show($"Task đã ở trạng thái {_currentTask.StatusText} rồi!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
             try
             {
+                this.Cursor = Cursors.WaitCursor;
+                
                 bool success = await _taskApi.UpdateTaskStatusAsync(_currentTask.TaskId, newStatus);
 
                 if (success)
@@ -364,6 +517,9 @@ namespace TimeFlow.Tasks
                     _statusBadge.BackColor = newColor;
                     _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
 
+                    // ✅ Update button states (instead of full refresh)
+                    UpdateButtonStates();
+
                     // ✅ Raise TaskUpdated event
                     TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
                     {
@@ -373,9 +529,6 @@ namespace TimeFlow.Tasks
 
                     MessageBox.Show($"Trạng thái đã được đổi sang {_currentTask.StatusText}", "Thành công", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    // Refresh to get updated activities
-                    RefreshTaskDetail();
                 }
                 else
                 {
@@ -385,6 +538,10 @@ namespace TimeFlow.Tasks
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi cập nhật trạng thái: {ex.Message}", "Lỗi");
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
 
