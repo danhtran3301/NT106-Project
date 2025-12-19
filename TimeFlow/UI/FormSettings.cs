@@ -136,29 +136,27 @@ namespace TimeFlow.UI
         {
             try
             {
-                // Check if FormDangNhap already exists
-                var existingLogin = Application.OpenForms.OfType<FormDangNhap>().FirstOrDefault();
-
-                if (existingLogin != null)
-                {
-                    // Show existing form
-                    existingLogin.Show();
-                    existingLogin.BringToFront();
-                    existingLogin.WindowState = FormWindowState.Normal;
-                }
-                else
-                {
-                    // Create new login form
-                    FormDangNhap loginForm = new FormDangNhap();
-                    loginForm.Show();
-                }
+                // ✅ FIX: Tạo form login mới, không kiểm tra form cũ
+                FormDangNhap loginForm = new FormDangNhap();
+                loginForm.Show();
 
                 Console.WriteLine("[Logout] Login form shown");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[Logout] Error showing login form: {ex.Message}");
-                throw;
+                
+                // ✅ Nếu lỗi, vẫn cố gắng tạo form login
+                try
+                {
+                    FormDangNhap fallbackForm = new FormDangNhap();
+                    fallbackForm.Show();
+                }
+                catch
+                {
+                    MessageBox.Show("Không thể mở form đăng nhập. Vui lòng khởi động lại ứng dụng.", 
+                        "Lỗi nghiêm trọng", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
