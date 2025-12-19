@@ -555,6 +555,15 @@ namespace TimeFlowServer.ServerCore
 
                 var data = root.GetProperty("data");
                 
+                // ✅ FIX: Properly handle nullable categoryId
+                int? categoryId = null;
+                if (data.TryGetProperty("categoryId", out var catIdElem) && 
+                    catIdElem.ValueKind != JsonValueKind.Null && 
+                    catIdElem.ValueKind == JsonValueKind.Number)
+                {
+                    categoryId = catIdElem.GetInt32();
+                }
+                
                 var newTask = new TaskItem
                 {
                     Title = data.GetProperty("title").GetString() ?? "",
@@ -563,12 +572,12 @@ namespace TimeFlowServer.ServerCore
                         ? DateTime.Parse(dueDate.GetString()!) : null,
                     Priority = (TaskPriority)data.GetProperty("priority").GetInt32(),
                     Status = data.TryGetProperty("status", out var statusProp) ? (TimeFlow.Models.TaskStatus)statusProp.GetInt32() : TimeFlow.Models.TaskStatus.Pending,
-                    CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : null,
+                    CategoryId = categoryId, // ✅ Use safely parsed categoryId
                     CreatedBy = user.UserId, // ✅ Always use authenticated user's ID
                     IsGroupTask = data.TryGetProperty("isGroupTask", out var isGroup) && isGroup.GetBoolean()
                 };
 
-                Log.Information($"[{_clientId}] Creating task: {newTask.Title} for user {username}");
+                Log.Information($"[{_clientId}] Creating task: {newTask.Title} for user {username} (CategoryId: {categoryId})");
 
                 // ✅ Create task (validation + activity logging done inside transaction)
                 int taskId = _taskRepo.Create(newTask);
@@ -577,8 +586,6 @@ namespace TimeFlowServer.ServerCore
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", taskId = taskId }));
                     Log.Information($"[{_clientId}] ✓ Task created with ID={taskId}");
-                    
-                    // ✅ REMOVED: Duplicate activity log (already logged in TaskRepository.Create)
                 }
                 else
                 {

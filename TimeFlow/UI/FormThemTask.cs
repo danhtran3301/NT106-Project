@@ -59,10 +59,48 @@ namespace TimeFlow.UI
                 dateTimePicker2.Value = DateTime.Now.AddDays(1);
             }
 
+            // ✅ Load Priority ComboBox
+            comboBoxPriority.Items.Clear();
+            comboBoxPriority.Items.Add("🟢 Low (Thấp)");
+            comboBoxPriority.Items.Add("🟡 Medium (Trung bình)");
+            comboBoxPriority.Items.Add("🔴 High (Cao)");
+            comboBoxPriority.SelectedIndex = 1; // Default: Medium
+
+            // ✅ Load Categories từ server
+            await LoadCategoriesAsync();
+
             // Load task data nếu đang edit
             if (_taskIdToEdit.HasValue)
             {
                 await LoadTaskForEdit(_taskIdToEdit.Value);
+            }
+        }
+
+        // ✅ NEW: Load categories từ server
+        private async System.Threading.Tasks.Task LoadCategoriesAsync()
+        {
+            try
+            {
+                var categories = await _taskApi.GetCategoriesAsync();
+                
+                comboBoxCategory.DisplayMember = "CategoryName";
+                comboBoxCategory.ValueMember = "CategoryId";
+                comboBoxCategory.DataSource = categories;
+
+                // Default selection: first category
+                if (comboBoxCategory.Items.Count > 0)
+                {
+                    comboBoxCategory.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể tải danh mục: {ex.Message}\n\nDanh mục sẽ được đặt là NULL.", 
+                    "Cảnh báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                
+                // Clear category if failed
+                comboBoxCategory.DataSource = null;
+                comboBoxCategory.Items.Clear();
             }
         }
 
@@ -109,6 +147,9 @@ namespace TimeFlow.UI
                         dateTimePicker1.Value = _taskToEdit.DueDate.Value;
                         dateTimePicker2.Value = _taskToEdit.DueDate.Value.AddDays(1);
                     }
+
+                    // ✅ Set priority
+                    comboBoxPriority.SelectedIndex = (int)_taskToEdit.Priority - 1;
                 }
             }
             catch (Exception ex)
@@ -223,14 +264,25 @@ namespace TimeFlow.UI
                 throw new Exception("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
             }
 
+            // ✅ Get Priority from ComboBox
+            TaskPriority priority = (TaskPriority)(comboBoxPriority.SelectedIndex + 1);
+
+            // ✅ Get CategoryId from ComboBox (nullable)
+            int? categoryId = null;
+            if (comboBoxCategory.SelectedValue != null && comboBoxCategory.SelectedValue is int catId)
+            {
+                categoryId = catId;
+            }
+
             var newTask = new TaskItem
             {
                 Title = title,
                 Description = description,
                 DueDate = dueDate,
-                Priority = TaskPriority.Medium, // Default
+                Priority = priority, // ✅ From ComboBox
                 Status = TimeFlow.Models.TaskStatus.Pending,
-                CreatedBy = SessionManager.UserId.Value, // ✅ Use .Value
+                CategoryId = categoryId, // ✅ From ComboBox (can be null)
+                CreatedBy = SessionManager.UserId.Value,
                 IsGroupTask = false,
                 CreatedAt = DateTime.Now
             };
@@ -258,9 +310,21 @@ namespace TimeFlow.UI
                 throw new Exception("Không tìm thấy thông tin task để cập nhật!");
             }
 
+            // ✅ Get Priority from ComboBox
+            TaskPriority priority = (TaskPriority)(comboBoxPriority.SelectedIndex + 1);
+
+            // ✅ Get CategoryId from ComboBox
+            int? categoryId = null;
+            if (comboBoxCategory.SelectedValue != null && comboBoxCategory.SelectedValue is int catId)
+            {
+                categoryId = catId;
+            }
+
             _taskToEdit.Title = title;
             _taskToEdit.Description = description;
             _taskToEdit.DueDate = dueDate;
+            _taskToEdit.Priority = priority; // ✅ From ComboBox
+            _taskToEdit.CategoryId = categoryId; // ✅ From ComboBox
             _taskToEdit.UpdatedAt = DateTime.Now;
 
             bool success = await _taskApi.UpdateTaskAsync(_taskToEdit);

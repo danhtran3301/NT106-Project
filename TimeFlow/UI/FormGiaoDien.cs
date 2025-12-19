@@ -84,20 +84,45 @@ namespace TimeFlow
                 
                 _currentTasks = await _taskApi.GetTasksAsync();
                 
-                UpdateCalendarView();
-                LoadTaskCountBadges();
+                // ✅ FIX: Ensure UI updates on UI thread
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        UpdateCalendarView();
+                        LoadTaskCountBadges();
+                    }));
+                }
+                else
+                {
+                    UpdateCalendarView();
+                    LoadTaskCountBadges();
+                }
                 
                 HideLoadingIndicator();
             }
             catch (Exception ex)
             {
                 HideLoadingIndicator();
-                MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
-                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 
-                // Show empty state
-                UpdateCalendarView();
-                LoadTaskCountBadges();
+                // ✅ FIX: Show error on UI thread
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
+                            "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        UpdateCalendarView();
+                        LoadTaskCountBadges();
+                    }));
+                }
+                else
+                {
+                    MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
+                        "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UpdateCalendarView();
+                    LoadTaskCountBadges();
+                }
             }
             finally
             {
@@ -108,6 +133,16 @@ namespace TimeFlow
         // ✅ Loading indicator
         private void ShowLoadingIndicator()
         {
+            // ✅ FIX: Check if handle is created before manipulating controls
+            if (!this.IsHandleCreated)
+                return;
+
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(ShowLoadingIndicator));
+                return;
+            }
+
             tableLayoutPanel2.SuspendLayout();
             tableLayoutPanel2.Controls.Clear();
             
@@ -136,6 +171,10 @@ namespace TimeFlow
         // ✅ PRIORITY 3: Refresh calendar (called by events)
         private async void RefreshCalendar()
         {
+            // ✅ FIX: Check if form is ready before refreshing
+            if (!this.IsHandleCreated || this.IsDisposed)
+                return;
+
             await LoadTasksFromServerAsync();
         }
 
@@ -162,6 +201,16 @@ namespace TimeFlow
 
         private void UpdateCalendarView()
         {
+            // ✅ FIX: Check if handle is created before updating UI
+            if (!this.IsHandleCreated)
+                return;
+
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(UpdateCalendarView));
+                return;
+            }
+
             tableLayoutPanel2.SuspendLayout();
             tableLayoutPanel2.Controls.Clear();
 

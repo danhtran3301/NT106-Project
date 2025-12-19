@@ -40,6 +40,10 @@
             label1 = new Label();
             dateTimePicker1 = new DateTimePicker();
             dateTimePicker2 = new DateTimePicker();
+            comboBoxPriority = new ComboBox();
+            labelPriority = new Label();
+            comboBoxCategory = new ComboBox();
+            labelCategory = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
@@ -48,7 +52,7 @@
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
             pictureBox1.Location = new Point(-6, 1);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(950, 647);
+            pictureBox1.Size = new Size(950, 700);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
@@ -59,7 +63,7 @@
             button2.BackColor = SystemColors.ActiveCaption;
             button2.Font = new Font("Times New Roman", 16.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             button2.ForeColor = SystemColors.ActiveCaptionText;
-            button2.Location = new Point(42, 438);
+            button2.Location = new Point(42, 590);
             button2.Name = "button2";
             button2.Size = new Size(232, 48);
             button2.TabIndex = 28;
@@ -69,7 +73,7 @@
             // 
             // richTextBox1
             // 
-            richTextBox1.Location = new Point(161, 324);
+            richTextBox1.Location = new Point(161, 440);
             richTextBox1.Margin = new Padding(3, 4, 3, 4);
             richTextBox1.Name = "richTextBox1";
             richTextBox1.Size = new Size(318, 62);
@@ -89,7 +93,7 @@
             // 
             labelTaskDescription.AutoSize = true;
             labelTaskDescription.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            labelTaskDescription.Location = new Point(31, 344);
+            labelTaskDescription.Location = new Point(31, 460);
             labelTaskDescription.Name = "labelTaskDescription";
             labelTaskDescription.Size = new Size(82, 25);
             labelTaskDescription.TabIndex = 21;
@@ -155,11 +159,55 @@
             dateTimePicker2.Size = new Size(417, 32);
             dateTimePicker2.TabIndex = 29;
             // 
+            // comboBoxPriority
+            // 
+            comboBoxPriority.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxPriority.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            comboBoxPriority.FormattingEnabled = true;
+            comboBoxPriority.Location = new Point(161, 315);
+            comboBoxPriority.Name = "comboBoxPriority";
+            comboBoxPriority.Size = new Size(250, 33);
+            comboBoxPriority.TabIndex = 30;
+            // 
+            // labelPriority
+            // 
+            labelPriority.AutoSize = true;
+            labelPriority.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelPriority.Location = new Point(15, 318);
+            labelPriority.Name = "labelPriority";
+            labelPriority.Size = new Size(114, 25);
+            labelPriority.TabIndex = 31;
+            labelPriority.Text = "Độ ưu tiên";
+            // 
+            // comboBoxCategory
+            // 
+            comboBoxCategory.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxCategory.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            comboBoxCategory.FormattingEnabled = true;
+            comboBoxCategory.Location = new Point(161, 377);
+            comboBoxCategory.Name = "comboBoxCategory";
+            comboBoxCategory.Size = new Size(250, 33);
+            comboBoxCategory.TabIndex = 32;
+            // 
+            // labelCategory
+            // 
+            labelCategory.AutoSize = true;
+            labelCategory.Font = new Font("Segoe UI", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelCategory.Location = new Point(15, 380);
+            labelCategory.Name = "labelCategory";
+            labelCategory.Size = new Size(94, 25);
+            labelCategory.TabIndex = 33;
+            labelCategory.Text = "Danh mục";
+            // 
             // FormThemTask
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(936, 648);
+            ClientSize = new Size(936, 700);
+            Controls.Add(labelCategory);
+            Controls.Add(comboBoxCategory);
+            Controls.Add(labelPriority);
+            Controls.Add(comboBoxPriority);
             Controls.Add(dateTimePicker2);
             Controls.Add(button2);
             Controls.Add(richTextBox1);
@@ -193,5 +241,9 @@
         private Label label1;
         private DateTimePicker dateTimePicker1;
         private DateTimePicker dateTimePicker2;
+        private ComboBox comboBoxPriority;
+        private Label labelPriority;
+        private ComboBox comboBoxCategory;
+        private Label labelCategory;
     }
 }
