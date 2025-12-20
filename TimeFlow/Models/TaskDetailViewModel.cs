@@ -18,6 +18,7 @@ namespace TimeFlow.Models
         public DateTime? CompletedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public int? CategoryId { get; set; }
 
         // Extended info
         public string CategoryName { get; set; } = "Other";
