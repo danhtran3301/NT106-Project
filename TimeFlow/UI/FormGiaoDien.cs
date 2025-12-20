@@ -332,19 +332,30 @@ namespace TimeFlow
         private void OpenTaskDetail(TaskItem task)
         {
             FormTaskDetail detailForm = new FormTaskDetail(task);
-            
-            // ✅ Subscribe to TaskUpdated event
+
             detailForm.TaskUpdated += (s, e) =>
             {
+                // Cách 1: Nạp lại toàn bộ từ Server (An toàn nhất)
                 RefreshCalendar();
+
+                /* // Cách 2: Tối ưu hiệu năng - chỉ sửa đúng Task đó trong List local
+                var taskInMain = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
+                if (taskInMain != null) {
+                    taskInMain.Title = e.Title;
+                    taskInMain.Status = e.Status;
+                    taskInMain.Priority = e.Priority;
+                    taskInMain.DueDate = e.DueDate;
+                    UpdateCalendarView();
+                    LoadTaskCountBadges();
+                }
+                */
             };
-            
-            // ✅ Subscribe to TaskDeleted event
+
             detailForm.TaskDeleted += (s, e) =>
             {
                 RefreshCalendar();
             };
-            
+
             detailForm.Show();
         }
 
