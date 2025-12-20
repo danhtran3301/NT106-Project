@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -51,10 +51,10 @@ namespace TimeFlow.UI.Components
         public ModernPanel()
         {
             this.SetStyle(ControlStyles.UserPaint |
-                          ControlStyles.AllPaintingInWmPaint |
-                          ControlStyles.DoubleBuffer |
-                          ControlStyles.OptimizedDoubleBuffer |
-                          ControlStyles.ResizeRedraw, true);
+                   ControlStyles.AllPaintingInWmPaint |
+                   ControlStyles.DoubleBuffer |
+                   ControlStyles.OptimizedDoubleBuffer |
+                   ControlStyles.ResizeRedraw, true);
             this.SetStyle(ControlStyles.SupportsTransparentBackColor, true);
             this.BackColor = Color.White;
             this.DoubleBuffered = true;

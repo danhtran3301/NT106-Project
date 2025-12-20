@@ -47,19 +47,18 @@ namespace TimeFlow.Authentication
             // usernameTxtbox
             // 
             usernameTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            usernameTxtbox.Location = new Point(402, 130);
-            usernameTxtbox.Margin = new Padding(3, 2, 3, 2);
+            usernameTxtbox.Location = new Point(459, 173);
             usernameTxtbox.Name = "usernameTxtbox";
-            usernameTxtbox.Size = new Size(346, 32);
+            usernameTxtbox.Size = new Size(395, 38);
             usernameTxtbox.TabIndex = 0;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI Variable Display", 18F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label1.Location = new Point(487, 53);
+            label1.Location = new Point(557, 71);
             label1.Name = "label1";
-            label1.Size = new Size(179, 32);
+            label1.Size = new Size(220, 40);
             label1.TabIndex = 1;
             label1.Text = "Member Login";
             label1.Click += label1_Click;
@@ -69,10 +68,9 @@ namespace TimeFlow.Authentication
             btnLogin.BackColor = Color.Green;
             btnLogin.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             btnLogin.ForeColor = Color.WhiteSmoke;
-            btnLogin.Location = new Point(470, 289);
-            btnLogin.Margin = new Padding(3, 2, 3, 2);
+            btnLogin.Location = new Point(537, 385);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(214, 41);
+            btnLogin.Size = new Size(245, 55);
             btnLogin.TabIndex = 2;
             btnLogin.Text = "Đăng nhập";
             btnLogin.UseVisualStyleBackColor = false;
@@ -82,9 +80,9 @@ namespace TimeFlow.Authentication
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label2.Location = new Point(402, 104);
+            label2.Location = new Point(459, 139);
             label2.Name = "label2";
-            label2.Size = new Size(101, 26);
+            label2.Size = new Size(122, 31);
             label2.TabIndex = 3;
             label2.Text = "Username";
             // 
@@ -92,9 +90,9 @@ namespace TimeFlow.Authentication
             // 
             label3.AutoSize = true;
             label3.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label3.Location = new Point(402, 176);
+            label3.Location = new Point(459, 235);
             label3.Name = "label3";
-            label3.Size = new Size(97, 26);
+            label3.Size = new Size(117, 31);
             label3.TabIndex = 4;
             label3.Text = "Password";
             // 
@@ -102,11 +100,10 @@ namespace TimeFlow.Authentication
             // 
             passwordTxtbox.AcceptsTab = true;
             passwordTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            passwordTxtbox.Location = new Point(402, 208);
-            passwordTxtbox.Margin = new Padding(3, 2, 3, 2);
+            passwordTxtbox.Location = new Point(459, 277);
             passwordTxtbox.Name = "passwordTxtbox";
             passwordTxtbox.PasswordChar = '*';
-            passwordTxtbox.Size = new Size(346, 32);
+            passwordTxtbox.Size = new Size(395, 38);
             passwordTxtbox.TabIndex = 1;
             passwordTxtbox.TextChanged += textBox2_TextChanged;
             // 
@@ -114,19 +111,18 @@ namespace TimeFlow.Authentication
             // 
             label4.AutoSize = true;
             label4.Font = new Font("Segoe UI Variable Display", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label4.Location = new Point(438, 349);
+            label4.Location = new Point(501, 465);
             label4.Name = "label4";
-            label4.Size = new Size(172, 20);
+            label4.Size = new Size(205, 24);
             label4.TabIndex = 6;
             label4.Text = "Bạn chưa có tài khoản?";
             // 
             // btnSignup
             // 
             btnSignup.Font = new Font("Segoe UI Variable Display", 10.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnSignup.Location = new Point(622, 344);
-            btnSignup.Margin = new Padding(3, 2, 3, 2);
+            btnSignup.Location = new Point(711, 459);
             btnSignup.Name = "btnSignup";
-            btnSignup.Size = new Size(90, 28);
+            btnSignup.Size = new Size(103, 37);
             btnSignup.TabIndex = 7;
             btnSignup.Text = "Đăng ký";
             btnSignup.UseVisualStyleBackColor = true;
@@ -136,9 +132,9 @@ namespace TimeFlow.Authentication
             // 
             linkLabel1.AutoSize = true;
             linkLabel1.Font = new Font("Segoe UI Variable Display", 12F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            linkLabel1.Location = new Point(622, 244);
+            linkLabel1.Location = new Point(711, 325);
             linkLabel1.Name = "linkLabel1";
-            linkLabel1.Size = new Size(126, 21);
+            linkLabel1.Size = new Size(154, 27);
             linkLabel1.TabIndex = 8;
             linkLabel1.TabStop = true;
             linkLabel1.Text = "Quên mật khẩu?";
@@ -149,10 +145,9 @@ namespace TimeFlow.Authentication
             // 
             checkBoxShowPassword.AutoSize = true;
             checkBoxShowPassword.Font = new Font("Segoe UI Variable Display Semib", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            checkBoxShowPassword.Location = new Point(402, 244);
-            checkBoxShowPassword.Margin = new Padding(3, 2, 3, 2);
+            checkBoxShowPassword.Location = new Point(459, 325);
             checkBoxShowPassword.Name = "checkBoxShowPassword";
-            checkBoxShowPassword.Size = new Size(133, 25);
+            checkBoxShowPassword.Size = new Size(165, 31);
             checkBoxShowPassword.TabIndex = 9;
             checkBoxShowPassword.Text = "Hiện mật khẩu";
             checkBoxShowPassword.UseVisualStyleBackColor = true;
@@ -161,20 +156,19 @@ namespace TimeFlow.Authentication
             // pictureBox1
             // 
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(94, 121);
-            pictureBox1.Margin = new Padding(3, 2, 3, 2);
+            pictureBox1.Location = new Point(-2, -3);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(214, 178);
-            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.Size = new Size(409, 568);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 10;
             pictureBox1.TabStop = false;
             // 
             // FormDangNhap
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
-            ClientSize = new Size(854, 423);
+            ClientSize = new Size(976, 564);
             Controls.Add(pictureBox1);
             Controls.Add(checkBoxShowPassword);
             Controls.Add(linkLabel1);
@@ -186,7 +180,6 @@ namespace TimeFlow.Authentication
             Controls.Add(btnLogin);
             Controls.Add(label1);
             Controls.Add(usernameTxtbox);
-            Margin = new Padding(3, 2, 3, 2);
             Name = "FormDangNhap";
             Text = "TimeFlow";
             Load += FormDangNhap_Load;
