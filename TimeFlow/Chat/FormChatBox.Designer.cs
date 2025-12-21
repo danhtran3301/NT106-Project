@@ -2,15 +2,8 @@
 {
     partial class ChatForm
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -22,10 +15,6 @@
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             this.tableLayoutMain = new System.Windows.Forms.TableLayoutPanel();
@@ -92,7 +81,7 @@
             this.lblHeaderTitle.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
             this.lblHeaderTitle.Size = new System.Drawing.Size(258, 58);
             this.lblHeaderTitle.TabIndex = 1;
-            this.lblHeaderTitle.Text = "Contacts";
+            this.lblHeaderTitle.Text = "Tin nhắn & Nhóm";
             this.lblHeaderTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnBack
@@ -132,7 +121,7 @@
             this.lblChatTitle.Padding = new System.Windows.Forms.Padding(15, 0, 0, 0);
             this.lblChatTitle.Size = new System.Drawing.Size(658, 58);
             this.lblChatTitle.TabIndex = 1;
-            this.lblChatTitle.Text = "User B";
+            this.lblChatTitle.Text = "Chọn hội thoại...";
             this.lblChatTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // btnClose
@@ -140,7 +129,6 @@
             this.btnClose.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnClose.Dock = System.Windows.Forms.DockStyle.Right;
             this.btnClose.FlatAppearance.BorderSize = 0;
-            this.btnClose.FlatAppearance.MouseOverBackColor = System.Drawing.Color.MistyRose;
             this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClose.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnClose.ForeColor = System.Drawing.Color.DimGray;
@@ -206,6 +194,7 @@
             // 
             // pnlInputBackground
             // 
+            this.pnlInputBackground.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
             this.pnlInputBackground.Controls.Add(this.txtMessage);
             this.pnlInputBackground.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlInputBackground.Location = new System.Drawing.Point(50, 10);
@@ -222,9 +211,8 @@
             this.txtMessage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtMessage.Font = new System.Drawing.Font("Segoe UI", 11F);
             this.txtMessage.Location = new System.Drawing.Point(15, 12);
-            this.txtMessage.Multiline = true;
             this.txtMessage.Name = "txtMessage";
-            this.txtMessage.Size = new System.Drawing.Size(560, 28);
+            this.txtMessage.Size = new System.Drawing.Size(560, 20);
             this.txtMessage.TabIndex = 0;
             // 
             // btnSend
@@ -257,7 +245,6 @@
             this.btnAddFile.TabIndex = 0;
             this.btnAddFile.Text = "+";
             this.btnAddFile.UseVisualStyleBackColor = true;
-            this.btnAddFile.Click += new System.EventHandler(this.btnAddFile_Click);
             // 
             // ChatForm
             // 
@@ -265,9 +252,10 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 600);
             this.Controls.Add(this.tableLayoutMain);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "ChatForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Chat Application";
+            this.Text = "TimeFlow Chat";
             this.tableLayoutMain.ResumeLayout(false);
             this.pnlLeftHeader.ResumeLayout(false);
             this.pnlRightHeader.ResumeLayout(false);

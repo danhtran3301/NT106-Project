@@ -7,25 +7,24 @@ using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace TimeFlow
 {
     public partial class ChatForm : Form
     {
-
         private TcpClient _client;
         private NetworkStream _stream;
         private Thread _listenThread;
         private string _myUsername;
         private string _currentReceiver = "";
+        private int? _currentGroupId = null; 
         private bool _isConnected = false;
-
 
         public ChatForm()
         {
             InitializeComponent();
         }
-
 
         public ChatForm(TcpClient client, string myUsername)
         {
@@ -36,11 +35,10 @@ namespace TimeFlow
             _isConnected = true;
 
             this.Text = $"TimeFlow Chat - {_myUsername}";
-            if (lblChatTitle != null) lblChatTitle.Text = "Chọn một người để bắt đầu chat";
+            if (lblChatTitle != null) lblChatTitle.Text = "Chọn một người hoặc nhóm để bắt đầu";
 
             StartListening();
         }
-
 
         private void StartListening()
         {
@@ -55,7 +53,9 @@ namespace TimeFlow
                         if (bytesRead == 0) break;
 
                         string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        ProcessServerMessage(json);
+                        this.Invoke((MethodInvoker)delegate {
+                            ProcessServerMessage(json);
+                        });
                     }
                 }
                 catch
@@ -66,7 +66,6 @@ namespace TimeFlow
             _listenThread.IsBackground = true;
             _listenThread.Start();
         }
-
 
         private void ProcessServerMessage(string json)
         {
@@ -81,11 +80,8 @@ namespace TimeFlow
 
                         if (type == "user_list")
                         {
-                            if (root.TryGetProperty("users", out JsonElement usersElem))
-                            {
-                                var users = JsonSerializer.Deserialize<string[]>(usersElem.GetRawText());
-                                this.Invoke((MethodInvoker)delegate { UpdateSidebar(users); });
-                            }
+                            var users = JsonSerializer.Deserialize<string[]>(root.GetProperty("users").GetRawText());
+                            UpdateSidebar(users, new List<TimeFlow.Models.Group>());
                         }
                         else if (type == "receive_message")
                         {
@@ -93,109 +89,136 @@ namespace TimeFlow
                             string content = root.GetProperty("content").GetString();
                             string time = root.GetProperty("timestamp").GetString();
 
-                            this.Invoke((MethodInvoker)delegate
+                            if (sender == _currentReceiver || sender == _myUsername)
                             {
-                                if (sender == _currentReceiver || sender == _myUsername)
-                                {
-                                    bool isMe = (sender == _myUsername);
-                                    AddMessageBubble(content, isMe, time);
-                                }
-                            });
+                                AddMessageBubble(content, sender == _myUsername, time);
+                            }
+                        }
+                        else if (type == "receive_group_message")
+                        {
+                            int groupId = root.GetProperty("groupId").GetInt32();
+                            string sender = root.GetProperty("sender").GetString();
+                            string content = root.GetProperty("content").GetString();
+                            string time = root.GetProperty("timestamp").GetString();
+
+                            if (_currentGroupId == groupId)
+                            {
+                                AddMessageBubble(content, sender == _myUsername, time);
+                            }
                         }
                         else if (type == "history_data")
                         {
-                            if (root.TryGetProperty("data", out JsonElement dataArray))
+                            flowChatMessages.Controls.Clear();
+                            foreach (JsonElement msg in root.GetProperty("data").EnumerateArray())
                             {
-                                this.Invoke((MethodInvoker)delegate
-                                {
-                                    flowChatMessages.Controls.Clear();
-                                    foreach (JsonElement msg in dataArray.EnumerateArray())
-                                    {
-                                        string sender = msg.GetProperty("SenderUsername").GetString();
-                                        string content = msg.GetProperty("Content").GetString();
-                                        DateTime time = msg.GetProperty("Timestamp").GetDateTime();
-                                        bool isMe = (sender == _myUsername);
-
-                                        AddMessageBubble(content, isMe, time.ToString("HH:mm"));
-                                    }
-                                    if (flowChatMessages.Controls.Count > 0)
-                                        flowChatMessages.ScrollControlIntoView(flowChatMessages.Controls[flowChatMessages.Controls.Count - 1]);
-                                });
+                                string sender = msg.GetProperty("SenderUsername").GetString();
+                                string content = msg.GetProperty("Content").GetString();
+                                string time = msg.GetProperty("Timestamp").GetDateTime().ToString("HH:mm");
+                                AddMessageBubble(content, sender == _myUsername, time);
                             }
+                            ScrollToBottom();
+                        }
+                        else if (type == "group_history_response")
+                        {
+                            flowChatMessages.Controls.Clear();
+                            foreach (JsonElement msg in root.GetProperty("messages").EnumerateArray())
+                            {
+                                string sender = msg.GetProperty("Sender").GetString();
+                                string content = msg.GetProperty("Content").GetString();
+                                string time = msg.GetProperty("Time").GetDateTime().ToString("HH:mm");
+                                AddMessageBubble(content, sender == _myUsername, time);
+                            }
+                            ScrollToBottom();
                         }
                     }
                 }
             }
-            catch {  }
+            catch { }
         }
 
-
-        private void UpdateSidebar(string[] users)
+        // ================== GIAO DIỆN SIDEBAR ==================
+        public void UpdateSidebar(string[] onlineUsers, List<TimeFlow.Models.Group> myGroups)
         {
             if (flowSidebar == null) return;
             flowSidebar.Controls.Clear();
 
-            foreach (var user in users)
+            // Hiển thị các Nhóm
+            foreach (var group in myGroups)
+            {
+                Button btnGroup = CreateSidebarButton($"[G] {group.GroupName}", Color.LightGreen);
+                btnGroup.Click += (s, e) => {
+                    _currentGroupId = group.GroupId;
+                    _currentReceiver = "";
+                    lblChatTitle.Text = $"Group: {group.GroupName}";
+                    HighlightActiveButton(btnGroup);
+                    flowChatMessages.Controls.Clear();
+                    SendJson(new { type = "get_group_history", groupId = group.GroupId });
+                };
+                flowSidebar.Controls.Add(btnGroup);
+            }
+
+            // Hiển thị các User
+            foreach (var user in onlineUsers)
             {
                 if (user == _myUsername) continue;
-
-                Button btn = new Button();
-                btn.Text = user;
-                btn.Width = flowSidebar.Width - 25;
-                btn.Height = 50;
-                btn.TextAlign = ContentAlignment.MiddleLeft;
-                btn.Padding = new Padding(20, 0, 0, 0);
-                btn.FlatStyle = FlatStyle.Flat;
-                btn.FlatAppearance.BorderSize = 0;
-                btn.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-                btn.Cursor = Cursors.Hand;
-
-                if (user == _currentReceiver)
-                {
-                    btn.BackColor = Color.AliceBlue;
-                    btn.ForeColor = Color.DodgerBlue;
-                }
-                else
-                {
-                    btn.BackColor = Color.White;
-                    btn.ForeColor = Color.Black;
-                }
-
-                btn.Click += (s, e) => SwitchUser(user);
-                flowSidebar.Controls.Add(btn);
+                Button btnUser = CreateSidebarButton(user, Color.AliceBlue);
+                btnUser.Click += (s, e) => {
+                    _currentGroupId = null;
+                    _currentReceiver = user;
+                    lblChatTitle.Text = user;
+                    HighlightActiveButton(btnUser);
+                    flowChatMessages.Controls.Clear();
+                    SendJson(new { type = "get_history", target_user = user });
+                };
+                flowSidebar.Controls.Add(btnUser);
             }
         }
 
-        private void SwitchUser(string targetUser)
+        private Button CreateSidebarButton(string text, Color backColor)
         {
-            _currentReceiver = targetUser;
-            lblChatTitle.Text = targetUser;
-            flowChatMessages.Controls.Clear();
-
-            foreach (Control c in flowSidebar.Controls)
+            return new Button
             {
-                if (c is Button b)
-                {
-                    bool isTarget = (b.Text == targetUser);
-                    b.BackColor = isTarget ? Color.AliceBlue : Color.White;
-                    b.ForeColor = isTarget ? Color.DodgerBlue : Color.Black;
-                }
-            }
+                Text = text,
+                Width = flowSidebar.Width - 25,
+                Height = 50,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(15, 0, 0, 0),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
         }
 
+        private void HighlightActiveButton(Button activeBtn)
+        {
+            foreach (Control c in flowSidebar.Controls)
+                if (c is Button b) { b.BackColor = Color.White; b.ForeColor = Color.Black; }
+            activeBtn.BackColor = Color.DodgerBlue;
+            activeBtn.ForeColor = Color.White;
+        }
+
+        // ================== GỬI TIN NHẮN ==================
         private void btnSend_Click(object sender, EventArgs e)
         {
             string msg = txtMessage.Text.Trim();
             if (string.IsNullOrEmpty(msg)) return;
-            if (string.IsNullOrEmpty(_currentReceiver))
+
+            if (_currentGroupId == null && string.IsNullOrEmpty(_currentReceiver))
             {
-                MessageBox.Show("Chọn người để chat trước!");
+                MessageBox.Show("Hãy chọn một người hoặc nhóm để chat!");
                 return;
             }
 
             if (_isConnected)
             {
-                SendJson(new { type = "chat", receiver = _currentReceiver, content = msg });
+                object packet;
+                if (_currentGroupId != null)
+                    packet = new { type = "chat", groupId = _currentGroupId, content = msg };
+                else
+                    packet = new { type = "chat", receiver = _currentReceiver, content = msg };
+
+                SendJson(packet);
                 AddMessageBubble(msg, true, DateTime.Now.ToString("HH:mm"));
                 txtMessage.Clear();
             }
@@ -209,38 +232,39 @@ namespace TimeFlow
                 byte[] bytes = Encoding.UTF8.GetBytes(json);
                 _stream.Write(bytes, 0, bytes.Length);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Lỗi gửi: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Lỗi gửi: " + ex.Message); }
         }
 
+        // ================== HIỂN THỊ BONG BÓNG CHAT ==================
         private void AddMessageBubble(string message, bool isMe, string time)
         {
             if (flowChatMessages == null) return;
 
-            Panel pnlRow = new Panel();
-            pnlRow.Width = flowChatMessages.ClientSize.Width - 25;
-            pnlRow.Height = 50;
-            pnlRow.BackColor = Color.Transparent;
-            pnlRow.Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5);
+            Panel pnlRow = new Panel
+            {
+                Width = flowChatMessages.ClientSize.Width - 25,
+                BackColor = Color.Transparent,
+                Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5)
+            };
 
-            Panel pnlBubble = new Panel();
-            pnlBubble.BackColor = Color.Transparent;
+            Panel pnlBubble = new Panel { BackColor = Color.Transparent };
+            Label lblContent = new Label
+            {
+                Text = message,
+                Font = new Font("Segoe UI", 11),
+                ForeColor = isMe ? Color.White : Color.Black,
+                AutoSize = true,
+                MaximumSize = new Size(pnlRow.Width - 120, 0),
+                Location = new Point(isMe ? 12 : 18, 10)
+            };
 
-            Label lblContent = new Label();
-            lblContent.Text = message;
-            lblContent.Font = new Font("Segoe UI", 11);
-            lblContent.ForeColor = isMe ? Color.White : Color.Black;
-            lblContent.AutoSize = true;
-            lblContent.MaximumSize = new Size(pnlRow.Width - 120, 0);
-            lblContent.Location = new Point(isMe ? 12 : 18, 10);
-
-            Label lblTime = new Label();
-            lblTime.Text = time;
-            lblTime.Font = new Font("Arial", 8, FontStyle.Italic);
-            lblTime.ForeColor = isMe ? Color.FromArgb(230, 230, 230) : Color.Gray;
-            lblTime.AutoSize = true;
+            Label lblTime = new Label
+            {
+                Text = time,
+                Font = new Font("Arial", 8, FontStyle.Italic),
+                ForeColor = isMe ? Color.FromArgb(230, 230, 230) : Color.Gray,
+                AutoSize = true
+            };
 
             pnlBubble.Controls.Add(lblContent);
             pnlBubble.Controls.Add(lblTime);
@@ -249,8 +273,7 @@ namespace TimeFlow
             lblTime.Location = new Point(lblContent.Left, lblContent.Top + textSize.Height + 2);
             pnlBubble.Size = new Size(textSize.Width + 40, textSize.Height + 35);
 
-            pnlBubble.Paint += (s, e) =>
-            {
+            pnlBubble.Paint += (s, e) => {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 Color color = isMe ? Color.FromArgb(0, 132, 255) : Color.FromArgb(240, 242, 245);
@@ -266,9 +289,16 @@ namespace TimeFlow
             pnlRow.Controls.Add(pnlBubble);
 
             flowChatMessages.Controls.Add(pnlRow);
-            flowChatMessages.ScrollControlIntoView(pnlRow);
+            ScrollToBottom();
         }
 
+        private void ScrollToBottom()
+        {
+            if (flowChatMessages.Controls.Count > 0)
+                flowChatMessages.ScrollControlIntoView(flowChatMessages.Controls[flowChatMessages.Controls.Count - 1]);
+        }
+
+        // ================== ĐỒ HỌA & TIỆN ÍCH ==================
         private GraphicsPath DrawSmoothBubble(Rectangle r, int radius, bool isMe)
         {
             GraphicsPath path = new GraphicsPath();
@@ -313,7 +343,6 @@ namespace TimeFlow
 
         private void btnClose_Click(object sender, EventArgs e) => this.Close();
         private void btnBack_Click(object sender, EventArgs e) => this.Close();
-        private void btnAddFile_Click(object sender, EventArgs e) { }
         private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
