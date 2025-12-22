@@ -40,7 +40,6 @@
             tableLayoutPanel1 = new TableLayoutPanel();
             pictureBox1 = new PictureBox();
             label1 = new Label();
-            button4 = new Button();
             button3 = new Button();
             button2 = new Button();
             button1 = new Button();
@@ -79,7 +78,6 @@
             panel1.Controls.Add(tableLayoutPanel1);
             panel1.Controls.Add(pictureBox1);
             panel1.Controls.Add(label1);
-            panel1.Controls.Add(button4);
             panel1.Controls.Add(button3);
             panel1.Controls.Add(button2);
             panel1.Controls.Add(button1);
@@ -87,7 +85,7 @@
             panel1.Font = new Font("Times New Roman", 13.8F, FontStyle.Bold);
             panel1.Location = new Point(6, 7);
             panel1.Name = "panel1";
-            panel1.Size = new Size(289, 744);
+            panel1.Size = new Size(289, 781);
             panel1.TabIndex = 0;
             panel1.Paint += panel1_Paint;
             // 
@@ -100,9 +98,9 @@
             panel3.Controls.Add(panel5);
             panel3.Controls.Add(panel4);
             panel3.Controls.Add(label11);
-            panel3.Location = new Point(24, 601);
+            panel3.Location = new Point(24, 596);
             panel3.Name = "panel3";
-            panel3.Size = new Size(237, 125);
+            panel3.Size = new Size(244, 144);
             panel3.TabIndex = 7;
             panel3.Paint += panel3_Paint;
             // 
@@ -110,7 +108,7 @@
             // 
             label13.AutoSize = true;
             label13.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label13.Location = new Point(76, 85);
+            label13.Location = new Point(76, 98);
             label13.Name = "label13";
             label13.Size = new Size(105, 20);
             label13.TabIndex = 7;
@@ -121,7 +119,7 @@
             // 
             label12.AutoSize = true;
             label12.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label12.Location = new Point(91, 45);
+            label12.Location = new Point(91, 58);
             label12.Name = "label12";
             label12.Size = new Size(72, 20);
             label12.TabIndex = 0;
@@ -131,7 +129,7 @@
             // 
             panel5.BackColor = Color.PaleGreen;
             panel5.BorderStyle = BorderStyle.FixedSingle;
-            panel5.Location = new Point(23, 77);
+            panel5.Location = new Point(23, 90);
             panel5.Name = "panel5";
             panel5.Size = new Size(42, 33);
             panel5.TabIndex = 6;
@@ -140,7 +138,7 @@
             // 
             panel4.BackColor = SystemColors.GradientInactiveCaption;
             panel4.BorderStyle = BorderStyle.FixedSingle;
-            panel4.Location = new Point(23, 38);
+            panel4.Location = new Point(23, 51);
             panel4.Name = "panel4";
             panel4.Size = new Size(42, 33);
             panel4.TabIndex = 5;
@@ -149,7 +147,7 @@
             // 
             label11.AutoSize = true;
             label11.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label11.Location = new Point(56, 13);
+            label11.Location = new Point(56, 26);
             label11.Name = "label11";
             label11.Size = new Size(120, 20);
             label11.TabIndex = 4;
@@ -159,7 +157,7 @@
             // pictureBox4
             // 
             pictureBox4.Image = (Image)resources.GetObject("pictureBox4.Image");
-            pictureBox4.Location = new Point(233, 36);
+            pictureBox4.Location = new Point(230, 56);
             pictureBox4.Name = "pictureBox4";
             pictureBox4.Size = new Size(38, 36);
             pictureBox4.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -183,7 +181,7 @@
             // pictureBox1
             // 
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(37, 36);
+            pictureBox1.Location = new Point(34, 56);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(42, 36);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -195,26 +193,12 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label1.Location = new Point(85, 44);
+            label1.Location = new Point(82, 64);
             label1.Name = "label1";
             label1.Size = new Size(106, 28);
             label1.TabIndex = 5;
             label1.Text = "Username";
             label1.Click += label1_Click;
-            // 
-            // button4
-            // 
-            button4.BackColor = SystemColors.ActiveCaption;
-            button4.FlatAppearance.BorderSize = 0;
-            button4.FlatStyle = FlatStyle.Flat;
-            button4.Font = new Font("Times New Roman", 13.8F, FontStyle.Bold);
-            button4.Location = new Point(24, 316);
-            button4.Name = "button4";
-            button4.Size = new Size(238, 54);
-            button4.TabIndex = 4;
-            button4.Text = "Submit task";
-            button4.UseVisualStyleBackColor = false;
-            button4.Click += button4_Click;
             // 
             // button3
             // 
@@ -222,9 +206,9 @@
             button3.FlatAppearance.BorderSize = 0;
             button3.FlatStyle = FlatStyle.Flat;
             button3.Font = new Font("Times New Roman", 13.8F, FontStyle.Bold);
-            button3.Location = new Point(24, 252);
+            button3.Location = new Point(24, 351);
             button3.Name = "button3";
-            button3.Size = new Size(238, 58);
+            button3.Size = new Size(244, 83);
             button3.TabIndex = 3;
             button3.Text = "New task";
             button3.UseVisualStyleBackColor = false;
@@ -236,9 +220,9 @@
             button2.FlatAppearance.BorderSize = 0;
             button2.FlatStyle = FlatStyle.Flat;
             button2.Font = new Font("Times New Roman", 13.8F, FontStyle.Bold);
-            button2.Location = new Point(23, 187);
+            button2.Location = new Point(23, 253);
             button2.Name = "button2";
-            button2.Size = new Size(238, 59);
+            button2.Size = new Size(245, 82);
             button2.TabIndex = 2;
             button2.Text = "Group";
             button2.UseVisualStyleBackColor = false;
@@ -250,9 +234,9 @@
             button1.FlatAppearance.BorderSize = 0;
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Times New Roman", 13.8F, FontStyle.Bold);
-            button1.Location = new Point(23, 115);
+            button1.Location = new Point(24, 146);
             button1.Name = "button1";
-            button1.Size = new Size(238, 66);
+            button1.Size = new Size(244, 88);
             button1.TabIndex = 1;
             button1.Text = "Your Task";
             button1.UseVisualStyleBackColor = false;
@@ -260,8 +244,8 @@
             // 
             // monthCalendar1
             // 
-            monthCalendar1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
-            monthCalendar1.Location = new Point(37, 382);
+            monthCalendar1.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            monthCalendar1.Location = new Point(37, 396);
             monthCalendar1.Name = "monthCalendar1";
             monthCalendar1.TabIndex = 0;
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
@@ -276,7 +260,7 @@
             panel2.Location = new Point(307, 7);
             panel2.Name = "panel2";
             panel2.RightToLeft = RightToLeft.No;
-            panel2.Size = new Size(873, 745);
+            panel2.Size = new Size(949, 782);
             panel2.TabIndex = 1;
             // 
             // panel6
@@ -289,7 +273,7 @@
             panel6.Controls.Add(label10);
             panel6.Location = new Point(-8, 64);
             panel6.Name = "panel6";
-            panel6.Size = new Size(889, 49);
+            panel6.Size = new Size(965, 49);
             panel6.TabIndex = 6;
             // 
             // pictureBox3
@@ -298,7 +282,7 @@
             pictureBox3.BackColor = Color.White;
             pictureBox3.BorderStyle = BorderStyle.Fixed3D;
             pictureBox3.Image = (Image)resources.GetObject("pictureBox3.Image");
-            pictureBox3.Location = new Point(589, 1);
+            pictureBox3.Location = new Point(665, 1);
             pictureBox3.Name = "pictureBox3";
             pictureBox3.Size = new Size(60, 43);
             pictureBox3.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -322,7 +306,7 @@
             label10.Font = new Font("Microsoft Tai Le", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label10.Location = new Point(5, 6);
             label10.Name = "label10";
-            label10.Size = new Size(869, 26);
+            label10.Size = new Size(945, 26);
             label10.TabIndex = 2;
             label10.Text = "D/M/Y";
             label10.TextAlign = ContentAlignment.MiddleCenter;
@@ -333,7 +317,7 @@
             label2.Font = new Font("Segoe UI", 16.2F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.Location = new Point(-1, 5);
             label2.Name = "label2";
-            label2.Size = new Size(869, 38);
+            label2.Size = new Size(945, 38);
             label2.TabIndex = 5;
             label2.Text = "TIMELINE";
             label2.TextAlign = ContentAlignment.MiddleCenter;
@@ -371,7 +355,7 @@
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 9.523809F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 9.523809F));
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Absolute, 32F));
-            tableLayoutPanel2.Size = new Size(868, 631);
+            tableLayoutPanel2.Size = new Size(944, 668);
             tableLayoutPanel2.TabIndex = 4;
             // 
             // label9
@@ -379,9 +363,9 @@
             label9.AutoSize = true;
             label9.Dock = DockStyle.Fill;
             label9.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label9.Location = new Point(744, 3);
+            label9.Location = new Point(810, 3);
             label9.Name = "label9";
-            label9.Size = new Size(118, 134);
+            label9.Size = new Size(128, 143);
             label9.TabIndex = 9;
             label9.Text = "SUN ";
             label9.TextAlign = ContentAlignment.MiddleCenter;
@@ -391,9 +375,9 @@
             label8.AutoSize = true;
             label8.Dock = DockStyle.Fill;
             label8.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label8.Location = new Point(621, 3);
+            label8.Location = new Point(676, 3);
             label8.Name = "label8";
-            label8.Size = new Size(114, 134);
+            label8.Size = new Size(125, 143);
             label8.TabIndex = 8;
             label8.Text = "SAT ";
             label8.TextAlign = ContentAlignment.MiddleCenter;
@@ -403,9 +387,9 @@
             label7.AutoSize = true;
             label7.Dock = DockStyle.Fill;
             label7.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label7.Location = new Point(498, 3);
+            label7.Location = new Point(542, 3);
             label7.Name = "label7";
-            label7.Size = new Size(114, 134);
+            label7.Size = new Size(125, 143);
             label7.TabIndex = 7;
             label7.Text = "FRI ";
             label7.TextAlign = ContentAlignment.MiddleCenter;
@@ -415,9 +399,9 @@
             label6.AutoSize = true;
             label6.Dock = DockStyle.Fill;
             label6.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label6.Location = new Point(375, 3);
+            label6.Location = new Point(408, 3);
             label6.Name = "label6";
-            label6.Size = new Size(114, 134);
+            label6.Size = new Size(125, 143);
             label6.TabIndex = 6;
             label6.Text = "THU";
             label6.TextAlign = ContentAlignment.MiddleCenter;
@@ -427,9 +411,9 @@
             label4.AutoSize = true;
             label4.Dock = DockStyle.Fill;
             label4.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label4.Location = new Point(129, 3);
+            label4.Location = new Point(140, 3);
             label4.Name = "label4";
-            label4.Size = new Size(114, 134);
+            label4.Size = new Size(125, 143);
             label4.TabIndex = 4;
             label4.Text = "TUE";
             label4.TextAlign = ContentAlignment.MiddleCenter;
@@ -441,7 +425,7 @@
             label3.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label3.Location = new Point(6, 3);
             label3.Name = "label3";
-            label3.Size = new Size(114, 134);
+            label3.Size = new Size(125, 143);
             label3.TabIndex = 3;
             label3.Text = "MON";
             label3.TextAlign = ContentAlignment.MiddleCenter;
@@ -451,9 +435,9 @@
             label5.AutoSize = true;
             label5.Dock = DockStyle.Fill;
             label5.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label5.Location = new Point(252, 3);
+            label5.Location = new Point(274, 3);
             label5.Name = "label5";
-            label5.Size = new Size(114, 134);
+            label5.Size = new Size(125, 143);
             label5.TabIndex = 5;
             label5.Text = "WED ";
             label5.TextAlign = ContentAlignment.MiddleCenter;
@@ -462,7 +446,7 @@
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1192, 757);
+            ClientSize = new Size(1268, 794);
             Controls.Add(panel1);
             Controls.Add(panel2);
             Name = "FormGiaoDien";
