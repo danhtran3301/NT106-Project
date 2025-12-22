@@ -31,6 +31,10 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormGiaoDien));
             panel1 = new Panel();
             panel3 = new Panel();
+            label14 = new Label();
+            label15 = new Label();
+            panel7 = new Panel();
+            panel8 = new Panel();
             label13 = new Label();
             label12 = new Label();
             panel5 = new Panel();
@@ -93,22 +97,66 @@
             // 
             panel3.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel3.BorderStyle = BorderStyle.FixedSingle;
+            panel3.Controls.Add(label14);
+            panel3.Controls.Add(label15);
+            panel3.Controls.Add(panel7);
+            panel3.Controls.Add(panel8);
             panel3.Controls.Add(label13);
             panel3.Controls.Add(label12);
             panel3.Controls.Add(panel5);
             panel3.Controls.Add(panel4);
             panel3.Controls.Add(label11);
-            panel3.Location = new Point(24, 596);
+            panel3.Location = new Point(24, 566);
             panel3.Name = "panel3";
-            panel3.Size = new Size(244, 144);
+            panel3.Size = new Size(244, 205);
             panel3.TabIndex = 7;
             panel3.Paint += panel3_Paint;
+            // 
+            // label14
+            // 
+            label14.AutoSize = true;
+            label14.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label14.Location = new Point(89, 171);
+            label14.Name = "label14";
+            label14.Size = new Size(79, 20);
+            label14.TabIndex = 11;
+            label14.Text = " Cancelled";
+            label14.Click += label14_Click;
+            // 
+            // label15
+            // 
+            label15.AutoSize = true;
+            label15.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label15.Location = new Point(81, 135);
+            label15.Name = "label15";
+            label15.Size = new Size(89, 20);
+            label15.TabIndex = 8;
+            label15.Text = " In Progress";
+            label15.Click += label15_Click;
+            // 
+            // panel7
+            // 
+            panel7.BackColor = Color.FromArgb(255, 128, 128);
+            panel7.BorderStyle = BorderStyle.FixedSingle;
+            panel7.Location = new Point(23, 165);
+            panel7.Name = "panel7";
+            panel7.Size = new Size(42, 33);
+            panel7.TabIndex = 10;
+            // 
+            // panel8
+            // 
+            panel8.BackColor = Color.FromArgb(255, 255, 192);
+            panel8.BorderStyle = BorderStyle.FixedSingle;
+            panel8.Location = new Point(23, 126);
+            panel8.Name = "panel8";
+            panel8.Size = new Size(42, 33);
+            panel8.TabIndex = 9;
             // 
             // label13
             // 
             label13.AutoSize = true;
             label13.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label13.Location = new Point(76, 98);
+            label13.Location = new Point(76, 91);
             label13.Name = "label13";
             label13.Size = new Size(105, 20);
             label13.TabIndex = 7;
@@ -119,7 +167,7 @@
             // 
             label12.AutoSize = true;
             label12.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label12.Location = new Point(91, 58);
+            label12.Location = new Point(91, 51);
             label12.Name = "label12";
             label12.Size = new Size(72, 20);
             label12.TabIndex = 0;
@@ -129,7 +177,7 @@
             // 
             panel5.BackColor = Color.PaleGreen;
             panel5.BorderStyle = BorderStyle.FixedSingle;
-            panel5.Location = new Point(23, 90);
+            panel5.Location = new Point(23, 83);
             panel5.Name = "panel5";
             panel5.Size = new Size(42, 33);
             panel5.TabIndex = 6;
@@ -138,7 +186,7 @@
             // 
             panel4.BackColor = SystemColors.GradientInactiveCaption;
             panel4.BorderStyle = BorderStyle.FixedSingle;
-            panel4.Location = new Point(23, 51);
+            panel4.Location = new Point(23, 44);
             panel4.Name = "panel4";
             panel4.Size = new Size(42, 33);
             panel4.TabIndex = 5;
@@ -147,7 +195,7 @@
             // 
             label11.AutoSize = true;
             label11.Font = new Font("Segoe UI", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label11.Location = new Point(56, 26);
+            label11.Location = new Point(61, 9);
             label11.Name = "label11";
             label11.Size = new Size(120, 20);
             label11.TabIndex = 4;
@@ -499,5 +547,9 @@
         private Button button2;
         private Button button1;
         private MonthCalendar monthCalendar1;
+        private Label label14;
+        private Label label15;
+        private Panel panel7;
+        private Panel panel8;
     }
 }
