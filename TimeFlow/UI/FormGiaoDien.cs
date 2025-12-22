@@ -46,45 +46,39 @@ namespace TimeFlow
 
         private void InitializeForm()
         {
-            // Display user info
             if (!string.IsNullOrEmpty(SessionManager.Username))
             {
                 label1.Text = SessionManager.Username;
             }
-            
+
             label10.Text = currentSelectedDate.ToString("MMMM yyyy");
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
 
-            // Window config
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.WindowState = FormWindowState.Maximized;
         }
 
         private async void GiaoDien_Load(object sender, EventArgs e)
         {
-            // Test mode fallback
             if (string.IsNullOrEmpty(SessionManager.Username))
             {
                 SessionManager.Username = "TEST_USER";
             }
-            
+
             EnableDoubleBuffered(tableLayoutPanel2);
 
-            // ✅ Load tasks từ server
             await LoadTasksFromServerAsync();
         }
 
-        // ✅ PRIORITY 1: Load tasks từ server
         private async System.Threading.Tasks.Task LoadTasksFromServerAsync()
         {
             try
             {
                 _isLoading = true;
                 ShowLoadingIndicator();
-                
+
                 _currentTasks = await _taskApi.GetTasksAsync();
-                
-                // ✅ FIX: Ensure UI updates on UI thread
+
                 if (this.InvokeRequired)
                 {
                     this.Invoke(new Action(() =>
@@ -98,19 +92,18 @@ namespace TimeFlow
                     UpdateCalendarView();
                     LoadTaskCountBadges();
                 }
-                
+
                 HideLoadingIndicator();
             }
             catch (Exception ex)
             {
                 HideLoadingIndicator();
-                
-                // ✅ FIX: Show error on UI thread
+
                 if (this.InvokeRequired)
                 {
                     this.Invoke(new Action(() =>
                     {
-                        MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
+                        MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập",
                             "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         UpdateCalendarView();
                         LoadTaskCountBadges();
@@ -118,7 +111,7 @@ namespace TimeFlow
                 }
                 else
                 {
-                    MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập", 
+                    MessageBox.Show($"Không thể tải tasks: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập",
                         "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     UpdateCalendarView();
                     LoadTaskCountBadges();
@@ -130,10 +123,8 @@ namespace TimeFlow
             }
         }
 
-        // ✅ Loading indicator
         private void ShowLoadingIndicator()
         {
-            // ✅ FIX: Check if handle is created before manipulating controls
             if (!this.IsHandleCreated)
                 return;
 
@@ -145,7 +136,7 @@ namespace TimeFlow
 
             tableLayoutPanel2.SuspendLayout();
             tableLayoutPanel2.Controls.Clear();
-            
+
             Label loadingLabel = new Label
             {
                 Text = "⏳ Loading your tasks...\n\nPlease wait...",
@@ -155,23 +146,20 @@ namespace TimeFlow
                 ForeColor = AppColors.Gray600,
                 BackColor = Color.White
             };
-            
+
             tableLayoutPanel2.Controls.Add(loadingLabel, 0, 0);
             tableLayoutPanel2.SetColumnSpan(loadingLabel, 7);
             tableLayoutPanel2.SetRowSpan(loadingLabel, tableLayoutPanel2.RowCount);
-            
+
             tableLayoutPanel2.ResumeLayout();
         }
 
         private void HideLoadingIndicator()
         {
-            // Will be cleared by UpdateCalendarView()
         }
 
-        // ✅ PRIORITY 3: Refresh calendar (called by events)
         private async void RefreshCalendar()
         {
-            // ✅ FIX: Check if form is ready before refreshing
             if (!this.IsHandleCreated || this.IsDisposed)
                 return;
 
@@ -182,10 +170,17 @@ namespace TimeFlow
         {
             totalTaskCount = _currentTasks.Count(t => t.Status != TimeFlow.Models.TaskStatus.Completed);
             completedTaskCount = _currentTasks.Count(t => t.Status == TimeFlow.Models.TaskStatus.Completed);
-            
+            int inProgressCount = _currentTasks.Count(t => t.Status == TimeFlow.Models.TaskStatus.InProgress);
+            int cancelledCount = _currentTasks.Count(t => t.Status == TimeFlow.Models.TaskStatus.Cancelled);
+
+
             button1.Text = $"Your Task ({totalTaskCount})";
             label12.Text = $"Pending tasks: {totalTaskCount} ⏳";
             label13.Text = $"Completed: {completedTaskCount} ✓";
+            label15.Text = $"In progress: {inProgressCount} 🟠";
+            label14.Text = $"Cancelled: {cancelledCount} ❌";
+
+
 
             if (totalTaskCount > 0)
             {
@@ -201,7 +196,6 @@ namespace TimeFlow
 
         private void UpdateCalendarView()
         {
-            // ✅ FIX: Check if handle is created before updating UI
             if (!this.IsHandleCreated)
                 return;
 
@@ -216,7 +210,6 @@ namespace TimeFlow
 
             DateTime startDate = currentSelectedDate;
 
-            // Render 7 columns (7 days)
             for (int col = 0; col < 7; col++)
             {
                 DateTime columnDate = startDate.AddDays(col);
@@ -311,24 +304,20 @@ namespace TimeFlow
             tableLayoutPanel2.Controls.Add(dayCell, col, row);
         }
 
-        // ✅ PRIORITY 2: Click task → Open FormTaskDetail
         private void OnCalendarCellClick(DateTime date, TaskItem task)
         {
             if (task != null)
             {
-                // ✅ Open task detail
                 OpenTaskDetail(task);
             }
             else
             {
-                // Click vào ô trống → Tạo task mới
                 currentSelectedTask = null;
                 UpdateCalendarView();
                 OpenNewTaskFormForDate(date);
             }
         }
 
-        // ✅ Open FormTaskDetail với event subscription
         private void OpenTaskDetail(TaskItem task)
         {
             FormTaskDetail detailForm = new FormTaskDetail(task);
@@ -415,14 +404,12 @@ namespace TimeFlow
 
         private void button2_Click(object sender, EventArgs e)
         {
-            // Open Group Tasks form
             FormGroupTaskList groupTasksForm = new FormGroupTaskList();
             groupTasksForm.Show();
         }
 
         private void button4_Click(object sender, EventArgs e)
         {
-            // Test button - open task detail directly
             if (_currentTasks.Count > 0)
             {
                 OpenTaskDetail(_currentTasks[0]);
@@ -439,7 +426,6 @@ namespace TimeFlow
             formSettings.Show();
         }
 
-        // Empty event handlers
         private void label1_Click(object sender, EventArgs e) { }
         private void tableLayoutPanel2_Paint(object sender, PaintEventArgs e) { }
         private void label2_Click(object sender, EventArgs e) { }
@@ -453,5 +439,15 @@ namespace TimeFlow
         private void label10_Click(object sender, EventArgs e) { }
         private void label13_Click_1(object sender, EventArgs e) { }
         private void panel1_Paint(object sender, PaintEventArgs e) { }
+
+        private void label15_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label14_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace TimeFlow.Server
         public FormTCPServer()
         {
             InitializeComponent();
-            
+
             // Khoi tao Repositories
             _userRepo = new UserRepository();
             _activityLogRepo = new ActivityLogRepository();
@@ -223,17 +223,9 @@ namespace TimeFlow.Server
                             SendResponse(client, JsonSerializer.Serialize(new { status = "autologin_fail" }));
                         }
                     }
-                    else if (type == "chat")
-                    {
-                        if (!string.IsNullOrEmpty(currentUsername))
-                        {
-                            string receiver = root.GetProperty("receiver").GetString();
-                            string content = root.GetProperty("content").GetString();
-                            RouteMessage(currentUsername, receiver, content);
-                        }
-                    }
                 }
             }
+            
             catch (Exception ex)
             {
                 AppendLog($"Client lỗi/ngắt kết nối: {ex.Message}");
@@ -300,6 +292,8 @@ namespace TimeFlow.Server
                 // TODO: Luu vao Database bang 'Messages' neu user Offline
                 AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Cần lưu DB.");
             }
+
+
         }
 
         private void SendResponse(TcpClient client, string response)
@@ -346,7 +340,7 @@ namespace TimeFlow.Server
 
                 // Dung UserRepository de validate login
                 var user = _userRepo.ValidateLogin(username, passwordHash);
-                
+
                 if (user != null)
                 {
                     AppendLog($"[DEBUG] ✓ Login successful for user: {username}");
@@ -388,14 +382,14 @@ namespace TimeFlow.Server
                 };
 
                 int userId = _userRepo.Create(newUser);
-                
+
                 if (userId > 0)
                 {
                     AppendLog($"[DEBUG] ✓ User registered successfully: {username} (ID: {userId})");
-                    
+
                     // Log activity
                     _activityLogRepo.LogActivity(userId, null, "Register", $"New user registered: {username}");
-                    
+
                     return true;
                 }
                 else
@@ -467,6 +461,11 @@ namespace TimeFlow.Server
             {
                 return Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(data))).Replace("=", "").Replace('+', '-').Replace('/', '_');
             }
+        }
+
+        private void FormTCPServer_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
