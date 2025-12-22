@@ -223,6 +223,15 @@ namespace TimeFlow.Server
                             SendResponse(client, JsonSerializer.Serialize(new { status = "autologin_fail" }));
                         }
                     }
+                    else if (type == "chat")
+                    {
+                        if (!string.IsNullOrEmpty(currentUsername))
+                        {
+                            string receiver = root.GetProperty("receiver").GetString();
+                            string content = root.GetProperty("content").GetString();
+                            RouteMessage(currentUsername, receiver, content);
+                        }
+                    }
                 }
             }
             
