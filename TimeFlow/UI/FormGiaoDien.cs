@@ -175,7 +175,6 @@ namespace TimeFlow
 
 
             button1.Text = $"Your Task ({totalTaskCount})";
-            label12.Text = $"Pending tasks: {totalTaskCount} ⏳";
             label13.Text = $"Completed: {completedTaskCount} ✓";
             label15.Text = $"In progress: {inProgressCount} 🟠";
             label14.Text = $"Cancelled: {cancelledCount} ❌";
