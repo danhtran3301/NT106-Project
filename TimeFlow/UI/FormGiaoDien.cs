@@ -392,6 +392,7 @@ namespace TimeFlow
         private void button1_Click(object sender, EventArgs e)
         {
             FormTaskList formTaskList = new FormTaskList();
+            formTaskList.TasksChanged += (s, ev) => RefreshCalendar(); 
             formTaskList.Show();
         }
 
@@ -424,6 +425,14 @@ namespace TimeFlow
             FormSettings formSettings = new FormSettings();
             formSettings.Show();
         }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (!_isLoading)
+                RefreshCalendar();
+        }
+
 
         private void label1_Click(object sender, EventArgs e) { }
         private void tableLayoutPanel2_Paint(object sender, PaintEventArgs e) { }
