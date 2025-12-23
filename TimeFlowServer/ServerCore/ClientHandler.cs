@@ -20,6 +20,7 @@ namespace TimeFlowServer.ServerCore
         private readonly CommentRepository _commentRepo;
         private readonly GroupRepository _groupRepo;
         private readonly GroupMemberRepository _groupMemberRepo;
+        private readonly MessageRepository _messageRepo;
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
@@ -37,6 +38,7 @@ namespace TimeFlowServer.ServerCore
             CommentRepository commentRepo,
             GroupRepository groupRepo,             
             GroupMemberRepository groupMemberRepo, 
+            MessageRepository messageRepo,
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -50,6 +52,7 @@ namespace TimeFlowServer.ServerCore
             _commentRepo = commentRepo;
             _groupRepo = groupRepo;
             _groupMemberRepo = groupMemberRepo;
+            _messageRepo = messageRepo;
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -445,63 +448,105 @@ namespace TimeFlowServer.ServerCore
 
         private async Task HandleChatAsync(JsonElement root)
         {
-            if (string.IsNullOrEmpty(_currentUsername))
-            {
-                Log.Warning($"[{_clientId}] Chat message from unauthenticated client");
-                return;
-            }
+            if (string.IsNullOrEmpty(_currentUsername)) return;
 
             try
             {
-                string receiver = root.GetProperty("receiver").GetString() ?? "";
                 string content = root.GetProperty("content").GetString() ?? "";
+                string receiver = root.GetProperty("receiver").GetString() ?? "";
 
-                Log.Information($"[CHAT] {_currentUsername} → {receiver}: {content}");
-
-                // Tim receiver client
-                TcpClient? receiverClient = null;
-                lock (_clientsLock)
+                // Kiểm tra xem có phải chat nhóm không (Client gửi cờ isGroup = true)
+                bool isGroup = false;
+                if (root.TryGetProperty("isGroup", out JsonElement groupElem))
                 {
-                    if (_onlineClients.TryGetValue(receiver, out var client))
-                    {
-                        receiverClient = client;
-                    }
+                    isGroup = groupElem.GetBoolean();
                 }
 
-                if (receiverClient != null && receiverClient.Connected)
+                if (isGroup)
                 {
-                    try
+                    // --- XỬ LÝ CHAT NHÓM ---
+                    int groupId = int.Parse(receiver); // Receiver lúc này là GroupId
+
+                    // 1. Lưu vào Database
+                    _messageRepo.AddGroupMessage(_currentUsername, groupId, content);
+
+                    // 2. Lấy danh sách thành viên trong nhóm (Dùng GroupMemberRepo đã có)
+                    var members = _groupMemberRepo.GetByGroupId(groupId);
+
+                    // 3. Gửi cho từng thành viên đang online
+                    foreach (var member in members)
                     {
-                        var message = new
+                        // Lấy username của member (Cần join bảng User hoặc lấy từ cache nếu có)
+                        // Giả sử GroupMember có property User hoặc ta query thêm
+                        // Ở đây ta cần Username để tra trong _onlineClients
+                        var user = _userRepo.GetById(member.UserId);
+                        if (user == null) continue;
+
+                        string memberUsername = user.Username;
+
+                        // Không gửi lại cho chính mình (tuỳ chọn)
+                        if (memberUsername == _currentUsername) continue;
+
+                        TcpClient? clientToSend = null;
+                        lock (_clientsLock)
+                        {
+                            if (_onlineClients.TryGetValue(memberUsername, out var c))
+                            {
+                                clientToSend = c;
+                            }
+                        }
+
+                        if (clientToSend != null && clientToSend.Connected)
+                        {
+                            try
+                            {
+                                var packet = new
+                                {
+                                    type = "receive_group_message",
+                                    groupId = groupId,
+                                    sender = _currentUsername,
+                                    content = content,
+                                    timestamp = DateTime.Now.ToString("HH:mm")
+                                };
+                                string json = JsonSerializer.Serialize(packet);
+                                byte[] bytes = Encoding.UTF8.GetBytes(json);
+                                await clientToSend.GetStream().WriteAsync(bytes, 0, bytes.Length);
+                            }
+                            catch { /* Log error */ }
+                        }
+                    }
+                    Log.Information($"[GROUP CHAT] {_currentUsername} sent to Group {groupId}");
+                }
+                else
+                {
+                    // --- XỬ LÝ CHAT 1-1 (CŨ) ---
+
+                    // 1. Lưu vào DB
+                    _messageRepo.AddMessage(_currentUsername, receiver, content);
+
+                    // 2. Gửi cho người nhận
+                    TcpClient? receiverClient = null;
+                    lock (_clientsLock)
+                    {
+                        if (_onlineClients.TryGetValue(receiver, out var c)) receiverClient = c;
+                    }
+
+                    if (receiverClient != null)
+                    {
+                        var packet = new
                         {
                             type = "receive_message",
                             sender = _currentUsername,
                             content = content,
                             timestamp = DateTime.Now.ToString("HH:mm")
                         };
-
-                        string json = JsonSerializer.Serialize(message);
-                        byte[] bytes = Encoding.UTF8.GetBytes(json);
-                        
-                        var stream = receiverClient.GetStream();
-                        await stream.WriteAsync(bytes, 0, bytes.Length);
-
-                        Log.Information($"[CHAT] ✓ Message delivered to {receiver}");
+                        // ... Gửi packet ...
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, $"[CHAT] ✗ Failed to deliver message to {receiver}");
-                    }
-                }
-                else
-                {
-                    Log.Warning($"[CHAT] ✗ User {receiver} is offline - message not delivered");
-                    // TODO: Luu vao database de gui lai sau
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"[{_clientId}] Chat error");
+                Log.Error(ex, "Chat error");
             }
         }
 
