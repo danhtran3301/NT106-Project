@@ -21,18 +21,18 @@ namespace TimeFlow.Tasks
         private readonly TaskApiClient _taskApi;
 
         private TaskDetailViewModel _currentTask;
-        private TaskItem _basicTaskData; // ✅ Cache basic data
+        private TaskItem _basicTaskData; //Cache basic data
         private ModernPanel _statusBadge;
         private int _taskId;
         private bool _isLoadingDetails = false;
 
-        // ✅ Cache button references để update sau
+        // Cache button references để update sau
         private CustomButton _btnEditTask;
         private CustomButton _btnChangeStatus;
         private CustomButton _btnDeleteTask;
         private CustomButton _btnSubmitTask;
 
-        // ✅ Event để notify parent form
+        // Event để notify parent form
         public event EventHandler<TaskUpdateEventArgs> TaskUpdated;
         public event EventHandler TaskDeleted;
 
@@ -56,13 +56,13 @@ namespace TimeFlow.Tasks
             _basicTaskData = basicTask;
             _taskId = basicTask.TaskId;
             
-            // ✅ Convert TaskItem to basic TaskDetailViewModel
+            //Convert TaskItem to basic TaskDetailViewModel
             _currentTask = ConvertToBasicViewModel(basicTask);
             
-            // ✅ Render basic info NGAY LẬP TỨC (fast)
+            // Render basic info NGAY LẬP TỨC (fast)
             SetupLayout();
             
-            // ✅ Load full details async (comments, activities)
+            //Load full details async (comments, activities)
             LoadFullDetailsAsync(basicTask.TaskId);
         }
 
@@ -125,15 +125,15 @@ namespace TimeFlow.Tasks
             {
                 _isLoadingDetails = true;
                 
-                // ✅ Fetch full task detail từ server (comments + activities)
+                //Fetch full task detail từ server (comments + activities)
                 var fullDetails = await _taskApi.GetTaskDetailFullAsync(taskId);
 
                 if (fullDetails != null)
                 {
-                    // ✅ Update với full data
+                    //  Update với full data
                     _currentTask = fullDetails;
                     
-                    // ✅ Progressive rendering
+                    //Progressive rendering
                     this.Invoke((MethodInvoker)delegate
                     {
                         // Render comments nếu có
@@ -148,7 +148,7 @@ namespace TimeFlow.Tasks
                             RenderActivities();
                         }
                         
-                        // ✅ Update button states sau khi load xong
+                        // Update button states sau khi load xong
                         UpdateButtonStates();
                         
                         _isLoadingDetails = false;
@@ -184,7 +184,7 @@ namespace TimeFlow.Tasks
                 {
                     SetupLayout();
                     
-                    // ✅ Update button states sau khi setup xong
+                    //Update button states sau khi setup xong
                     UpdateButtonStates();
                     
                     this.Text = "Task Details";
@@ -227,7 +227,7 @@ namespace TimeFlow.Tasks
             foreach (var comment in filteredList)
             {
                 var commentControl = CreateComment(comment.DisplayName, comment.Content, comment.TimeAgo);
-                commentControl.Tag = "CommentItem"; // Đánh dấu để dễ xóa lần sau
+                commentControl.Tag = "CommentItem"; 
 
                 centerPanel.Controls.Add(commentControl);
                 centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
@@ -267,20 +267,20 @@ namespace TimeFlow.Tasks
             if (_btnEditTask != null)
             {
                 _btnEditTask.Enabled = hasPerm && !isCompleted;
-                _btnEditTask.BackColor = AppColors.Blue500; // Cố định màu gốc
+                _btnEditTask.BackColor = AppColors.Blue500;
                 _btnEditTask.Text = isCompleted ? "✏️ Edit (Done)" : "✏️ Edit Task";
             }
 
             if (_btnChangeStatus != null)
             {
                 _btnChangeStatus.Enabled = !isCompleted;
-                _btnChangeStatus.BackColor = AppColors.Orange500; // Cố định màu gốc
+                _btnChangeStatus.BackColor = AppColors.Orange500; 
             }
 
             if (_btnSubmitTask != null)
             {
                 _btnSubmitTask.Enabled = !isCompleted;
-                _btnSubmitTask.BackColor = AppColors.Purple500; // Cố định màu gốc
+                _btnSubmitTask.BackColor = AppColors.Purple500;
                 _btnSubmitTask.Text = isCompleted ? "✓ Finished" : "Submit task";
             }
         }
@@ -313,7 +313,7 @@ namespace TimeFlow.Tasks
         {
             if (_currentTask == null) return;
             
-            // ✅ Kiểm tra task đã completed chưa
+            // Kiểm tra task đã completed chưa
             if (_currentTask.Status == TimeFlow.Models.TaskStatus.Completed)
             {
                 MessageBox.Show("Task này đã được nộp rồi!", "Thông báo", 
@@ -321,7 +321,7 @@ namespace TimeFlow.Tasks
                 return;
             }
 
-            // ✅ Xác nhận submit
+            // Xác nhận submit
             var confirmResult = MessageBox.Show(
                 "Bạn có chắc chắn muốn nộp task này?\n\n" +
                 "⚠️ Lưu ý: Sau khi nộp, task sẽ chuyển sang trạng thái HOÀN THÀNH và không thể chỉnh sửa nữa. " +
@@ -346,7 +346,7 @@ namespace TimeFlow.Tasks
                 
                 if (success)
                 {
-                    // ✅ Raise event để parent form refresh
+                    // Raise event để parent form refresh
                     TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
                     {
                         TaskId = _currentTask.TaskId,
@@ -416,7 +416,7 @@ namespace TimeFlow.Tasks
                     
                     if (success)
                     {
-                        // ✅ Raise TaskDeleted event trước khi close
+                        //Raise TaskDeleted event trước khi close
                         TaskDeleted?.Invoke(this, EventArgs.Empty);
                         
                         MessageBox.Show("Task đã được xóa thành công!", "Thành công");
@@ -438,7 +438,7 @@ namespace TimeFlow.Tasks
         {
             if (_currentTask == null || _statusBadge == null) return;
 
-            // ✅ FIX: Kiểm tra status có thay đổi không
+            //FIX: Kiểm tra status có thay đổi không
             if (_currentTask.Status == newStatus)
             {
                 MessageBox.Show($"Task đã ở trạng thái {_currentTask.StatusText} rồi!", "Thông báo",
@@ -465,10 +465,10 @@ namespace TimeFlow.Tasks
                     _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
                     _statusBadge.Text = _currentTask.StatusText;
                     _statusBadge.Invalidate();
-                    // ✅ Update button states (instead of full refresh)
+                    //Update button states (instead of full refresh)
                     UpdateButtonStates();
 
-                    // ✅ Raise TaskUpdated event
+                    //Raise TaskUpdated event
                     TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
                     {
                         TaskId = _currentTask.TaskId,
@@ -516,7 +516,7 @@ namespace TimeFlow.Tasks
             };
         }
 
-        // ✅ Progressive Rendering Methods
+        //Progressive Rendering Methods
         private void RenderComments()
         {
             if (_currentTask == null || !_currentTask.HasComments) return;
@@ -550,9 +550,9 @@ namespace TimeFlow.Tasks
                     comment.TimeAgo
                 );
                 
-                // ✅ Add control first
+                //Add control first
                 centerPanel.Controls.Add(commentControl);
-                // ✅ Then set index to insert before spacer
+                // Then set index to insert before spacer
                 centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
             }
 
@@ -570,7 +570,7 @@ namespace TimeFlow.Tasks
                 };
                 loadMoreLabel.Click += (s, e) => LoadMoreComments(centerPanel, INITIAL_COMMENTS);
                 
-                // ✅ Add then set index
+                //  Add then set index
                 centerPanel.Controls.Add(loadMoreLabel);
                 centerPanel.Controls.SetChildIndex(loadMoreLabel, spacerIndex);
             }
@@ -616,9 +616,9 @@ namespace TimeFlow.Tasks
                     contentWidth
                 );
                 
-                // ✅ Add control first
+                //  Add control first
                 rightSidebar.Controls.Add(activityControl);
-                // ✅ Then set index to insert before spacer
+                // Then set index to insert before spacer
                 rightSidebar.Controls.SetChildIndex(activityControl, spacerIndex);
             }
 
@@ -634,7 +634,7 @@ namespace TimeFlow.Tasks
                     Margin = new Padding(0, 10, 0, 0)
                 };
                 
-                // ✅ Add then set index
+                // Add then set index
                 rightSidebar.Controls.Add(showMoreLabel);
                 rightSidebar.Controls.SetChildIndex(showMoreLabel, spacerIndex);
             }
@@ -672,7 +672,7 @@ namespace TimeFlow.Tasks
                     comment.TimeAgo
                 );
                 
-                // ✅ Add then set index
+                //  Add then set index
                 centerPanel.Controls.Add(commentControl);
                 centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
             }
@@ -692,7 +692,7 @@ namespace TimeFlow.Tasks
                 };
                 newLoadMoreLabel.Click += (s, e) => LoadMoreComments(centerPanel, totalLoaded);
                 
-                // ✅ Add then set index
+                // Add then set index
                 centerPanel.Controls.Add(newLoadMoreLabel);
                 centerPanel.Controls.SetChildIndex(newLoadMoreLabel, spacerIndex);
             }
