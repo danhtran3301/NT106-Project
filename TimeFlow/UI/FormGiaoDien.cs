@@ -339,16 +339,18 @@ namespace TimeFlow
             {
                 RefreshCalendar();
 
-
-                detailForm.TaskDeleted += (s, e) =>
-                {
-                    RefreshCalendar();
-                };
-
-                detailForm.Show();
-
             };
-            }
+
+            detailForm.TaskDeleted += (s, e) =>
+            {
+                RefreshCalendar();
+            };
+
+            detailForm.Show();
+
+        }
+            
+       
         
 
         private Color GetStatusColor(TimeFlow.Models.TaskStatus status)
