@@ -15,25 +15,31 @@ namespace TimeFlow.Server
 {
     public partial class FormTCPServer : Form
     {
-        // --- CAC BIEN TOAN CUC ---
+        private readonly UserRepository _userRepo;
+        private readonly ActivityLogRepository _activityLogRepo;
+        private readonly MessageRepository _messageRepo;
+
+        // --- CÁC BIẾN TOÀN CỤC KHÁC ---
         private TcpListener tcpListener;
         private Thread serverThread;
-
-        // Database Repositories
-        private UserRepository _userRepo;
-        private ActivityLogRepository _activityLogRepo;
-
-        // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
-        private static Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private static object _lock = new object();
 
+        // Chuỗi kết nối Database
+        private string connectionString = "Server=localhost,1433;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;";
+
+        // DANH SÁCH USER ONLINE: Map từ Username -> Socket Client
+        private static readonly Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
+
+        // --- CONSTRUCTOR DUY NHẤT (Đã gộp) ---
         public FormTCPServer()
         {
             InitializeComponent();
-            
-            // Khoi tao Repositories
+
+            // Khởi tạo tất cả Repositories tại đây
+            // Lưu ý: Nếu UserRepository cần connectionString, bạn hãy sửa thành new UserRepository(connectionString)
             _userRepo = new UserRepository();
             _activityLogRepo = new ActivityLogRepository();
+            _messageRepo = new MessageRepository(connectionString);
         }
 
         // --- CAC CLASS DU LIEU (DTO) ---
@@ -52,7 +58,8 @@ namespace TimeFlow.Server
             try
             {
                 AppendLog("Testing database connection...");
-                var testDb = new Data.DatabaseHelper();
+                // Cần đảm bảo DatabaseHelper nhận chuỗi kết nối đúng
+                var testDb = new Data.DatabaseHelper(connectionString);
                 if (testDb.TestConnection())
                 {
                     AppendLog("✓ Database connection successful!");
@@ -104,6 +111,41 @@ namespace TimeFlow.Server
             }
         }
 
+        // Gửi danh sách user online cho TẤT CẢ client đang kết nối
+        private void BroadcastOnlineUsers()
+        {
+            List<string> userList;
+            lock (_lock)
+            {
+                userList = new List<string>(_onlineClients.Keys);
+            }
+
+            var packet = new
+            {
+                type = "user_list",
+                users = userList
+            };
+
+            string json = JsonSerializer.Serialize(packet);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+
+            lock (_lock)
+            {
+                foreach (var client in _onlineClients.Values)
+                {
+                    try
+                    {
+                        if (client.Connected)
+                        {
+                            client.GetStream().Write(bytes, 0, bytes.Length);
+                        }
+                    }
+                    catch { /* Bỏ qua nếu client nào đó bị lỗi */ }
+                }
+            }
+            AppendLog($"[System] Đã cập nhật danh sách online ({userList.Count} users)");
+        }
+
         // --- HAM XU LY CLIENT ---
         private void HandleClient(TcpClient client)
         {
@@ -145,6 +187,7 @@ namespace TimeFlow.Server
                                 if (_onlineClients.ContainsKey(currentUsername))
                                     _onlineClients[currentUsername].Close();
                                 _onlineClients[currentUsername] = client;
+                                BroadcastOnlineUsers();
                             }
 
                             string res = JsonSerializer.Serialize(new
@@ -232,6 +275,28 @@ namespace TimeFlow.Server
                             RouteMessage(currentUsername, receiver, content);
                         }
                     }
+                    else if (type == "get_history")
+                    {
+                        // 1. Lấy tên người mà Client muốn xem tin nhắn cùng
+                        string targetUser = root.GetProperty("target_user").GetString();
+
+                        if (!string.IsNullOrEmpty(currentUsername))
+                        {
+                            // 2. Gọi Repo lấy dữ liệu từ SQL
+                            var historyList = _messageRepo.GetHistory(currentUsername, targetUser);
+
+                            // 3. Đóng gói JSON gửi trả về Client
+                            var response = new
+                            {
+                                type = "history_data",
+                                data = historyList
+                            };
+                            SendResponse(client, JsonSerializer.Serialize(response));
+
+                            // Log nhẹ để debug
+                            AppendLog($"[History] User '{currentUsername}' lấy lịch sử chat với '{targetUser}' ({historyList.Count} tin).");
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -248,6 +313,7 @@ namespace TimeFlow.Server
                         {
                             _onlineClients.Remove(currentUsername);
                         }
+                        BroadcastOnlineUsers();
                     }
                     AppendLog($"User '{currentUsername}' đã Offline.");
 
@@ -265,8 +331,10 @@ namespace TimeFlow.Server
         // --- HAM DIEU HUONG TIN NHAN (ROUTING) ---
         private void RouteMessage(string sender, string receiver, string content)
         {
-            TcpClient receiverClient = null;
+            // 1. LUÔN LUÔN LƯU VÀO DATABASE
+            _messageRepo.AddMessage(sender, receiver, content);
 
+            TcpClient receiverClient = null;
             lock (_lock)
             {
                 if (_onlineClients.ContainsKey(receiver))
@@ -275,6 +343,7 @@ namespace TimeFlow.Server
                 }
             }
 
+            // 2. NẾU USER ONLINE -> GỬI NGAY
             if (receiverClient != null && receiverClient.Connected)
             {
                 try
@@ -292,13 +361,13 @@ namespace TimeFlow.Server
                 }
                 catch
                 {
-                    AppendLog($"Gửi tin tới {receiver} thất bại.");
+                    AppendLog($"Gửi tin tới {receiver} thất bại (Đã lưu DB).");
                 }
             }
             else
             {
-                // TODO: Luu vao Database bang 'Messages' neu user Offline
-                AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Cần lưu DB.");
+                // 3. NẾU OFFLINE -> CHỈ CẦN LOG VÌ ĐÃ LƯU DB Ở BƯỚC 1 RỒI
+                AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Đã lưu tin nhắn.");
             }
         }
 
@@ -340,32 +409,37 @@ namespace TimeFlow.Server
         {
             try
             {
-                string passwordHash = HashPassword(password);
-                AppendLog($"[DEBUG] Đang check login: User={username}");
-                AppendLog($"[DEBUG] Hash từ Client: {passwordHash}");
-
-                // Dung UserRepository de validate login
-                var user = _userRepo.ValidateLogin(username, passwordHash);
-                
-                if (user != null)
+                using SqlConnection conn = new SqlConnection(connectionString);
+                conn.Open();
+                string query = "SELECT TOP 1 UserId, Username, Email, FullName, IsActive FROM Users WHERE Username = @u AND Password = @p";
+                using SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@u", username);
+                cmd.Parameters.AddWithValue("@p", HashPassword(password));
+                using (var reader = cmd.ExecuteReader())
                 {
-                    AppendLog($"[DEBUG] ✓ Login successful for user: {username}");
+                    if (reader.Read())
+                    {
+                        return new User
+                        {
+                            UserId = reader.GetInt32(reader.GetOrdinal("UserId")),
+                            Username = reader.GetString(reader.GetOrdinal("Username")),
+                            Email = reader.GetString(reader.GetOrdinal("Email")),
+                            FullName = reader.IsDBNull(reader.GetOrdinal("FullName")) ? null : reader.GetString(reader.GetOrdinal("FullName")),
+                            IsActive = reader.GetBoolean(reader.GetOrdinal("IsActive"))
+                        };
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
-                else
-                {
-                    AppendLog($"[DEBUG] ✗ Login failed for user: {username}");
-                }
-
-                return user;
             }
-            catch (Exception ex)
+            catch
             {
-                AppendLog($"[ERROR] ValidateLogin exception: {ex.Message}");
                 return null;
             }
         }
 
-        // Dang ky user moi
         private bool RegisterNewUser(string username, string password, string email)
         {
             try
@@ -388,14 +462,14 @@ namespace TimeFlow.Server
                 };
 
                 int userId = _userRepo.Create(newUser);
-                
+
                 if (userId > 0)
                 {
                     AppendLog($"[DEBUG] ✓ User registered successfully: {username} (ID: {userId})");
-                    
+
                     // Log activity
                     _activityLogRepo.LogActivity(userId, null, "Register", $"New user registered: {username}");
-                    
+
                     return true;
                 }
                 else
@@ -406,7 +480,7 @@ namespace TimeFlow.Server
             }
             catch (Exception ex)
             {
-                AppendLog($"[ERROR] Register exception: {ex.Message}");
+                AppendLog("Register Error: " + ex.Message);
                 return false;
             }
         }
