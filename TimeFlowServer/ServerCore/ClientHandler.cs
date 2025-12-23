@@ -147,6 +147,12 @@ namespace TimeFlowServer.ServerCore
 
                     // --- Metadata (Staging) ---
                     case "get_categories": await HandleGetCategoriesAsync(root); break;
+                    case "get_groups":
+                        int uId = root.GetProperty("userId").GetInt32();
+                        var groups = _groupRepo.GetByUserId(uId);
+                        var resp = new { status = "success", data = groups };
+                        await SendResponseAsync(JsonSerializer.Serialize(resp));
+                        break;
 
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");

@@ -10,7 +10,7 @@ namespace TimeFlow.Data.Configuration
         // Connection string mac dinh cho development (SQL Server Authentication)
         private const string DefaultConnectionString = 
             "Server=localhost;Database=TimeFlowDB;User Id=myuser;Password=YourStrong@Passw0rd;TrustServerCertificate=True;Integrated Security=False;";
-
+        private static string _connectionString;
         // Timeout mac dinh (giay)
         private const int DefaultCommandTimeout = 30;
 
@@ -37,6 +37,10 @@ namespace TimeFlow.Data.Configuration
             }
 
             return DefaultConnectionString;
+        }
+        public static void SetConnectionString(string connectionString)
+        {
+            _connectionString = connectionString;
         }
 
         // Lay command timeout

@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "TimeFlowServer\\TimeFlowServer.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "TimeFlow\\TimeFlow.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

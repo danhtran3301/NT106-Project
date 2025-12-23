@@ -17,10 +17,16 @@ namespace TimeFlow.Data.Repositories
     public class MessageRepository
     {
         private readonly string _connectionString;
+        private DatabaseHelper dbHelper;
 
         public MessageRepository(string connectionString)
         {
             _connectionString = connectionString;
+        }
+
+        public MessageRepository(DatabaseHelper dbHelper)
+        {
+            this.dbHelper = dbHelper;
         }
 
         // 1. Gửi tin nhắn cá nhân
