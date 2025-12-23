@@ -162,6 +162,21 @@ namespace TimeFlow.Tasks
             leftContainer.Controls.Add(titleLabel);
             headerTable.Controls.Add(leftContainer, 0, 0);
 
+            CustomButton btnAddGroup = new CustomButton
+            {
+                Text = "+",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = AppColors.Blue500,
+                Dock = DockStyle.Right,
+                Width = 30,
+                Height = 30,
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            btnAddGroup.Click += BtnAddGroup_Click; // Sự kiện click
+
+          
+
             CustomButton closeButton = new CustomButton
             {
                 Text = "✕",
@@ -177,6 +192,21 @@ namespace TimeFlow.Tasks
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             headerTable.Controls.Add(closeButton, 2, 0);
+
+            CustomButton btnCreateTask = new CustomButton
+            {
+                Text = "+ New Task",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                BackColor = AppColors.Blue500,
+                ForeColor = Color.White,
+                HoverColor = AppColors.Blue600,
+                BorderRadius = 4,
+                Width = 100,
+                Height = 36,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 10, 0) // Cách nút Chat ra
+            };
+            btnCreateTask.Click += BtnCreateTask_Click;
 
             CustomButton chatButton = new CustomButton
             {
@@ -300,6 +330,44 @@ namespace TimeFlow.Tasks
             }
 
             return button;
+        }
+        private void BtnAddGroup_Click(object sender, EventArgs e)
+        {
+            string groupName = ShowInputDialog("Create New Group", "Enter group name:");
+            if (string.IsNullOrWhiteSpace(groupName)) return;
+
+            try
+            {
+                // Gửi request tạo nhóm
+                var packet = new
+                {
+                    type = "create_group",
+                    token = "TOKEN_CUA_USER", // Bạn cần lấy token từ biến global (Program.UserToken)
+                    data = new
+                    {
+                        groupName = groupName,
+                        description = "Created via Desktop App"
+                    }
+                };
+
+                // Gửi qua TCP (Sử dụng _tcpClient đã có)
+                if (_tcpClient != null && _tcpClient.Connected)
+                {
+                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
+
+                    // Lưu ý: Thực tế bạn cần lắng nghe phản hồi từ server để reload lại list
+                    // Ở đây ta tạm thời reload thủ công hoặc thông báo
+                    MessageBox.Show("Request sent! Please refresh to see new group.");
+
+                    // Gọi lại hàm load danh sách nhóm (Cần viết thêm hàm LoadGroupsAsync tương tự LoadTasksAsync)
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error creating group: " + ex.Message);
+            }
         }
 
         private Control CreateTaskListContent()
@@ -514,6 +582,81 @@ namespace TimeFlow.Tasks
                 MessageBox.Show($"Unable to open chat: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void BtnCreateTask_Click(object sender, EventArgs e)
+        {
+            if (!_selectedGroupId.HasValue)
+            {
+                MessageBox.Show("Please select a group first!");
+                return;
+            }
+
+            string taskTitle = ShowInputDialog("New Group Task", "Enter task title:");
+            if (string.IsNullOrWhiteSpace(taskTitle)) return;
+
+            try
+            {
+                var packet = new
+                {
+                    type = "create_task",
+                    token = "TOKEN_CUA_USER", // Lấy từ biến global
+                    data = new
+                    {
+                        title = taskTitle,
+                        description = "",
+                        priority = 1, // Medium
+                        status = 0,   // Pending
+                        categoryId = 1, // Default category
+                        isGroupTask = true,
+                        groupId = _selectedGroupId.Value // QUAN TRỌNG: Gửi ID nhóm hiện tại
+                    }
+                };
+
+                if (_tcpClient != null && _tcpClient.Connected)
+                {
+                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
+
+                    MessageBox.Show("Task creation requested!");
+                    // Sau này nên lắng nghe sự kiện "task_created" từ server để auto refresh
+                    // Tạm thời reload lại list sau 1s
+                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
+                        this.Invoke((MethodInvoker)delegate { LoadTasksAsync(_contentPanel); })
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error creating task: " + ex.Message);
+            }
+        }
+
+        private string ShowInputDialog(string title, string prompt)
+        {
+            Form promptForm = new Form()
+            {
+                Width = 400,
+                Height = 180,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = title,
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            Label textLabel = new Label() { Left = 20, Top = 20, Text = prompt, AutoSize = true, Font = new Font("Segoe UI", 10) };
+            TextBox textBox = new TextBox() { Left = 20, Top = 50, Width = 340, Font = new Font("Segoe UI", 10) };
+            Button confirmation = new Button() { Text = "Create", Left = 240, Width = 100, Top = 90, DialogResult = DialogResult.OK, BackColor = AppColors.Blue500, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+
+            promptForm.Controls.Add(textLabel);
+            promptForm.Controls.Add(textBox);
+            promptForm.Controls.Add(confirmation);
+            promptForm.AcceptButton = confirmation;
+
+            return promptForm.ShowDialog() == DialogResult.OK ? textBox.Text.Trim() : "";
+        }
+
         private Control CreateGroupTaskItem(TaskItem task)
         {
             ModernPanel taskItemPanel = new ModernPanel

@@ -19,6 +19,9 @@ namespace TimeFlowServer.ServerCore
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
         private readonly TaskRepository _taskRepo;
+        private readonly GroupRepository _groupRepo;
+        private readonly GroupMemberRepository _groupMemberRepo;
+        private readonly GroupTaskRepository _groupTaskRepo;
         private readonly CategoryRepository _categoryRepo;
         private readonly CommentRepository _commentRepo;
 
@@ -41,6 +44,9 @@ namespace TimeFlowServer.ServerCore
             _userRepo = new UserRepository(dbHelper);
             _activityLogRepo = new ActivityLogRepository(dbHelper);
             _taskRepo = new TaskRepository(dbHelper);
+            _groupRepo = new GroupRepository(dbHelper);
+            _groupMemberRepo = new GroupMemberRepository(dbHelper);
+            _groupTaskRepo = new GroupTaskRepository(dbHelper);
             _categoryRepo = new CategoryRepository(dbHelper);
             _commentRepo = new CommentRepository(dbHelper);
 
@@ -147,6 +153,8 @@ namespace TimeFlowServer.ServerCore
                 _taskRepo,
                 _categoryRepo,
                 _commentRepo,
+                _groupRepo,
+                _groupMemberRepo,
                 _jwtManager,
                 _onlineClients,
                 _clientsLock

@@ -18,6 +18,8 @@ namespace TimeFlowServer.ServerCore
         private readonly TaskRepository _taskRepo;
         private readonly CategoryRepository _categoryRepo;
         private readonly CommentRepository _commentRepo;
+        private readonly GroupRepository _groupRepo;
+        private readonly GroupMemberRepository _groupMemberRepo;
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
@@ -33,6 +35,8 @@ namespace TimeFlowServer.ServerCore
             TaskRepository taskRepo,
             CategoryRepository categoryRepo,
             CommentRepository commentRepo,
+            GroupRepository groupRepo,             
+            GroupMemberRepository groupMemberRepo, 
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -44,6 +48,8 @@ namespace TimeFlowServer.ServerCore
             _taskRepo = taskRepo;
             _categoryRepo = categoryRepo;
             _commentRepo = commentRepo;
+            _groupRepo = groupRepo;
+            _groupMemberRepo = groupMemberRepo;
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -146,6 +152,14 @@ namespace TimeFlowServer.ServerCore
                         await HandleGetCategoriesAsync(root);
                         break;
 
+                    case "get_my_groups":
+                        await HandleGetMyGroupsAsync(root);
+                        break;
+
+                    case "create_group":
+                        await HandleCreateGroupAsync(root);
+                        break;
+
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");
                         break;
@@ -161,6 +175,89 @@ namespace TimeFlowServer.ServerCore
             }
         }
 
+
+        private async Task HandleCreateGroupAsync(JsonElement root)
+        {
+            try
+            {
+                // 1. Kiểm tra đăng nhập
+                if (!_currentUserId.HasValue)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
+                string groupName = data.GetProperty("groupName").GetString();
+                string description = data.TryGetProperty("description", out var desc) ? desc.GetString() : "";
+
+                // 2. Tạo Group Model
+                var newGroup = new Group
+                {
+                    GroupName = groupName,
+                    Description = description,
+                    CreatedBy = _currentUserId.Value,
+                    IsActive = true
+                };
+
+                // 3. Lưu vào DB (Hàm Create trong GroupRepo đã xử lý việc thêm Group và add Admin)
+                int groupId = _groupRepo.Create(newGroup);
+
+                if (groupId > 0)
+                {
+                    // Tự động add người tạo vào làm Admin (nếu Repo chưa làm, ta làm thủ công ở đây cho chắc)
+                    // _groupMemberRepo.AddMember(groupId, _currentUserId.Value, GroupRole.Admin);
+
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", groupId = groupId, groupName = groupName }));
+                    Log.Information($"[{_clientId}] Created group '{groupName}' (ID: {groupId})");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to create group" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating group");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleGetMyGroupsAsync(JsonElement root)
+        {
+            try
+            {
+                if (!_currentUserId.HasValue)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    return;
+                }
+
+                Log.Information($"[{_clientId}] Getting groups for UserID: {_currentUserId}");
+
+                // Gọi Repo lấy danh sách nhóm
+                var groups = _groupRepo.GetByUserId(_currentUserId.Value);
+
+                // Tạo response JSON
+                var response = new
+                {
+                    type = "my_groups_list",
+                    status = "success",
+                    data = groups.Select(g => new
+                    {
+                        groupId = g.GroupId,
+                        groupName = g.GroupName,
+                        description = g.Description
+                    })
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error getting groups");
+            }
+        }
         private async Task HandleLoginAsync(JsonElement root)
         {
             try
