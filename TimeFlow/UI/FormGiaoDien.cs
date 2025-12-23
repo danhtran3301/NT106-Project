@@ -337,6 +337,7 @@ namespace TimeFlow
 
             detailForm.TaskUpdated += (s, e) =>
             {
+                // Cách 1: Nạp lại toàn bộ từ Server (An toàn nhất)
                 RefreshCalendar();
 
             };

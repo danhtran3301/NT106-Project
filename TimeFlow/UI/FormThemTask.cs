@@ -108,57 +108,40 @@ namespace TimeFlow.UI
         {
             try
             {
-                // Get task from TaskManager (mock data) and convert to TaskItem
-                var taskModel = Services.TaskManager.GetTaskById(taskId);
+                // Thay vì dùng TaskManager (dữ liệu giả), hãy gọi API lấy dữ liệu thật từ Server
+                var taskDetail = await _taskApi.GetTaskDetailFullAsync(taskId);
 
-                if (taskModel != null)
+                if (taskDetail != null)
                 {
-                    // Convert TaskModel to TaskItem
                     _taskToEdit = new TaskItem
                     {
-                        TaskId = taskModel.Id,
-                        Title = taskModel.Name,
-                        Description = taskModel.Description,
-                        DueDate = taskModel.DueDate,
-                        Priority = taskModel.Priority switch
-                        {
-                            TaskPriorityLevel.Low => TaskPriority.Low,
-                            TaskPriorityLevel.Medium => TaskPriority.Medium,
-                            TaskPriorityLevel.High => TaskPriority.High,
-                            TaskPriorityLevel.Critical => TaskPriority.High,
-                            _ => TaskPriority.Medium
-                        },
-                        Status = taskModel.Status switch
-                        {
-                            TaskState.Pending => TimeFlow.Models.TaskStatus.Pending,
-                            TaskState.InProgress => TimeFlow.Models.TaskStatus.InProgress,
-                            TaskState.Completed => TimeFlow.Models.TaskStatus.Completed,
-                            TaskState.Cancelled => TimeFlow.Models.TaskStatus.Cancelled,
-                            _ => TimeFlow.Models.TaskStatus.Pending
-                        },
-                        CreatedBy = SessionManager.UserId ?? 0
+                        TaskId = taskDetail.TaskId,
+                        Title = taskDetail.Title,
+                        Description = taskDetail.Description,
+                        DueDate = taskDetail.DueDate,
+                        Priority = taskDetail.Priority,
+                        Status = taskDetail.Status,
+                        CategoryId = taskDetail.CategoryId
                     };
 
+                    // Hiển thị lên UI
                     textBox1.Text = _taskToEdit.Title;
                     richTextBox1.Text = _taskToEdit.Description ?? "";
-                    
                     if (_taskToEdit.DueDate.HasValue)
-                    {
                         dateTimePicker1.Value = _taskToEdit.DueDate.Value;
-                        dateTimePicker2.Value = _taskToEdit.DueDate.Value.AddDays(1);
-                    }
 
-                    // ✅ Set priority
                     comboBoxPriority.SelectedIndex = (int)_taskToEdit.Priority - 1;
+
+                    // Chọn đúng Category trong ComboBox
+                    if (_taskToEdit.CategoryId.HasValue)
+                        comboBoxCategory.SelectedValue = _taskToEdit.CategoryId.Value;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi tải thông tin task: {ex.Message}", "Lỗi", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Lỗi tải dữ liệu thật từ Server: {ex.Message}");
             }
         }
-
         private async void button2_Click_1(object sender, EventArgs e)
         {
             // Validation

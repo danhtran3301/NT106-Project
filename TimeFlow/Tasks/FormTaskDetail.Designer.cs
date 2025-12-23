@@ -47,10 +47,10 @@ namespace TimeFlow.Tasks
 
         #endregion
 
-        // UI Setup Methods
+        // khoi tao UI
         private void SetupLayout()
         {
-            this.SuspendLayout(); // ✅ Ngừng layout calculation
+            this.SuspendLayout(); //Ngung layout calculation
             
             this.Text = "Task Details";
             this.BackColor = AppColors.Gray100;
@@ -58,10 +58,10 @@ namespace TimeFlow.Tasks
             this.Padding = new Padding(0);
             this.MinimumSize = new Size(800, 600);
 
-            // Clear existing controls before re-rendering
+            // xoa cac control da co truoc khi render
             this.Controls.Clear();
 
-            // Check if task loaded
+            // kiem tra task da load chua
             if (_currentTask == null)
             {
                 Label errorLabel = new Label
@@ -73,7 +73,7 @@ namespace TimeFlow.Tasks
                     TextAlign = ContentAlignment.MiddleCenter
                 };
                 this.Controls.Add(errorLabel);
-                this.ResumeLayout(); // ✅ Resume layout
+                this.ResumeLayout(); // tiep tuc ve giao dien
                 return;
             }
 
@@ -109,7 +109,7 @@ namespace TimeFlow.Tasks
             mainLayout.Controls.Add(CreateCenterContent(), 1, 0);
             mainLayout.Controls.Add(CreateRightSidebar(), 2, 0);
             
-            this.ResumeLayout(); // ✅ Calculate layout 1 lần duy nhất
+            this.ResumeLayout(); // tinh toan layout 1 lan duy nhat
         }
 
         private Control CreateHeaderBar()
@@ -215,8 +215,7 @@ namespace TimeFlow.Tasks
 
             int buttonWidth = 200;
             int buttonHeight = 50;
-
-            // ✅ Create buttons and cache references
+            //tao cac button
             _btnEditTask = CreateMenuButton("✏️ Edit Task", AppColors.Blue500, Color.White, buttonWidth, buttonHeight, AppColors.Blue600);
             _btnEditTask.Click += EditItem_Click;
             menuPanel.Controls.Add(_btnEditTask);
@@ -228,7 +227,6 @@ namespace TimeFlow.Tasks
                 ContextMenuStrip statusMenu = new ContextMenuStrip();
                 foreach (TimeFlow.Models.TaskStatus status in System.Enum.GetValues(typeof(TimeFlow.Models.TaskStatus)))
                 {
-                    // ✅ Skip "Completed" - chỉ được set qua nút Submit
                     if (status == TimeFlow.Models.TaskStatus.Completed)
                         continue;
                     
@@ -278,7 +276,7 @@ namespace TimeFlow.Tasks
 
             menuPanel.Controls.Add(monthCalendar);
 
-            // ✅ Update button states sau khi tạo xong
+            // cap nhat button sau khi da tao xong
             UpdateButtonStates();
 
             return menuPanel;
@@ -309,7 +307,6 @@ namespace TimeFlow.Tasks
 
             int centerContentWidth = 800;
 
-            // Header with title and status
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
                 Width = centerContentWidth,
@@ -355,7 +352,7 @@ namespace TimeFlow.Tasks
 
             contentPanel.Controls.Add(headerLayout);
 
-            // Description
+            // mo ta
             if (!string.IsNullOrEmpty(_currentTask.Description))
             {
                 Label description = new Label
@@ -369,7 +366,7 @@ namespace TimeFlow.Tasks
                 };
                 contentPanel.Controls.Add(description);
             }
-            // 1. Tạo ô tìm kiếm
+            // tao o tim kiem
             CustomTextBoxWrapper txtSearchComments = new CustomTextBoxWrapper
             {
                 Width = centerContentWidth,
@@ -382,20 +379,17 @@ namespace TimeFlow.Tasks
                  txtSearchComments.SelectAll();
                 });
             };
-            // 2. Thêm sự kiện khi người dùng gõ chữ
+         
             txtSearchComments.TextChanged += (s, e) => {
 
                 string keyword = txtSearchComments.TextBoxText.Trim();
                 if (keyword == "Search comments...") keyword = "";
 
-                // Gọi hàm lọc dữ liệu
                 FilterComments(keyword);
             };
 
-            // 3. Thêm vào contentPanel trước phần tiêu đề Comments
             contentPanel.Controls.Add(txtSearchComments);
 
-            // Comments section
             Label commentsTitle = new Label
             {
                 Text = _currentTask.HasComments ? $"Comments ({_currentTask.Comments.Count})" : "Comments",
@@ -435,12 +429,10 @@ namespace TimeFlow.Tasks
                 if (!string.IsNullOrWhiteSpace(newCommentBox.TextBoxText) && newCommentBox.TextBoxText != "Add a comment...")
                 {
                     MessageBox.Show("Comment feature will be implemented soon!", "Info");
-                    // TODO: Implement add comment API
                 }
             };
             contentPanel.Controls.Add(postButton);
 
-            // Display existing comments
             if (_currentTask.HasComments)
             {
                 foreach (var comment in _currentTask.Comments.Take(10)) // ✅ Limit initial render
@@ -452,7 +444,7 @@ namespace TimeFlow.Tasks
                     ));
                 }
                 
-                // Add "Load more" if needed
+                
                 if (_currentTask.Comments.Count > 10)
                 {
                     Label loadMoreLabel = new Label
@@ -470,7 +462,7 @@ namespace TimeFlow.Tasks
             }
             else if (_isLoadingDetails)
             {
-                // ✅ Show loading skeleton
+               
                 Label loadingComments = new Label
                 {
                     Text = "⏳ Loading comments...",
@@ -680,7 +672,7 @@ namespace TimeFlow.Tasks
             }
             else if (_isLoadingDetails)
             {
-                // ✅ Show loading skeleton
+                
                 Label loadingActivity = new Label
                 {
                     Text = "⏳ Loading activities...",
@@ -708,7 +700,7 @@ namespace TimeFlow.Tasks
             return mainSidebarPanel;
         }
 
-        // Helper Methods
+
         private CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor = null)
         {
             return new CustomButton
@@ -821,7 +813,6 @@ namespace TimeFlow.Tasks
             System.Array statusValues = System.Enum.GetValues(typeof(TimeFlow.Models.TaskStatus));
             foreach (TimeFlow.Models.TaskStatus status in statusValues)
             {
-                // ✅ Skip "Completed" - chỉ được set qua nút Submit
                 if (status == TimeFlow.Models.TaskStatus.Completed)
                     continue;
                 

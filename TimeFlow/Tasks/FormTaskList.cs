@@ -670,36 +670,29 @@ namespace TimeFlow.Tasks
         private void OpenTaskDetail(int taskId)
         {
             var task = _currentTasks.FirstOrDefault(t => t.TaskId == taskId);
-            if (task != null)
-            {
-                FormTaskDetail detailForm = new FormTaskDetail(task);
+            if (task == null) return;
 
-                detailForm.TaskUpdated += (s, e) =>
+            FormTaskDetail detailForm = new FormTaskDetail(task);
+
+            // Khi nhận được tín hiệu TaskUpdated từ Form Chi Tiết
+            detailForm.TaskUpdated += (s, e) => {
+                var taskInList = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
+                if (taskInList != null)
                 {
-                    var taskToUpdate = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
-                    if (taskToUpdate != null)
-                    {
-                        taskToUpdate.Status = e.Status;
-                    }
+                    // Cập nhật dữ liệu vào List local
+                    taskInList.Title = e.Title;
+                    taskInList.Status = e.Status;
+                    taskInList.Priority = e.Priority;
+                    taskInList.DueDate = e.DueDate;
 
+                    // Vẽ lại giao diện danh sách
                     RefreshTaskList();
-                };
+                }
+            };
 
-                detailForm.TaskDeleted += (s, e) =>
-                {
-                    var taskToRemove = _currentTasks.FirstOrDefault(t => t.TaskId == taskId);
-                    if (taskToRemove != null)
-                    {
-                        _currentTasks.Remove(taskToRemove);
-                    }
-                    
-                    RefreshTaskList();
-                };
-                
-                detailForm.FormClosed += (s, e) => this.Show();
-                this.Hide();
-                detailForm.Show();
-            }
+            detailForm.FormClosed += (s, e) => this.Show();
+            this.Hide();
+            detailForm.Show();
         }
         private void RefreshTaskList()
         {

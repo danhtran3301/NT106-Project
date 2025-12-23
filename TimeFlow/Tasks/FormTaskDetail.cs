@@ -163,7 +163,7 @@ namespace TimeFlow.Tasks
             }
         }
 
-        private async void LoadTaskDetailAsync(int taskId)
+        private async Task LoadTaskDetailAsync(int taskId)
         {
             try
             {
@@ -388,7 +388,7 @@ namespace TimeFlow.Tasks
             groupTasksForm.Show();
         }
 
-        private void EditItem_Click(object sender, EventArgs e)
+        private async void EditItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
 
@@ -396,7 +396,18 @@ namespace TimeFlow.Tasks
             {
                 if (editForm.ShowDialog() == DialogResult.OK)
                 {
-                    RefreshTaskDetail();
+                    await LoadTaskDetailAsync(_taskId);
+
+                    TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
+                    {
+                        TaskId = _currentTask.TaskId,
+                        Title = _currentTask.Title,
+                        Status = _currentTask.Status,
+                        Priority = _currentTask.Priority,
+                        DueDate = _currentTask.DueDate
+                    });
+
+                    UpdateButtonStates();
                 }
             }
         }

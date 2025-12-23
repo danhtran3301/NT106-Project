@@ -624,76 +624,50 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                // Authenticate từ token
-                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
-                
-                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                var data = root.GetProperty("data");
+                int taskId = data.GetProperty("taskId").GetInt32();
+
+                string token = root.GetProperty("token").GetString();
+                if (!_jwtManager.ValidateToken(token, out string username))
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "unauthorized", message = "Session expired" }));
                     return;
                 }
 
                 var user = _userRepo.GetByUsername(username);
-                if (user == null)
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
-                    return;
-                }
-
-                var data = root.GetProperty("data");
-                int taskId = data.GetProperty("taskId").GetInt32();
-
-                Log.Information($"[{_clientId}] Updating task: {taskId}");
+                if (user == null) return;
 
                 var existingTask = _taskRepo.GetById(taskId);
-                if (existingTask == null)
+                if (existingTask == null || existingTask.CreatedBy != user.UserId)
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "No permission or task not found" }));
                     return;
                 }
 
-                // Update fields
-                existingTask.Title = data.GetProperty("title").GetString() ?? existingTask.Title;
-                existingTask.Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : existingTask.Description;
-                existingTask.DueDate = data.TryGetProperty("dueDate", out var dueDate) && !string.IsNullOrEmpty(dueDate.GetString())
-                    ? DateTime.Parse(dueDate.GetString()!) : existingTask.DueDate;
+                existingTask.Title = data.GetProperty("title").GetString();
+                existingTask.Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : null;
+                if (data.TryGetProperty("dueDate", out var due) && !string.IsNullOrEmpty(due.GetString()))
+                    existingTask.DueDate = DateTime.Parse(due.GetString());
+
                 existingTask.Priority = (TaskPriority)data.GetProperty("priority").GetInt32();
                 existingTask.Status = (TimeFlow.Models.TaskStatus)data.GetProperty("status").GetInt32();
-                existingTask.CategoryId = data.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : existingTask.CategoryId;
+                existingTask.CategoryId = data.TryGetProperty("categoryId", out var cat) ? cat.GetInt32() : null;
+                existingTask.UpdatedAt = DateTime.Now;
 
-                // ✅ Use Update with authorization (validation + activity logging done inside)
                 bool success = _taskRepo.Update(existingTask, user.UserId);
 
                 if (success)
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
-                    Log.Information($"[{_clientId}] ✓ Task updated: {taskId}");
                 }
                 else
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update task" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Database update failed" }));
                 }
-            }
-            catch (TimeFlow.Data.Exceptions.ValidationException ex)
-            {
-                await SendResponseAsync(JsonSerializer.Serialize(new { 
-                    status = "validation_error",
-                    field = ex.Field,
-                    message = ex.Message 
-                }));
-                Log.Warning($"[{_clientId}] Validation error updating task: {ex.Message}");
-            }
-            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
-            {
-                await SendResponseAsync(JsonSerializer.Serialize(new { 
-                    status = "unauthorized",
-                    message = ex.Message 
-                }));
-                Log.Warning($"[{_clientId}] Unauthorized task update: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"[{_clientId}] Error updating task");
+                Log.Error(ex, "Error in HandleUpdateTaskAsync");
                 await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
         }
