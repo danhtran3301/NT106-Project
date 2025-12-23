@@ -276,16 +276,30 @@ namespace TimeFlow
             {
                 lblContent.Text = task.Title;
                 lblContent.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+                Color statusColor = GetStatusColor(task.Status);
+                lblContent.BackColor = statusColor;
+
+
+                if (statusColor == AppColors.Yellow500)
+                {
+                    lblContent.ForeColor = AppColors.Gray800; // Màu vàng dùng text đen
+                }
+                else
+                {
+                    lblContent.ForeColor = Color.White; // Các màu khác dùng text trắng
+                }
 
                 if (currentSelectedTask != null && task.TaskId == currentSelectedTask.TaskId)
                 {
-                    lblContent.BackColor = Color.Orange;
-                    lblContent.ForeColor = Color.White;
                     lblContent.BorderStyle = BorderStyle.FixedSingle;
+
+                    dayCell.BackColor = Color.DarkGray;
                 }
                 else
                 {
                     lblContent.BorderStyle = BorderStyle.None;
+                    dayCell.BackColor = Color.White;
+
                 }
             }
             else
@@ -326,17 +340,6 @@ namespace TimeFlow
                 // Cách 1: Nạp lại toàn bộ từ Server (An toàn nhất)
                 RefreshCalendar();
 
-                /* // Cách 2: Tối ưu hiệu năng - chỉ sửa đúng Task đó trong List local
-                var taskInMain = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
-                if (taskInMain != null) {
-                    taskInMain.Title = e.Title;
-                    taskInMain.Status = e.Status;
-                    taskInMain.Priority = e.Priority;
-                    taskInMain.DueDate = e.DueDate;
-                    UpdateCalendarView();
-                    LoadTaskCountBadges();
-                }
-                */
             };
 
             detailForm.TaskDeleted += (s, e) =>
@@ -345,6 +348,22 @@ namespace TimeFlow
             };
 
             detailForm.Show();
+
+        }
+            
+       
+        
+
+        private Color GetStatusColor(TimeFlow.Models.TaskStatus status)
+        {
+            return status switch
+            {
+                TimeFlow.Models.TaskStatus.Pending => Color.LightBlue,        
+                TimeFlow.Models.TaskStatus.InProgress => Color.Yellow,        
+                TimeFlow.Models.TaskStatus.Completed => Color.LightGreen,     
+                TimeFlow.Models.TaskStatus.Cancelled => Color.LightCoral,     
+                _ => Color.LightGray                                          
+            };
         }
 
         private void OpenNewTaskFormForDate(DateTime selectedDate)
