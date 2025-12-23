@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
-using TimeFlow.UI.Components;
+using System.Net.Sockets;
+using System.Windows.Forms;
 using TimeFlow.Models;
 using TimeFlow.Services;
-using System.Collections.Generic;
+using TimeFlow.UI.Components;
 
 namespace TimeFlow.Tasks
 {
@@ -21,7 +22,9 @@ namespace TimeFlow.Tasks
         private readonly Color HeaderIconColor = AppColors.Gray600;
         private readonly TaskApiClient _taskApi;
         private List<TaskItem> _currentTasks;
-        
+        private readonly TcpClient _tcpClient;
+        private readonly string _username;
+
         // ✅ Caching
         private Control _cachedLeftMenu;
         private Control _cachedHeaderBar;
@@ -174,6 +177,23 @@ namespace TimeFlow.Tasks
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             headerTable.Controls.Add(closeButton, 2, 0);
+
+            CustomButton chatButton = new CustomButton
+            {
+                Text = "💬",
+                Font = new Font("Segoe UI Emoji", 14F),
+                ForeColor = AppColors.Blue500,
+                BackColor = Color.White,
+                HoverColor = AppColors.Blue50,
+                BorderRadius = 4,
+                Width = 40,
+                Height = 40,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            chatButton.Click += BtnChat_Click; // Liên kết với Event bên file Logic
+            headerTable.Controls.Add(chatButton);
+
 
             Panel separator = new Panel
             {
@@ -482,6 +502,18 @@ namespace TimeFlow.Tasks
             }
         }
 
+        private void BtnChat_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                FormChatBox chatForm = new FormChatBox();
+                chatForm.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to open chat: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
         private Control CreateGroupTaskItem(TaskItem task)
         {
             ModernPanel taskItemPanel = new ModernPanel
