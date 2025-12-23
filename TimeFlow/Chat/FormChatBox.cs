@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Net.Sockets;
@@ -6,97 +7,122 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
+using TimeFlow.Models;
 
 namespace TimeFlow
 {
+    // Class hứng dữ liệu nhóm từ Server
+    public class GroupDto
+    {
+        public int groupId { get; set; }
+        public string groupName { get; set; }
+        public string description { get; set; }
+    }
+
     public partial class FormChatBox : Form
     {
         // --- CẤU HÌNH MẠNG ---
         private TcpClient _client;
         private NetworkStream _stream;
         private Thread _listenThread;
-        private string _myUsername;
-        private string _currentReceiver = "UserB"; // Mặc định chat với UserB (sẽ đổi khi click list user)
         private bool _isConnected = false;
 
-        // Constructor mặc định (Dùng cho testing)
+        // Thông tin User
+        private string _myUsername;
+
+        // Cấu hình Server mặc định
+        private const string SERVER_IP = "127.0.0.1";
+        private const int SERVER_PORT = 1010;
+
+        // Trạng thái Chat hiện tại
+        private int? _currentGroupId = null; // ID nhóm đang chọn
+        private string _currentReceiver = ""; // Tên người/nhóm nhận
+        private bool _isGroupChat = false;    // Cờ đánh dấu đang chat nhóm
+
+        // --- CONSTRUCTOR KHÔNG THAM SỐ ---
         public FormChatBox()
         {
             InitializeComponent();
-            // Tự động kết nối giả lập nếu chạy form này trực tiếp
-            ConnectToServer("UserA");
+            _myUsername = "admin";
+            ConnectToServer();
         }
 
-        // Constructor chính (Được gọi từ Form Login sau khi đăng nhập thành công)
-        public FormChatBox(TcpClient client, string myUsername)
-        {
-            InitializeComponent();
-            _client = client;
-            _stream = client.GetStream();
-            _myUsername = myUsername;
-            _isConnected = true;
-
-            this.Text = $"Chat App - {_myUsername}";
-
-            // Bắt đầu lắng nghe tin nhắn
-            StartListening();
-        }
-
-        // --- HÀM 1: KẾT NỐI SERVER (Chỉ dùng khi test riêng Form này) ---
-        private void ConnectToServer(string user)
+        private void ConnectToServer()
         {
             try
             {
-                _client = new TcpClient("127.0.0.1", 1010); // Đổi PORT cho khớp server
+                _client = new TcpClient();
+                _client.Connect(SERVER_IP, SERVER_PORT);
                 _stream = _client.GetStream();
-                _myUsername = user;
                 _isConnected = true;
 
-                // Gửi lệnh Login giả để Server biết mình là ai
-                var loginData = new { type = "login", data = new { username = user, password = "123" } };
-                byte[] data = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(loginData));
-                _stream.Write(data, 0, data.Length);
+                // 1. Gửi gói tin Login
+                var loginPacket = new { type = "login", data = new { username = _myUsername, password = "123" } };
+                string json = JsonSerializer.Serialize(loginPacket);
+                SendString(json);
 
+                // 2. Gửi yêu cầu lấy danh sách nhóm (Đợi 0.5s để server xử lý login xong)
+                Thread.Sleep(500);
+                var getGroupsPacket = new { type = "get_my_groups" };
+                SendString(JsonSerializer.Serialize(getGroupsPacket));
+
+                // Bắt đầu luồng lắng nghe tin nhắn
                 StartListening();
+
+                this.Text = $"TimeFlow Chat - Logged in as: {_myUsername}";
+                AppendSystemMessage($"Connected to server as {_myUsername}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Không thể kết nối Server: " + ex.Message);
+                MessageBox.Show("Không thể kết nối tới Chat Server: " + ex.Message);
+                this.Text = "TimeFlow Chat - Disconnected";
             }
         }
 
-        // --- HÀM 2: LẮNG NGHE TIN NHẮN (BACKGROUND THREAD) ---
+        // --- XỬ LÝ GỬI NHẬN ---
+
+        private void SendString(string data)
+        {
+            if (!_isConnected) return;
+            try
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(data);
+                _stream.Write(bytes, 0, bytes.Length);
+            }
+            catch { _isConnected = false; }
+        }
+
         private void StartListening()
         {
             _listenThread = new Thread(() =>
             {
-                try
+                byte[] buffer = new byte[40960]; // Tăng buffer để nhận list nhóm lớn
+                while (_isConnected)
                 {
-                    byte[] buffer = new byte[4096];
-                    while (_isConnected)
+                    try
                     {
                         int bytesRead = _stream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead == 0) break;
+                        if (bytesRead == 0) break; // Ngắt kết nối
 
                         string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        ProcessServerMessage(json);
+                        ProcessIncomingMessage(json);
                     }
-                }
-                catch
-                {
-                    // Ngắt kết nối hoặc lỗi mạng
-                    _isConnected = false;
+                    catch
+                    {
+                        _isConnected = false;
+                        break;
+                    }
                 }
             });
             _listenThread.IsBackground = true;
             _listenThread.Start();
         }
 
-        // Xử lý gói tin JSON nhận được
-        private void ProcessServerMessage(string json)
+        private void ProcessIncomingMessage(string json)
         {
             try
             {
+                // Xử lý gói tin JSON từ server
                 using (JsonDocument doc = JsonDocument.Parse(json))
                 {
                     JsonElement root = doc.RootElement;
@@ -104,210 +130,291 @@ namespace TimeFlow
                     {
                         string type = typeElem.GetString();
 
-                        // Nếu là tin nhắn chat đến
-                        if (type == "receive_message")
+                        // CASE 1: Nhận danh sách nhóm
+                        if (type == "my_groups_list")
+                        {
+                            if (root.GetProperty("status").GetString() == "success")
+                            {
+                                var dataStr = root.GetProperty("data").ToString();
+                                var groups = JsonSerializer.Deserialize<List<GroupDto>>(dataStr);
+
+                                // Vẽ lên giao diện (Thread safe)
+                                this.Invoke((MethodInvoker)delegate {
+                                    RenderGroupsToSidebar(groups);
+                                });
+                            }
+                        }
+
+                        // CASE 2: Nhận tin nhắn chat
+                        if (type == "receive_message" || type == "receive_group_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
                             string content = root.GetProperty("content").GetString();
-                            string time = root.GetProperty("timestamp").GetString();
 
-                            // Update UI phải dùng Invoke
-                            this.Invoke((MethodInvoker)delegate
-                            {
-                                bool isMe = (sender == _myUsername);
-                                AddMessageBubble(content, isMe, time);
+                            // Chỉ hiện tin nhắn nếu:
+                            // 1. Chat 1-1 và đúng người gửi
+                            // 2. Chat Group (cần check thêm groupId từ server trả về nếu muốn chính xác tuyệt đối)
+
+                            this.Invoke((MethodInvoker)delegate {
+                                AddMessageBubble(content, sender, false);
                             });
                         }
                     }
                 }
             }
-            catch { /* Bỏ qua lỗi parse JSON rác */ }
+            catch { }
         }
 
-        // --- HÀM 3: GỬI TIN NHẮN ---
+        // --- UI LOGIC: VẼ DANH SÁCH NHÓM ---
+
+        private void RenderGroupsToSidebar(List<GroupDto> groups)
+        {
+            flowSidebar.Controls.Clear();
+
+            foreach (var group in groups)
+            {
+                // Panel chứa 1 item group
+                Panel pnlItem = new Panel();
+                pnlItem.Size = new Size(flowSidebar.Width - 25, 70);
+                pnlItem.BackColor = Color.White;
+                pnlItem.Cursor = Cursors.Hand;
+                pnlItem.Margin = new Padding(10, 5, 10, 5);
+
+                // Avatar chữ cái đầu
+                Label lblAvatar = new Label();
+                lblAvatar.Text = group.groupName.Substring(0, 1).ToUpper();
+                lblAvatar.Size = new Size(45, 45);
+                lblAvatar.Location = new Point(10, 12);
+                lblAvatar.TextAlign = ContentAlignment.MiddleCenter;
+                lblAvatar.BackColor = Color.DodgerBlue;
+                lblAvatar.ForeColor = Color.White;
+                lblAvatar.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+                // Bo tròn avatar
+                GraphicsPath path = new GraphicsPath();
+                path.AddEllipse(0, 0, 45, 45);
+                lblAvatar.Region = new Region(path);
+
+                // Tên nhóm
+                Label lblName = new Label();
+                lblName.Text = group.groupName;
+                lblName.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+                lblName.Location = new Point(65, 15);
+                lblName.AutoSize = true;
+
+                // Mô tả ngắn
+                Label lblDesc = new Label();
+                lblDesc.Text = group.description ?? "Group Chat";
+                lblDesc.Font = new Font("Segoe UI", 8, FontStyle.Regular);
+                lblDesc.ForeColor = Color.Gray;
+                lblDesc.Location = new Point(65, 40);
+                lblDesc.AutoSize = true;
+
+                // Sự kiện Click chọn nhóm
+                EventHandler clickEvent = (s, e) =>
+                {
+                    // Reset màu các item khác
+                    foreach (Control c in flowSidebar.Controls) c.BackColor = Color.White;
+                    pnlItem.BackColor = Color.FromArgb(230, 240, 255); // Highlight màu xanh nhạt
+
+                    // Cập nhật trạng thái
+                    _currentGroupId = group.groupId;
+                    _currentReceiver = group.groupName;
+                    _isGroupChat = true;
+
+                    lblChatTitle.Text = group.groupName;
+                    flowChatMessages.Controls.Clear(); // Xóa chat cũ (thực tế nên load lịch sử từ server)
+                };
+
+                pnlItem.Click += clickEvent;
+                lblAvatar.Click += clickEvent;
+                lblName.Click += clickEvent;
+                lblDesc.Click += clickEvent;
+
+                pnlItem.Controls.Add(lblAvatar);
+                pnlItem.Controls.Add(lblName);
+                pnlItem.Controls.Add(lblDesc);
+
+                flowSidebar.Controls.Add(pnlItem);
+            }
+        }
+
+        // --- UI EVENTS ---
+
         private void btnSend_Click(object sender, EventArgs e)
         {
-            string msg = txtMessage.Text.Trim();
-            if (string.IsNullOrEmpty(msg)) return;
+            string content = txtMessage.Text.Trim();
+            if (string.IsNullOrEmpty(content)) return;
 
-            if (_isConnected)
+            if (!_isConnected)
             {
-                try
+                MessageBox.Show("Mất kết nối server!");
+                return;
+            }
+
+            // Kiểm tra xem đã chọn ai để chat chưa
+            if (string.IsNullOrEmpty(_currentReceiver) && _currentGroupId == null)
+            {
+                MessageBox.Show("Vui lòng chọn một nhóm hoặc user để chat!");
+                return;
+            }
+
+            try
+            {
+                object packet;
+
+                if (_isGroupChat && _currentGroupId != null)
                 {
-                    // 1. Tạo JSON gửi đi
-                    var packet = new
+
+                    packet = new
                     {
                         type = "chat",
-                        receiver = _currentReceiver, // Người nhận hiện tại
-                        content = msg
+                        receiver = _currentGroupId.ToString(), 
+                        isGroup = true,
+                        content = content
                     };
-
-                    string jsonToSend = JsonSerializer.Serialize(packet);
-                    byte[] bytes = Encoding.UTF8.GetBytes(jsonToSend);
-                    _stream.Write(bytes, 0, bytes.Length);
-
-                    // 2. Hiển thị ngay lên màn hình của mình
-                    AddMessageBubble(msg, true, DateTime.Now.ToString("HH:mm"));
-                    txtMessage.Clear();
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show("Lỗi gửi tin: " + ex.Message);
+                    packet = new
+                    {
+                        type = "chat",
+                        receiver = string.IsNullOrEmpty(_currentReceiver) ? "UserB" : _currentReceiver,
+                        content = content
+                    };
                 }
+
+                SendString(JsonSerializer.Serialize(packet));
+                AddMessageBubble(content, "Me", true);
+                txtMessage.Clear();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Mất kết nối tới Server!");
+                MessageBox.Show("Lỗi gửi tin: " + ex.Message);
             }
         }
 
-        // --- UI LOGIC: VẼ BONG BÓNG CHAT (ĐÃ TỐI ƯU) ---
-        private void AddMessageBubble(string message, bool isMe, string time)
+        private void btnClose_Click(object sender, EventArgs e) => this.Close();
+        private void btnBack_Click(object sender, EventArgs e) => this.Close();
+
+        // Sự kiện vẽ khung input cho đẹp
+        private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
         {
-            // 1. Panel chứa 1 dòng tin nhắn
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            Rectangle rect = new Rectangle(0, 0, pnlInputBackground.Width - 1, pnlInputBackground.Height - 1);
+            using (GraphicsPath path = GetRoundedPath(rect, 20))
+            using (Pen pen = new Pen(Color.LightGray))
+            {
+                g.DrawPath(pen, path);
+            }
+        }
+
+        // --- HELPERS UI ---
+
+        private void AppendSystemMessage(string msg)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action<string>(AppendSystemMessage), msg);
+                return;
+            }
+            Label lbl = new Label();
+            lbl.Text = msg;
+            lbl.ForeColor = Color.Gray;
+            lbl.Font = new Font("Segoe UI", 8, FontStyle.Italic);
+            lbl.AutoSize = true;
+            lbl.Padding = new Padding(0, 5, 0, 5);
+            lbl.Dock = DockStyle.Top;
+            flowChatMessages.Controls.Add(lbl);
+            flowChatMessages.ScrollControlIntoView(lbl);
+        }
+
+        private void AddMessageBubble(string message, string senderName, bool isMe)
+        {
             Panel pnlRow = new Panel();
             pnlRow.Width = flowChatMessages.ClientSize.Width - 25;
             pnlRow.BackColor = Color.Transparent;
-            pnlRow.Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5); // Padding sâu hơn để tin nhắn ngắn lại
+            pnlRow.Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5);
 
-            // 2. Bong bóng màu
             Panel pnlBubble = new Panel();
             pnlBubble.BackColor = Color.Transparent;
 
-            // 3. Label Nội dung
+            // Sender Name
+            int nameHeight = 0;
+            if (!isMe)
+            {
+                Label lblSender = new Label();
+                lblSender.Text = senderName;
+                lblSender.Font = new Font("Segoe UI", 8, FontStyle.Bold);
+                lblSender.ForeColor = Color.DimGray;
+                lblSender.AutoSize = true;
+                lblSender.Location = new Point(15, 2);
+                pnlBubble.Controls.Add(lblSender);
+                nameHeight = 15;
+            }
+
+            // Content
             Label lblContent = new Label();
             lblContent.Text = message;
             lblContent.Font = new Font("Segoe UI", 11);
             lblContent.ForeColor = isMe ? Color.White : Color.Black;
             lblContent.AutoSize = true;
-            lblContent.MaximumSize = new Size(pnlRow.Width - 120, 0); // Giới hạn chiều rộng text
-            lblContent.Location = new Point(isMe ? 12 : 18, 10); // Cách lề để chừa chỗ cho đuôi
+            lblContent.MaximumSize = new Size(pnlRow.Width - 140, 0);
+            lblContent.Location = new Point(isMe ? 12 : 18, 5 + nameHeight);
             lblContent.BackColor = Color.Transparent;
 
-            // 4. Label Thời gian (Mới thêm)
+            // Time
             Label lblTime = new Label();
-            lblTime.Text = time;
+            lblTime.Text = DateTime.Now.ToString("HH:mm");
             lblTime.Font = new Font("Arial", 8, FontStyle.Italic);
-            lblTime.ForeColor = isMe ? Color.FromArgb(230, 230, 230) : Color.Gray;
+            lblTime.ForeColor = isMe ? Color.FromArgb(220, 220, 220) : Color.Gray;
             lblTime.AutoSize = true;
             lblTime.BackColor = Color.Transparent;
 
-            // Add control để tính size
             pnlBubble.Controls.Add(lblContent);
             pnlBubble.Controls.Add(lblTime);
 
-            // 5. Tính toán kích thước dynamic
-            Size textSize = lblContent.GetPreferredSize(new Size(pnlRow.Width - 120, 0));
-
-            // Set vị trí thời gian nằm dưới text
+            // Calculate Size
+            Size textSize = lblContent.GetPreferredSize(new Size(pnlRow.Width - 140, 0));
             lblTime.Location = new Point(lblContent.Left, lblContent.Top + textSize.Height + 2);
+            pnlBubble.Size = new Size(textSize.Width + 40, textSize.Height + 30 + nameHeight);
 
-            pnlBubble.Size = new Size(textSize.Width + 40, textSize.Height + 35); // +35 cho padding và timestamp
-
-            // 6. Sự kiện vẽ
+            // Paint Event
             pnlBubble.Paint += (s, e) =>
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-
-                // Màu sắc: Xanh Messenger (Mình) - Xám (Bạn)
                 Color color = isMe ? Color.FromArgb(0, 132, 255) : Color.FromArgb(240, 242, 245);
                 using (var brush = new SolidBrush(color))
                 {
-                    var path = DrawSmoothBubble(pnlBubble.ClientRectangle, 15, isMe);
+                    Rectangle r = new Rectangle(0, nameHeight, pnlBubble.Width, pnlBubble.Height - nameHeight);
+                    var path = GetRoundedPath(r, 15);
                     g.FillPath(brush, path);
                 }
             };
 
-            // Layout
             pnlRow.Height = pnlBubble.Height + 10;
             pnlBubble.Dock = isMe ? DockStyle.Right : DockStyle.Left;
             pnlRow.Controls.Add(pnlBubble);
 
             flowChatMessages.Controls.Add(pnlRow);
-
-            // Auto-scroll xuống cuối
-            flowChatMessages.ControlAdded += (s, e) => flowChatMessages.ScrollControlIntoView(pnlRow);
             flowChatMessages.ScrollControlIntoView(pnlRow);
         }
 
-        // --- LOGIC VẼ HÌNH DÁNG (GIỮ NGUYÊN NHƯNG CHỈNH RADIUS) ---
-        private GraphicsPath DrawSmoothBubble(Rectangle r, int radius, bool isMe)
+        private GraphicsPath GetRoundedPath(Rectangle r, int radius)
         {
             GraphicsPath path = new GraphicsPath();
             int d = radius * 2;
-            int tailSize = 8;
             r.Width -= 1; r.Height -= 1;
-
-            if (isMe)
-            {
-                path.AddArc(r.X, r.Y, d, d, 180, 90);
-                path.AddArc(r.Right - d - tailSize, r.Y, d, d, 270, 90);
-                path.AddLine(r.Right - tailSize, r.Y + radius, r.Right - tailSize, r.Bottom - radius);
-                path.AddArc(r.Right - d - tailSize, r.Bottom - d, d, d, 0, 90);
-                // Đuôi phải
-                path.AddLine(r.Right - tailSize - radius, r.Bottom, r.Right, r.Bottom);
-                path.AddLine(r.Right, r.Bottom, r.Right - tailSize, r.Bottom - tailSize);
-                path.AddLine(r.Right - tailSize, r.Bottom - tailSize, r.X + radius, r.Bottom);
-                path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
-            }
-            else
-            {
-                path.AddArc(r.X + tailSize, r.Y, d, d, 180, 90);
-                path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
-                path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
-                path.AddLine(r.Right - radius, r.Bottom, r.X + tailSize, r.Bottom);
-                // Đuôi trái
-                path.AddLine(r.X + tailSize, r.Bottom, r.X, r.Bottom);
-                path.AddLine(r.X, r.Bottom, r.X + tailSize, r.Bottom - tailSize);
-                path.AddArc(r.X + tailSize, r.Bottom - d, d, d, 90, 90);
-            }
+            path.AddArc(r.X, r.Y, d, d, 180, 90);
+            path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+            path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
             path.CloseFigure();
             return path;
         }
 
-        // Các event handler phụ
-        private void btnClose_Click(object sender, EventArgs e) => this.Close();
-        private void btnBack_Click(object sender, EventArgs e) => this.Close();
-        private void btnAddFile_Click(object sender, EventArgs e) { /* Tính năng gửi file */ }
-
-        // Vẽ ô nhập liệu
-        private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
-        {
-            // Code vẽ bo tròn ô input (giữ nguyên)
-            Graphics g = e.Graphics;
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-            Rectangle rect = new Rectangle(0, 0, ((Panel)sender).Width - 1, ((Panel)sender).Height - 1);
-            using (GraphicsPath path = GetRoundedRectPath(rect, 20))
-            using (Pen pen = new Pen(Color.LightGray, 1))
-            using (Brush brush = new SolidBrush(Color.FromArgb(240, 240, 240)))
-            {
-                g.FillPath(brush, path);
-                g.DrawPath(pen, path);
-            }
-        }
-
-        private GraphicsPath GetRoundedRectPath(Rectangle bounds, int radius)
-        {
-            int diameter = radius * 2;
-            Size size = new Size(diameter, diameter);
-            Rectangle arc = new Rectangle(bounds.Location, size);
-            GraphicsPath path = new GraphicsPath();
-            if (radius == 0) { path.AddRectangle(bounds); return path; }
-            path.AddArc(arc, 180, 90);
-            arc.X = bounds.Right - diameter;
-            path.AddArc(arc, 270, 90);
-            arc.Y = bounds.Bottom - diameter;
-            path.AddArc(arc, 0, 90);
-            arc.X = bounds.Left;
-            path.AddArc(arc, 90, 90);
-            path.CloseFigure();
-            return path;
-        }
-
-        private void lblHeaderTitle_Click(object sender, EventArgs e)
-        {
-
-        }
+        private void btnAddFile_Click(object sender, EventArgs e) { }
+        private void btnCreateGroup_Click(object sender, EventArgs e) { MessageBox.Show("Tính năng tạo nhóm đang phát triển!"); }
     }
 }

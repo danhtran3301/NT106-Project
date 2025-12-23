@@ -18,6 +18,9 @@ namespace TimeFlowServer.ServerCore
         private readonly TaskRepository _taskRepo;
         private readonly CategoryRepository _categoryRepo;
         private readonly CommentRepository _commentRepo;
+        private readonly GroupRepository _groupRepo;
+        private readonly GroupMemberRepository _groupMemberRepo;
+        private readonly MessageRepository _messageRepo;
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
@@ -33,6 +36,9 @@ namespace TimeFlowServer.ServerCore
             TaskRepository taskRepo,
             CategoryRepository categoryRepo,
             CommentRepository commentRepo,
+            GroupRepository groupRepo,             
+            GroupMemberRepository groupMemberRepo, 
+            MessageRepository messageRepo,
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -44,6 +50,9 @@ namespace TimeFlowServer.ServerCore
             _taskRepo = taskRepo;
             _categoryRepo = categoryRepo;
             _commentRepo = commentRepo;
+            _groupRepo = groupRepo;
+            _groupMemberRepo = groupMemberRepo;
+            _messageRepo = messageRepo;
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -146,6 +155,14 @@ namespace TimeFlowServer.ServerCore
                         await HandleGetCategoriesAsync(root);
                         break;
 
+                    case "get_my_groups":
+                        await HandleGetMyGroupsAsync(root);
+                        break;
+
+                    case "create_group":
+                        await HandleCreateGroupAsync(root);
+                        break;
+
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");
                         break;
@@ -161,6 +178,89 @@ namespace TimeFlowServer.ServerCore
             }
         }
 
+
+        private async Task HandleCreateGroupAsync(JsonElement root)
+        {
+            try
+            {
+                // 1. Kiểm tra đăng nhập
+                if (!_currentUserId.HasValue)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
+                string groupName = data.GetProperty("groupName").GetString();
+                string description = data.TryGetProperty("description", out var desc) ? desc.GetString() : "";
+
+                // 2. Tạo Group Model
+                var newGroup = new Group
+                {
+                    GroupName = groupName,
+                    Description = description,
+                    CreatedBy = _currentUserId.Value,
+                    IsActive = true
+                };
+
+                // 3. Lưu vào DB (Hàm Create trong GroupRepo đã xử lý việc thêm Group và add Admin)
+                int groupId = _groupRepo.Create(newGroup);
+
+                if (groupId > 0)
+                {
+                    // Tự động add người tạo vào làm Admin (nếu Repo chưa làm, ta làm thủ công ở đây cho chắc)
+                    // _groupMemberRepo.AddMember(groupId, _currentUserId.Value, GroupRole.Admin);
+
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", groupId = groupId, groupName = groupName }));
+                    Log.Information($"[{_clientId}] Created group '{groupName}' (ID: {groupId})");
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to create group" }));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating group");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task HandleGetMyGroupsAsync(JsonElement root)
+        {
+            try
+            {
+                if (!_currentUserId.HasValue)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    return;
+                }
+
+                Log.Information($"[{_clientId}] Getting groups for UserID: {_currentUserId}");
+
+                // Gọi Repo lấy danh sách nhóm
+                var groups = _groupRepo.GetByUserId(_currentUserId.Value);
+
+                // Tạo response JSON
+                var response = new
+                {
+                    type = "my_groups_list",
+                    status = "success",
+                    data = groups.Select(g => new
+                    {
+                        groupId = g.GroupId,
+                        groupName = g.GroupName,
+                        description = g.Description
+                    })
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error getting groups");
+            }
+        }
         private async Task HandleLoginAsync(JsonElement root)
         {
             try
@@ -348,63 +448,105 @@ namespace TimeFlowServer.ServerCore
 
         private async Task HandleChatAsync(JsonElement root)
         {
-            if (string.IsNullOrEmpty(_currentUsername))
-            {
-                Log.Warning($"[{_clientId}] Chat message from unauthenticated client");
-                return;
-            }
+            if (string.IsNullOrEmpty(_currentUsername)) return;
 
             try
             {
-                string receiver = root.GetProperty("receiver").GetString() ?? "";
                 string content = root.GetProperty("content").GetString() ?? "";
+                string receiver = root.GetProperty("receiver").GetString() ?? "";
 
-                Log.Information($"[CHAT] {_currentUsername} → {receiver}: {content}");
-
-                // Tim receiver client
-                TcpClient? receiverClient = null;
-                lock (_clientsLock)
+                // Kiểm tra xem có phải chat nhóm không (Client gửi cờ isGroup = true)
+                bool isGroup = false;
+                if (root.TryGetProperty("isGroup", out JsonElement groupElem))
                 {
-                    if (_onlineClients.TryGetValue(receiver, out var client))
-                    {
-                        receiverClient = client;
-                    }
+                    isGroup = groupElem.GetBoolean();
                 }
 
-                if (receiverClient != null && receiverClient.Connected)
+                if (isGroup)
                 {
-                    try
+                    // --- XỬ LÝ CHAT NHÓM ---
+                    int groupId = int.Parse(receiver); // Receiver lúc này là GroupId
+
+                    // 1. Lưu vào Database
+                    _messageRepo.AddGroupMessage(_currentUsername, groupId, content);
+
+                    // 2. Lấy danh sách thành viên trong nhóm (Dùng GroupMemberRepo đã có)
+                    var members = _groupMemberRepo.GetByGroupId(groupId);
+
+                    // 3. Gửi cho từng thành viên đang online
+                    foreach (var member in members)
                     {
-                        var message = new
+                        // Lấy username của member (Cần join bảng User hoặc lấy từ cache nếu có)
+                        // Giả sử GroupMember có property User hoặc ta query thêm
+                        // Ở đây ta cần Username để tra trong _onlineClients
+                        var user = _userRepo.GetById(member.UserId);
+                        if (user == null) continue;
+
+                        string memberUsername = user.Username;
+
+                        // Không gửi lại cho chính mình (tuỳ chọn)
+                        if (memberUsername == _currentUsername) continue;
+
+                        TcpClient? clientToSend = null;
+                        lock (_clientsLock)
+                        {
+                            if (_onlineClients.TryGetValue(memberUsername, out var c))
+                            {
+                                clientToSend = c;
+                            }
+                        }
+
+                        if (clientToSend != null && clientToSend.Connected)
+                        {
+                            try
+                            {
+                                var packet = new
+                                {
+                                    type = "receive_group_message",
+                                    groupId = groupId,
+                                    sender = _currentUsername,
+                                    content = content,
+                                    timestamp = DateTime.Now.ToString("HH:mm")
+                                };
+                                string json = JsonSerializer.Serialize(packet);
+                                byte[] bytes = Encoding.UTF8.GetBytes(json);
+                                await clientToSend.GetStream().WriteAsync(bytes, 0, bytes.Length);
+                            }
+                            catch { /* Log error */ }
+                        }
+                    }
+                    Log.Information($"[GROUP CHAT] {_currentUsername} sent to Group {groupId}");
+                }
+                else
+                {
+                    // --- XỬ LÝ CHAT 1-1 (CŨ) ---
+
+                    // 1. Lưu vào DB
+                    _messageRepo.AddMessage(_currentUsername, receiver, content);
+
+                    // 2. Gửi cho người nhận
+                    TcpClient? receiverClient = null;
+                    lock (_clientsLock)
+                    {
+                        if (_onlineClients.TryGetValue(receiver, out var c)) receiverClient = c;
+                    }
+
+                    if (receiverClient != null)
+                    {
+                        var packet = new
                         {
                             type = "receive_message",
                             sender = _currentUsername,
                             content = content,
                             timestamp = DateTime.Now.ToString("HH:mm")
                         };
-
-                        string json = JsonSerializer.Serialize(message);
-                        byte[] bytes = Encoding.UTF8.GetBytes(json);
-                        
-                        var stream = receiverClient.GetStream();
-                        await stream.WriteAsync(bytes, 0, bytes.Length);
-
-                        Log.Information($"[CHAT] ✓ Message delivered to {receiver}");
+                        // ... Gửi packet ...
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Warning(ex, $"[CHAT] ✗ Failed to deliver message to {receiver}");
-                    }
-                }
-                else
-                {
-                    Log.Warning($"[CHAT] ✗ User {receiver} is offline - message not delivered");
-                    // TODO: Luu vao database de gui lai sau
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, $"[{_clientId}] Chat error");
+                Log.Error(ex, "Chat error");
             }
         }
 

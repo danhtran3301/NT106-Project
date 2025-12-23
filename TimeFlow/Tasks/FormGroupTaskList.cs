@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
-using System.Windows.Forms;
 using System.Linq;
-using TimeFlow.UI.Components;
+using System.Net.Sockets;
+using System.Text;
+using System.Windows.Forms;
 using TimeFlow.Models;
 using TimeFlow.Services;
-using System.Collections.Generic;
+using TimeFlow.UI.Components;
 
 namespace TimeFlow.Tasks
 {
@@ -21,7 +23,12 @@ namespace TimeFlow.Tasks
         private readonly Color HeaderIconColor = AppColors.Gray600;
         private readonly TaskApiClient _taskApi;
         private List<TaskItem> _currentTasks;
-        
+        private readonly TcpClient _tcpClient;
+        private readonly string _username;
+        private const string SERVER_IP = "127.0.0.1";
+        private const int SERVER_PORT = 1010;
+        private Button btnAddGroup;       // Nút + tạo nhóm
+        private CustomButton btnAddMember;  // Nút thêm thành viên
         // ✅ Caching
         private Control _cachedLeftMenu;
         private Control _cachedHeaderBar;
@@ -146,6 +153,20 @@ namespace TimeFlow.Tasks
             arrowButton.Click += (sender, e) => { this.Close(); };
             leftContainer.Controls.Add(arrowButton);
 
+            CustomButton btnAddMember = new CustomButton
+            {
+                Text = "+ User",
+                BackColor = Color.White,
+                ForeColor = AppColors.Blue500,
+                Width = 80,
+                Height = 36,
+                BorderThickness = 1,
+                BorderColor = AppColors.Blue500,
+                Margin = new Padding(0, 0, 5, 0)
+            };
+            btnAddMember.Click += BtnAddMember_Click; // Sự kiện click
+            leftContainer.Controls.Add(btnAddMember);
+
             Label titleLabel = new Label
             {
                 Text = $"👥 {_groupName}",
@@ -158,6 +179,21 @@ namespace TimeFlow.Tasks
             };
             leftContainer.Controls.Add(titleLabel);
             headerTable.Controls.Add(leftContainer, 0, 0);
+
+            CustomButton btnAddGroup = new CustomButton
+            {
+                Text = "+",
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = AppColors.Blue500,
+                Dock = DockStyle.Right,
+                Width = 30,
+                Height = 30,
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+            btnAddGroup.Click += BtnAddGroup_Click; // Sự kiện click
+
+          
 
             CustomButton closeButton = new CustomButton
             {
@@ -174,6 +210,38 @@ namespace TimeFlow.Tasks
             };
             closeButton.Click += (sender, e) => { this.Close(); };
             headerTable.Controls.Add(closeButton, 2, 0);
+
+            CustomButton btnCreateTask = new CustomButton
+            {
+                Text = "+ New Task",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                BackColor = AppColors.Blue500,
+                ForeColor = Color.White,
+                HoverColor = AppColors.Blue600,
+                BorderRadius = 4,
+                Width = 100,
+                Height = 36,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 10, 0) // Cách nút Chat ra
+            };
+            btnCreateTask.Click += BtnCreateTask_Click;
+
+            CustomButton chatButton = new CustomButton
+            {
+                Text = "💬",
+                Font = new Font("Segoe UI Emoji", 14F),
+                ForeColor = AppColors.Blue500,
+                BackColor = Color.White,
+                HoverColor = AppColors.Blue50,
+                BorderRadius = 4,
+                Width = 40,
+                Height = 40,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            chatButton.Click += BtnChat_Click; // Liên kết với Event bên file Logic
+            headerTable.Controls.Add(chatButton);
+
 
             Panel separator = new Panel
             {
@@ -280,6 +348,44 @@ namespace TimeFlow.Tasks
             }
 
             return button;
+        }
+        private void BtnAddGroup_Click(object sender, EventArgs e)
+        {
+            string groupName = ShowInputDialog("Create New Group", "Enter group name:");
+            if (string.IsNullOrWhiteSpace(groupName)) return;
+
+            try
+            {
+                // Gửi request tạo nhóm
+                var packet = new
+                {
+                    type = "create_group",
+                    token = "TOKEN_CUA_USER", // Bạn cần lấy token từ biến global (Program.UserToken)
+                    data = new
+                    {
+                        groupName = groupName,
+                        description = "Created via Desktop App"
+                    }
+                };
+
+                // Gửi qua TCP (Sử dụng _tcpClient đã có)
+                if (_tcpClient != null && _tcpClient.Connected)
+                {
+                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
+
+                    // Lưu ý: Thực tế bạn cần lắng nghe phản hồi từ server để reload lại list
+                    // Ở đây ta tạm thời reload thủ công hoặc thông báo
+                    MessageBox.Show("Request sent! Please refresh to see new group.");
+
+                    // Gọi lại hàm load danh sách nhóm (Cần viết thêm hàm LoadGroupsAsync tương tự LoadTasksAsync)
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error creating group: " + ex.Message);
+            }
         }
 
         private Control CreateTaskListContent()
@@ -482,6 +588,93 @@ namespace TimeFlow.Tasks
             }
         }
 
+        private void BtnChat_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                FormChatBox chatForm = new FormChatBox();
+                chatForm.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to open chat: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void BtnCreateTask_Click(object sender, EventArgs e)
+        {
+            if (!_selectedGroupId.HasValue)
+            {
+                MessageBox.Show("Please select a group first!");
+                return;
+            }
+
+            string taskTitle = ShowInputDialog("New Group Task", "Enter task title:");
+            if (string.IsNullOrWhiteSpace(taskTitle)) return;
+
+            try
+            {
+                var packet = new
+                {
+                    type = "create_task",
+                    token = "TOKEN_CUA_USER", // Lấy từ biến global
+                    data = new
+                    {
+                        title = taskTitle,
+                        description = "",
+                        priority = 1, // Medium
+                        status = 0,   // Pending
+                        categoryId = 1, // Default category
+                        isGroupTask = true,
+                        groupId = _selectedGroupId.Value // QUAN TRỌNG: Gửi ID nhóm hiện tại
+                    }
+                };
+
+                if (_tcpClient != null && _tcpClient.Connected)
+                {
+                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
+                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
+
+                    MessageBox.Show("Task creation requested!");
+                    // Sau này nên lắng nghe sự kiện "task_created" từ server để auto refresh
+                    // Tạm thời reload lại list sau 1s
+                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
+                        this.Invoke((MethodInvoker)delegate { LoadTasksAsync(_contentPanel); })
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error creating task: " + ex.Message);
+            }
+        }
+
+        private string ShowInputDialog(string title, string prompt)
+        {
+            Form promptForm = new Form()
+            {
+                Width = 400,
+                Height = 180,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = title,
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+
+            Label textLabel = new Label() { Left = 20, Top = 20, Text = prompt, AutoSize = true, Font = new Font("Segoe UI", 10) };
+            TextBox textBox = new TextBox() { Left = 20, Top = 50, Width = 340, Font = new Font("Segoe UI", 10) };
+            Button confirmation = new Button() { Text = "Create", Left = 240, Width = 100, Top = 90, DialogResult = DialogResult.OK, BackColor = AppColors.Blue500, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
+
+            promptForm.Controls.Add(textLabel);
+            promptForm.Controls.Add(textBox);
+            promptForm.Controls.Add(confirmation);
+            promptForm.AcceptButton = confirmation;
+
+            return promptForm.ShowDialog() == DialogResult.OK ? textBox.Text.Trim() : "";
+        }
+
         private Control CreateGroupTaskItem(TaskItem task)
         {
             ModernPanel taskItemPanel = new ModernPanel
@@ -579,6 +772,80 @@ namespace TimeFlow.Tasks
 
             taskItemPanel.Controls.Add(taskLayout);
             return taskItemPanel;
+        }
+
+
+        // --- SỰ KIỆN: THÊM THÀNH VIÊN ---
+        private void BtnAddMember_Click(object sender, EventArgs e)
+        {
+            if (!_selectedGroupId.HasValue)
+            {
+                MessageBox.Show("Please select a group first from the left menu!");
+                return;
+            }
+
+            string username = ShowInputDialog("Add Member", "Enter username to invite:");
+            if (string.IsNullOrWhiteSpace(username)) return;
+
+            SendOneTimeRequest(new
+            {
+                type = "add_group_member",
+                token = "admin",
+                data = new { groupId = _selectedGroupId.Value, username = username }
+            });
+        }
+
+        // --- HELPER: GỬI REQUEST LÊN SERVER ---
+        private void SendOneTimeRequest(object packet)
+        {
+            try
+            {
+                using (TcpClient client = new TcpClient())
+                {
+                    // Kết nối nhanh (Timeout 2s)
+                    var result = client.BeginConnect(SERVER_IP, SERVER_PORT, null, null);
+                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(2));
+
+                    if (!success) throw new Exception("Connection timeout");
+                    client.EndConnect(result);
+
+                    using (NetworkStream stream = client.GetStream())
+                    {
+                        // 1. Gửi Login giả để server nhận diện User (quan trọng để có _currentUserId)
+                        // Dùng _username đã truyền vào constructor
+                        var loginPacket = new { type = "login", data = new { username = _username ?? "admin", password = "123" } };
+                        byte[] loginBytes = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(loginPacket));
+                        stream.Write(loginBytes, 0, loginBytes.Length);
+
+                        // Đợi xíu cho server xử lý login
+                        System.Threading.Thread.Sleep(100);
+
+                        // 2. Gửi Lệnh chính (Tạo nhóm / Thêm user)
+                        string json = System.Text.Json.JsonSerializer.Serialize(packet);
+                        byte[] bytes = Encoding.UTF8.GetBytes(json);
+                        stream.Write(bytes, 0, bytes.Length);
+
+                        // 3. Đọc phản hồi (Cơ bản)
+                        byte[] buffer = new byte[1024];
+                        int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                        string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+                        if (response.Contains("\"status\":\"success\"") || response.Contains("\"status\":\"registered\""))
+                        {
+                            MessageBox.Show("Success!", "Notification", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                        else
+                        {
+                            // Hiển thị lỗi từ server nếu có
+                            MessageBox.Show("Server response: " + response, "Info");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Connection Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OpenTaskDetail(TaskItem task)
