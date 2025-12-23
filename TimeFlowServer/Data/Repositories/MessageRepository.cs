@@ -1,14 +1,16 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Microsoft.Data.SqlClient;
 
 namespace TimeFlow.Data.Repositories
 {
-    public class MessageData // Class DTO đơn giản
+    // Class DTO để chứa dữ liệu tin nhắn
+    public class MessageData
     {
-        public string Sender { get; set; }
-        public string Receiver { get; set; }
-        public string Content { get; set; }
+        public string Sender { get; set; } = "";
+        public string Receiver { get; set; } = "";
+        public int? GroupId { get; set; }
+        public string Content { get; set; } = "";
         public DateTime Time { get; set; }
     }
 
@@ -21,69 +23,101 @@ namespace TimeFlow.Data.Repositories
             _connectionString = connectionString;
         }
 
-        // Hàm lưu tin nhắn mới
+        // 1. Gửi tin nhắn cá nhân
         public void AddMessage(string sender, string receiver, string content)
         {
-            try
+            using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+                conn.Open();
+                string query = "INSERT INTO Messages (SenderUsername, ReceiverUsername, Content, Timestamp) VALUES (@s, @r, @c, GETDATE())";
+                using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    conn.Open();
-                    string query = "INSERT INTO Messages (SenderUsername, ReceiverUsername, Content, Timestamp) VALUES (@s, @r, @c, GETDATE())";
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@s", sender);
-                        cmd.Parameters.AddWithValue("@r", receiver);
-                        cmd.Parameters.AddWithValue("@c", content);
-                        cmd.ExecuteNonQuery();
-                    }
+                    cmd.Parameters.AddWithValue("@s", sender);
+                    cmd.Parameters.AddWithValue("@r", receiver);
+                    cmd.Parameters.AddWithValue("@c", content);
+                    cmd.ExecuteNonQuery();
                 }
             }
-            catch (Exception ex)
+        }
+        public void AddGroupMessage(string sender, int groupId, string content)
+        {
+            using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                // Log lỗi vào console hoặc file nếu cần
-                Console.WriteLine("Error saving message: " + ex.Message);
+                conn.Open();
+                string query = "INSERT INTO Messages (SenderUsername, GroupId, Content, Timestamp) VALUES (@s, @g, @c, GETDATE())";
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@s", sender);
+                    cmd.Parameters.AddWithValue("@g", groupId);
+                    cmd.Parameters.AddWithValue("@c", content);
+                    cmd.ExecuteNonQuery();
+                }
             }
         }
-
-        // Hàm lấy lịch sử chat giữa 2 người (Dùng cho Bước 2)
         public List<MessageData> GetHistory(string user1, string user2)
         {
             var list = new List<MessageData>();
-            try
+            using (SqlConnection conn = new SqlConnection(_connectionString))
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+                conn.Open();
+                string query = @"SELECT SenderUsername, ReceiverUsername, Content, Timestamp 
+                                 FROM Messages 
+                                 WHERE (SenderUsername = @u1 AND ReceiverUsername = @u2) 
+                                    OR (SenderUsername = @u2 AND ReceiverUsername = @u1)
+                                 ORDER BY Timestamp ASC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    conn.Open();
-                    // Lấy tin nhắn chiều đi và chiều về, sắp xếp theo thời gian
-                    string query = @"SELECT SenderUsername, ReceiverUsername, Content, Timestamp 
-                                     FROM Messages 
-                                     WHERE (SenderUsername = @u1 AND ReceiverUsername = @u2) 
-                                        OR (SenderUsername = @u2 AND ReceiverUsername = @u1)
-                                     ORDER BY Timestamp ASC";
+                    cmd.Parameters.AddWithValue("@u1", user1);
+                    cmd.Parameters.AddWithValue("@u2", user2);
 
-                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        cmd.Parameters.AddWithValue("@u1", user1);
-                        cmd.Parameters.AddWithValue("@u2", user2);
-
-                        using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
                         {
-                            while (reader.Read())
+                            list.Add(new MessageData
                             {
-                                list.Add(new MessageData
-                                {
-                                    Sender = reader.GetString(0),
-                                    Receiver = reader.GetString(1),
-                                    Content = reader.GetString(2),
-                                    Time = reader.GetDateTime(3)
-                                });
-                            }
+                                Sender = reader.GetString(0),
+                                Receiver = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                                Content = reader.GetString(2),
+                                Time = reader.GetDateTime(3)
+                            });
                         }
                     }
                 }
             }
-            catch { }
+            return list;
+        }
+        public List<MessageData> GetGroupHistory(int groupId)
+        {
+            var list = new List<MessageData>();
+            using (SqlConnection conn = new SqlConnection(_connectionString))
+            {
+                conn.Open();
+                string query = @"SELECT SenderUsername, GroupId, Content, Timestamp 
+                                 FROM Messages 
+                                 WHERE GroupId = @g
+                                 ORDER BY Timestamp ASC";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@g", groupId);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new MessageData
+                            {
+                                Sender = reader.GetString(0),
+                                GroupId = reader.GetInt32(1),
+                                Content = reader.GetString(2),
+                                Time = reader.GetDateTime(3)
+                            });
+                        }
+                    }
+                }
+            }
             return list;
         }
     }
