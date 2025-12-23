@@ -13,3 +13,5 @@ Release/
 
 # Others
 *.vsidx
+*.jwt
+

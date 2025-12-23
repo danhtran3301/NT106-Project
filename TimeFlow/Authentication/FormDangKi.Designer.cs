@@ -42,19 +42,16 @@
             label10 = new Label();
             label11 = new Label();
             pictureBox1 = new PictureBox();
-            pictureBox2 = new PictureBox();
-            pictureBox3 = new PictureBox();
             pictureBox4 = new PictureBox();
+            checkShowPassword = new CheckBox();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).BeginInit();
             SuspendLayout();
             // 
             // usernameTxtbox
             // 
             usernameTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            usernameTxtbox.Location = new Point(381, 178);
+            usernameTxtbox.Location = new Point(436, 196);
             usernameTxtbox.Name = "usernameTxtbox";
             usernameTxtbox.Size = new Size(301, 38);
             usernameTxtbox.TabIndex = 0;
@@ -62,7 +59,7 @@
             // emailTextbox
             // 
             emailTextbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            emailTextbox.Location = new Point(381, 287);
+            emailTextbox.Location = new Point(436, 295);
             emailTextbox.Name = "emailTextbox";
             emailTextbox.Size = new Size(301, 38);
             emailTextbox.TabIndex = 6;
@@ -70,23 +67,25 @@
             // passwordTxtbox
             // 
             passwordTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            passwordTxtbox.Location = new Point(381, 393);
+            passwordTxtbox.Location = new Point(436, 382);
             passwordTxtbox.Name = "passwordTxtbox";
             passwordTxtbox.Size = new Size(301, 38);
             passwordTxtbox.TabIndex = 7;
+            passwordTxtbox.UseSystemPasswordChar = true;
             // 
             // confirmTxtbox
             // 
             confirmTxtbox.Font = new Font("Segoe UI", 13.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            confirmTxtbox.Location = new Point(381, 501);
+            confirmTxtbox.Location = new Point(436, 483);
             confirmTxtbox.Name = "confirmTxtbox";
             confirmTxtbox.Size = new Size(301, 38);
             confirmTxtbox.TabIndex = 8;
+            confirmTxtbox.UseSystemPasswordChar = true;
             // 
             // btnSignup
             // 
             btnSignup.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            btnSignup.Location = new Point(436, 577);
+            btnSignup.Location = new Point(492, 557);
             btnSignup.Name = "btnSignup";
             btnSignup.Size = new Size(186, 67);
             btnSignup.TabIndex = 9;
@@ -121,7 +120,7 @@
             label7.BackColor = Color.White;
             label7.Font = new Font("Segoe UI Variable Display", 19.8000011F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label7.ForeColor = Color.Black;
-            label7.Location = new Point(392, 59);
+            label7.Location = new Point(421, 74);
             label7.Name = "label7";
             label7.Size = new Size(281, 46);
             label7.TabIndex = 1;
@@ -133,7 +132,7 @@
             label8.BackColor = SystemColors.HotTrack;
             label8.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label8.ForeColor = Color.WhiteSmoke;
-            label8.Location = new Point(376, 135);
+            label8.Location = new Point(421, 151);
             label8.Name = "label8";
             label8.Size = new Size(122, 31);
             label8.TabIndex = 2;
@@ -145,7 +144,7 @@
             label9.BackColor = SystemColors.HotTrack;
             label9.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label9.ForeColor = Color.WhiteSmoke;
-            label9.Location = new Point(376, 237);
+            label9.Location = new Point(421, 251);
             label9.Name = "label9";
             label9.Size = new Size(71, 31);
             label9.TabIndex = 3;
@@ -157,7 +156,7 @@
             label10.BackColor = SystemColors.HotTrack;
             label10.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label10.ForeColor = Color.WhiteSmoke;
-            label10.Location = new Point(376, 343);
+            label10.Location = new Point(421, 336);
             label10.Name = "label10";
             label10.Size = new Size(117, 31);
             label10.TabIndex = 4;
@@ -169,7 +168,7 @@
             label11.BackColor = SystemColors.HotTrack;
             label11.Font = new Font("Segoe UI Variable Display", 13.8F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label11.ForeColor = Color.WhiteSmoke;
-            label11.Location = new Point(376, 448);
+            label11.Location = new Point(421, 438);
             label11.Name = "label11";
             label11.Size = new Size(212, 31);
             label11.TabIndex = 5;
@@ -178,50 +177,42 @@
             // pictureBox1
             // 
             pictureBox1.BackColor = Color.White;
-            pictureBox1.Location = new Point(-3, -3);
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(0, -104);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(1129, 728);
+            pictureBox1.Size = new Size(1140, 804);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 12;
             pictureBox1.TabStop = false;
-            // 
-            // pictureBox2
-            // 
-            pictureBox2.BackColor = Color.White;
-            pictureBox2.Image = (Image)resources.GetObject("pictureBox2.Image");
-            pictureBox2.Location = new Point(28, 25);
-            pictureBox2.Name = "pictureBox2";
-            pictureBox2.Size = new Size(127, 139);
-            pictureBox2.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox2.TabIndex = 13;
-            pictureBox2.TabStop = false;
-            // 
-            // pictureBox3
-            // 
-            pictureBox3.BackColor = Color.White;
-            pictureBox3.Image = (Image)resources.GetObject("pictureBox3.Image");
-            pictureBox3.Location = new Point(803, 341);
-            pictureBox3.Name = "pictureBox3";
-            pictureBox3.Size = new Size(313, 342);
-            pictureBox3.SizeMode = PictureBoxSizeMode.Zoom;
-            pictureBox3.TabIndex = 14;
-            pictureBox3.TabStop = false;
             // 
             // pictureBox4
             // 
             pictureBox4.BackColor = SystemColors.HotTrack;
-            pictureBox4.Location = new Point(317, 124);
+            pictureBox4.Location = new Point(356, 108);
             pictureBox4.Name = "pictureBox4";
             pictureBox4.Size = new Size(434, 545);
             pictureBox4.TabIndex = 15;
             pictureBox4.TabStop = false;
+            // 
+            // checkShowPassword
+            // 
+            checkShowPassword.AutoSize = true;
+            checkShowPassword.BackColor = SystemColors.HotTrack;
+            checkShowPassword.ForeColor = Color.White;
+            checkShowPassword.Location = new Point(436, 527);
+            checkShowPassword.Name = "checkShowPassword";
+            checkShowPassword.Size = new Size(127, 24);
+            checkShowPassword.TabIndex = 16;
+            checkShowPassword.Text = "Hiện mật khẩu";
+            checkShowPassword.UseVisualStyleBackColor = false;
+            checkShowPassword.CheckedChanged += checkShowPassword_CheckedChanged;
             // 
             // FormDangKi
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1128, 695);
-            Controls.Add(pictureBox3);
-            Controls.Add(pictureBox2);
+            Controls.Add(checkShowPassword);
             Controls.Add(label6);
             Controls.Add(btnLogin);
             Controls.Add(btnSignup);
@@ -239,8 +230,6 @@
             Name = "FormDangKi";
             Text = "DK";
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox4).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -252,6 +241,7 @@
         private TextBox emailTextbox;
         private TextBox passwordTxtbox;
         private TextBox confirmTxtbox;
+        private CheckBox checkShowPassword;
         private Button btnSignup;
         private Button btnLogin;
         private Label label6;

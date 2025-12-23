@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace TimeFlow.Models
 {
@@ -13,6 +13,10 @@ namespace TimeFlow.Models
         public DateTime? UpdatedAt { get; set; }
         public bool IsEdited { get; set; }
 
+        // User info for display
+        public string? Username { get; set; }
+        public string? FullName { get; set; }
+
         // Navigation properties
         public TaskItem Task { get; set; } = null!;
         public User User { get; set; } = null!;
@@ -22,6 +26,9 @@ namespace TimeFlow.Models
             CreatedAt = DateTime.Now;
             IsEdited = false;
         }
+
+        // Hien thi ten user (uu tien FullName)
+        public string DisplayName => !string.IsNullOrEmpty(FullName) ? FullName : Username ?? "Unknown";
 
         // Hien thi thoi gian dang "5 minutes ago"
         public string TimeAgo

@@ -1,158 +1,296 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Linq; 
-using TimeFlow.Services; 
-using System.Collections.Generic; 
-using System.Text.RegularExpressions; 
+using System.Linq;
+using TimeFlow.Services;
+using System.Collections.Generic;
 using TimeFlow.Models;
 using TimeFlow.UI;
 using TimeFlow.UI.Components;
+
 namespace TimeFlow.Tasks
 {
     public partial class FormTaskDetail : Form
     {
+        // Fields
         private readonly Font FontRegular = new Font("Segoe UI", 10F, FontStyle.Regular);
         private readonly Font FontBold = new Font("Segoe UI", 10F, FontStyle.Bold);
         private readonly Font FontTitle = new Font("Segoe UI", 16F, FontStyle.Bold);
         private readonly Font FontHeaderTitle = new Font("Segoe UI", 12F, FontStyle.Bold);
         private readonly Color HeaderIconColor = AppColors.Gray600;
+        private readonly TaskApiClient _taskApi;
 
-        private TaskModel _currentTask;
+        private TaskDetailViewModel _currentTask;
+        private TaskItem _basicTaskData; // ✅ Cache basic data
+        private ModernPanel _statusBadge;
+        private int _taskId;
+        private bool _isLoadingDetails = false;
 
+        // ✅ Cache button references để update sau
+        private CustomButton _btnEditTask;
+        private CustomButton _btnChangeStatus;
+        private CustomButton _btnDeleteTask;
+        private CustomButton _btnSubmitTask;
+
+        // ✅ Event để notify parent form
+        public event EventHandler<TaskUpdateEventArgs> TaskUpdated;
+        public event EventHandler TaskDeleted;
+
+        // Constructors
         public FormTaskDetail()
         {
             InitializeComponent();
-            SetupLayout();
-            this.SetStyle(ControlStyles.DoubleBuffer |
+            this.DoubleBuffered = true;
+            _taskApi = new TaskApiClient();
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.DoubleBuffer |
                           ControlStyles.UserPaint |
                           ControlStyles.AllPaintingInWmPaint, true);
+
             this.UpdateStyles();
+            
+            this.Activated += (s, e) => UpdateButtonStates();
+        }
+
+        public FormTaskDetail(TaskItem basicTask) : this()
+        {
+            _basicTaskData = basicTask;
+            _taskId = basicTask.TaskId;
+            
+            // ✅ Convert TaskItem to basic TaskDetailViewModel
+            _currentTask = ConvertToBasicViewModel(basicTask);
+            
+            // ✅ Render basic info NGAY LẬP TỨC (fast)
+            SetupLayout();
+            
+            // ✅ Load full details async (comments, activities)
+            LoadFullDetailsAsync(basicTask.TaskId);
         }
 
         public FormTaskDetail(int taskId) : this()
         {
-            _currentTask = Services.TaskManager.GetTaskById(taskId);
-
-            if (_currentTask == null)
+            _taskId = taskId;
+            
+            // Show loading state immediately
+            this.Text = "Loading Task Details...";
+            Label loadingLabel = new Label
             {
-                MessageBox.Show("Không tìm thấy thông tin công việc!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.Close();
-                return;
-            }
-
-            SetupLayout();
+                Text = "⏳ Loading task details...\n\nPlease wait...",
+                Font = new Font("Segoe UI", 14F),
+                ForeColor = AppColors.Gray600,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.White
+            };
+            this.Controls.Add(loadingLabel);
+            
+            // Load data asynchronously
+            LoadTaskDetailAsync(taskId);
         }
 
-        private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height, Color? hoverColor)
+        // Business Logic Methods
+        private TaskDetailViewModel ConvertToBasicViewModel(TaskItem task)
         {
-            return new TimeFlow.UI.Components.CustomButton
+            return new TaskDetailViewModel
             {
-                Text = text,
-                BackColor = backColor,
-                ForeColor = foreColor,
-                HoverColor = hoverColor ?? AppColors.Blue600,
-                BorderRadius = 8,
-                Width = width,
-                Height = height,
-                Font = FontBold,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 0, 0, 12)
+                TaskId = task.TaskId,
+                Title = task.Title,
+                Description = task.Description,
+                DueDate = task.DueDate,
+                Priority = task.Priority,
+                Status = task.Status,
+                IsGroupTask = task.IsGroupTask,
+                CreatedBy = task.CreatedBy,
+                CompletedAt = task.CompletedAt,
+                CreatedAt = task.CreatedAt,
+                UpdatedAt = task.UpdatedAt,
+                CategoryName = task.Category?.CategoryName ?? "Other",
+                CategoryColor = task.Category?.Color ?? "#6B7280",
+                Progress = task.Status switch
+                {
+                    TimeFlow.Models.TaskStatus.Pending => 0,
+                    TimeFlow.Models.TaskStatus.InProgress => 50,
+                    TimeFlow.Models.TaskStatus.Completed => 100,
+                    TimeFlow.Models.TaskStatus.Cancelled => 0,
+                    _ => 0
+                },
+                // Comments và Activities sẽ load sau
+                Comments = new List<CommentViewModel>(),
+                Activities = new List<ActivityViewModel>()
             };
         }
-        private GroupTask _groupTaskDetails;
-        private TimeFlow.Models.Group _currentGroup;
 
-        private void LoadGroupData(int taskId)
+        private async void LoadFullDetailsAsync(int taskId)
         {
-            _groupTaskDetails = Services.TaskManager.GetGroupTaskByTaskId(taskId);
-
-            if (_groupTaskDetails != null)
+            try
             {
-                _currentGroup = _groupTaskDetails.Group;
+                _isLoadingDetails = true;
+                
+                // ✅ Fetch full task detail từ server (comments + activities)
+                var fullDetails = await _taskApi.GetTaskDetailFullAsync(taskId);
+
+                if (fullDetails != null)
+                {
+                    // ✅ Update với full data
+                    _currentTask = fullDetails;
+                    
+                    // ✅ Progressive rendering
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        // Render comments nếu có
+                        if (_currentTask.HasComments)
+                        {
+                            RenderComments();
+                        }
+                        
+                        // Render activities nếu có
+                        if (_currentTask.HasActivities)
+                        {
+                            RenderActivities();
+                        }
+                        
+                        // ✅ Update button states sau khi load xong
+                        UpdateButtonStates();
+                        
+                        _isLoadingDetails = false;
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _isLoadingDetails = false;
+                MessageBox.Show($"Không thể tải đầy đủ thông tin: {ex.Message}\n\nBasic info vẫn được hiển thị.", 
+                    "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+
+        private async Task LoadTaskDetailAsync(int taskId)
+        {
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+
+                // Fetch full task detail from server
+                _currentTask = await _taskApi.GetTaskDetailFullAsync(taskId);
+
+                if (_currentTask == null)
+                {
+                    MessageBox.Show("Không tìm thấy thông tin công việc!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    this.Close();
+                    return;
+                }
+
+                // Setup UI with loaded data
+                this.Invoke((MethodInvoker)delegate
+                {
+                    SetupLayout();
+                    
+                    // ✅ Update button states sau khi setup xong
+                    UpdateButtonStates();
+                    
+                    this.Text = "Task Details";
+                    this.Cursor = Cursors.Default;
+                });
+            }
+            catch (Exception ex)
+            {
+                this.Cursor = Cursors.Default;
+                MessageBox.Show($"Lỗi khi tải thông tin task: {ex.Message}\n\nVui lòng kiểm tra:\n1. Server đang chạy\n2. Đã đăng nhập\n3. Task tồn tại trong database", 
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+            }
+        }
+        private void FilterComments(string keyword)
+        {
+            if (_currentTask == null) return;
+
+            // Tìm Panel chứa danh sách bình luận
+            var centerPanel = FindCenterContentPanel();
+            if (centerPanel == null) return;
+
+            centerPanel.SuspendLayout(); // Tối ưu hiệu năng khi vẽ lại
+
+            // 1. Lấy danh sách bình luận cũ để xóa (trừ ô Search và nút Post)
+            var controlsToRemove = centerPanel.Controls.OfType<FlowLayoutPanel>()
+                .Where(c => c.Tag != null && c.Tag.ToString() == "CommentItem").ToList();
+
+            foreach (var ctrl in controlsToRemove) centerPanel.Controls.Remove(ctrl);
+
+            // 2. Dùng LINQ để lọc dữ liệu trong bộ nhớ
+            var filteredList = _currentTask.Comments
+                .Where(c => string.IsNullOrEmpty(keyword) ||
+                            c.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                            c.DisplayName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // 3. Hiển thị kết quả lọc
+            int spacerIndex = centerPanel.Controls.Count - 1;
+            foreach (var comment in filteredList)
+            {
+                var commentControl = CreateComment(comment.DisplayName, comment.Content, comment.TimeAgo);
+                commentControl.Tag = "CommentItem"; // Đánh dấu để dễ xóa lần sau
+
+                centerPanel.Controls.Add(commentControl);
+                centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
+            }
+
+            centerPanel.ResumeLayout();
+        }
+
         private bool UserHasPermission()
         {
             if (_currentTask == null) return false;
-            int currentUserId = 1; // ID người dùng hiện tại (Giả định)
+            
+            // Get current user ID from SessionManager
+            int currentUserId = SessionManager.UserId ?? 0;
+            
+            if (currentUserId == 0) return false;
 
-            if (_groupTaskDetails == null)
-            {
-                return _currentTask.CreatorId == currentUserId;
-            }
-
-            bool isCreator = _currentTask.CreatorId == currentUserId;
-            bool isAdmin = _currentGroup != null && _currentGroup.IsAdmin(currentUserId);
-
-            return isCreator || isAdmin;
+            // Check if user is creator
+            return _currentTask.CreatedBy == currentUserId;
         }
 
-        private TimeFlow.UI.Components.CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int width, int height)
+        private void RefreshTaskDetail()
         {
-            return CreateMenuButton(text, backColor, foreColor, width, height, null);
-        }
-
-        private Control CreateComment(string user, string text, string time)
-        {
-            FlowLayoutPanel comment = new FlowLayoutPanel
+            if (_taskId > 0)
             {
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoSize = false,
-                Width = 800,
-                Margin = new Padding(0, 0, 0, 16),
-                Padding = new Padding(0, 0, 0, 8),
-                BackColor = AppColors.Gray50,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            comment.AutoSize = true;
-            comment.WrapContents = false;
-
-            FlowLayoutPanel header = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.LeftToRight,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 4)
-            };
-            header.Controls.Add(new Label { Text = user, Font = FontBold, ForeColor = AppColors.Gray800, AutoSize = true, Margin = new Padding(0, 0, 8, 0) });
-            header.Controls.Add(new Label { Text = time, Font = FontRegular, ForeColor = AppColors.Gray500, AutoSize = true });
-            comment.Controls.Add(header);
-
-            Label content = new Label
-            {
-                Text = text,
-                Font = FontRegular,
-                ForeColor = AppColors.Gray600,
-                MaximumSize = new Size(comment.Width, 0),
-                AutoSize = true
-            };
-            comment.Controls.Add(content);
-
-            return comment;
-        }
-       
-
-       
-        private void LoadTaskDetail(int taskId)
-        {
-            var updatedTask = Services.TaskManager.GetTaskById(taskId);
-            if (updatedTask != null)
-            {
-                _currentTask = updatedTask;
-                LoadGroupData(taskId);
-                this.Controls.Clear();
-                InitializeComponent();
-            }
-            else
-            {
-                MessageBox.Show("Task này không còn tồn tại.", "Thông báo");
+                LoadTaskDetailAsync(_taskId);
             }
         }
+
+        private void UpdateButtonStates()
+        {
+            if (_currentTask == null) return;
+
+            bool isCompleted = _currentTask.Status == TimeFlow.Models.TaskStatus.Completed;
+            bool hasPerm = UserHasPermission();
+
+            if (_btnEditTask != null)
+            {
+                _btnEditTask.Enabled = hasPerm && !isCompleted;
+                _btnEditTask.BackColor = AppColors.Blue500; // Cố định màu gốc
+                _btnEditTask.Text = isCompleted ? "✏️ Edit (Done)" : "✏️ Edit Task";
+            }
+
+            if (_btnChangeStatus != null)
+            {
+                _btnChangeStatus.Enabled = !isCompleted;
+                _btnChangeStatus.BackColor = AppColors.Orange500; // Cố định màu gốc
+            }
+
+            if (_btnSubmitTask != null)
+            {
+                _btnSubmitTask.Enabled = !isCompleted;
+                _btnSubmitTask.BackColor = AppColors.Purple500; // Cố định màu gốc
+                _btnSubmitTask.Text = isCompleted ? "✓ Finished" : "Submit task";
+            }
+        }
+        // Event Handlers
         private void BtnYourTask_Click(object sender, EventArgs e)
         {
             FormTaskList newTasklist = new FormTaskList();
-            newTasklist.ShowDialog();
+            this.Hide();
+            newTasklist.FormClosed += (s, args) => this.Close();
+            newTasklist.Show();
         }
 
         private void BtnNewTask_Click(object sender, EventArgs e)
@@ -160,7 +298,10 @@ namespace TimeFlow.Tasks
             try
             {
                 FormThemTask newTaskForm = new FormThemTask();
-                newTaskForm.ShowDialog();
+                if (newTaskForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Optionally refresh
+                }
             }
             catch (Exception ex)
             {
@@ -168,130 +309,441 @@ namespace TimeFlow.Tasks
             }
         }
 
-        private void BtnSubmitTask_Click(object sender, EventArgs e)
+        private async void BtnSubmitTask_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
-            if (_currentTask.Progress < 100)
+            
+            // ✅ Kiểm tra task đã completed chưa
+            if (_currentTask.Status == TimeFlow.Models.TaskStatus.Completed)
             {
-                MessageBox.Show("Vui lòng hoàn thành 100% tiến độ trước khi nộp Task.", "Cảnh báo");
+                MessageBox.Show("Task này đã được nộp rồi!", "Thông báo", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            _currentTask.Status = TaskState.Completed;
-            if (Services.TaskManager.UpdateTask(_currentTask))
+            // ✅ Xác nhận submit
+            var confirmResult = MessageBox.Show(
+                "Bạn có chắc chắn muốn nộp task này?\n\n" +
+                "⚠️ Lưu ý: Sau khi nộp, task sẽ chuyển sang trạng thái HOÀN THÀNH và không thể chỉnh sửa nữa. " +
+                "Bạn chỉ có thể xem thông tin.",
+                "Xác nhận nộp Task",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (confirmResult != DialogResult.Yes)
             {
-                LoadTaskDetail(_currentTask.Id);
-                MessageBox.Show("Task đã được nộp và chuyển sang trạng thái HOÀN THÀNH.", "Thành công");
+                return;
             }
-        }
-        private void BtnGroup_Click(object sender,EventArgs e)
-        {
-           /* try
+
+            try
             {
-                FromGroupList groupListForm = new FormGroupList();
-                groupListForm.ShowDialog();
+                this.Cursor = Cursors.WaitCursor;
+                
+                bool success = await _taskApi.UpdateTaskStatusAsync(
+                    _currentTask.TaskId, 
+                    TimeFlow.Models.TaskStatus.Completed
+                );
+                
+                if (success)
+                {
+                    // ✅ Raise event để parent form refresh
+                    TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
+                    {
+                        TaskId = _currentTask.TaskId,
+                        Status = TimeFlow.Models.TaskStatus.Completed
+                    });
+                    
+                    MessageBox.Show(
+                        "✓ Task đã được nộp thành công!\n\n" +
+                        "Task hiện đã chuyển sang trạng thái HOÀN THÀNH.\n" +
+                        "Bạn không thể chỉnh sửa task này nữa, chỉ có thể xem thông tin.",
+                        "Nộp Task Thành Công",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    
+                    // Refresh để cập nhật UI với trạng thái mới
+                    RefreshTaskDetail();
+                }
+                else
+                {
+                    MessageBox.Show("Không thể nộp task. Vui lòng thử lại!", "Lỗi",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể mở danh sách nhóm: {ex.Message}", "Lỗi");
-            }*/
+                MessageBox.Show($"Lỗi khi nộp task: {ex.Message}", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
         }
-        private void EditItem_Click(object sender, EventArgs e)
+
+        private void BtnGroup_Click(object sender, EventArgs e)
+        {
+            // Mở form group tasks
+            FormGroupTaskList groupTasksForm = new FormGroupTaskList();
+            groupTasksForm.Show();
+        }
+
+        private async void EditItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
 
-            using (FormThemTask editForm = new FormThemTask(_currentTask.Id))
+            using (FormThemTask editForm = new FormThemTask(_currentTask.TaskId))
             {
                 if (editForm.ShowDialog() == DialogResult.OK)
                 {
-                    LoadTaskDetail(_currentTask.Id);
+                    await LoadTaskDetailAsync(_taskId);
+
+                    TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
+                    {
+                        TaskId = _currentTask.TaskId,
+                        Title = _currentTask.Title,
+                        Status = _currentTask.Status,
+                        Priority = _currentTask.Priority,
+                        DueDate = _currentTask.DueDate
+                    });
+
+                    UpdateButtonStates();
                 }
             }
         }
-        private void DeleteItem_Click(object sender, EventArgs e)
+
+        private async void DeleteItem_Click(object sender, EventArgs e)
         {
             if (_currentTask == null) return;
 
-            var confirm = MessageBox.Show($"Bạn có chắc chắn muốn xóa task '{_currentTask.Name}'?",
+            var confirm = MessageBox.Show($"Bạn có chắc chắn muốn xóa task '{_currentTask.Title}'?",
                                         "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
 
             if (confirm == DialogResult.Yes)
             {
-                if (Services.TaskManager.DeleteTask(_currentTask.Id))
+                try
                 {
-                    this.Close();
+                    bool success = await _taskApi.DeleteTaskAsync(_currentTask.TaskId);
+                    
+                    if (success)
+                    {
+                        // ✅ Raise TaskDeleted event trước khi close
+                        TaskDeleted?.Invoke(this, EventArgs.Empty);
+                        
+                        MessageBox.Show("Task đã được xóa thành công!", "Thành công");
+                        this.Close();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không thể xóa task. Vui lòng thử lại!", "Lỗi");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi xóa task: {ex.Message}", "Lỗi");
                 }
             }
         }
-        private void ChangeStatusItem_Click(TaskState newStatus)
+
+        private async void ChangeStatusItem_Click(TimeFlow.Models.TaskStatus newStatus)
         {
             if (_currentTask == null || _statusBadge == null) return;
 
-            _currentTask.Status = newStatus;
-
-            Color newColor = newStatus switch
+            // ✅ FIX: Kiểm tra status có thay đổi không
+            if (_currentTask.Status == newStatus)
             {
-                TaskState.Pending => AppColors.Yellow500,
-                TaskState.InProgress => AppColors.Blue500, //
-                TaskState.Completed => AppColors.Green500,
-                _ => AppColors.Gray400
-            };
+                MessageBox.Show($"Task đã ở trạng thái {_currentTask.StatusText} rồi!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
-            _statusBadge.Text = _currentTask.StatusText;
-            _statusBadge.BackColor = newColor;
-            _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
-
-            Services.TaskManager.UpdateTask(_currentTask);
-
-            Services.TaskManager.AddActivity(_currentTask.Id, $"Trạng thái đổi sang {newStatus}");
-        }
-        private void CreateStatusSubMenu(System.Windows.Forms.ToolStripMenuItem statusMenu)
-        {
-            System.Array statusValues = System.Enum.GetValues(typeof(TaskState));
-            foreach (TaskState status in statusValues)
+            try
             {
-                System.Windows.Forms.ToolStripMenuItem item = new System.Windows.Forms.ToolStripMenuItem(status.ToString());
-                if (status == _currentTask.Status) item.Checked = true;
-                item.Click += (sender, e) => ChangeStatusItem_Click(status);
-                statusMenu.DropDownItems.Add(item);
+                this.Cursor = Cursors.WaitCursor;
+                
+                bool success = await _taskApi.UpdateTaskStatusAsync(_currentTask.TaskId, newStatus);
+
+                if (success)
+                {
+                    // Update local state
+                    var oldStatus = _currentTask.Status;
+                    _currentTask.Status = newStatus;
+
+                    // Update UI
+                    Color newColor = GetStatusColor(newStatus);
+                    _statusBadge.Text = _currentTask.StatusText;
+                    _statusBadge.BackColor = newColor;
+                    _statusBadge.ForeColor = newColor == AppColors.Yellow500 ? AppColors.Gray800 : Color.White;
+                    _statusBadge.Text = _currentTask.StatusText;
+                    _statusBadge.Invalidate();
+                    // ✅ Update button states (instead of full refresh)
+                    UpdateButtonStates();
+
+                    // ✅ Raise TaskUpdated event
+                    TaskUpdated?.Invoke(this, new TaskUpdateEventArgs
+                    {
+                        TaskId = _currentTask.TaskId,
+                        Status = newStatus
+                    });
+
+                    MessageBox.Show($"Trạng thái đã được đổi sang {_currentTask.StatusText}", "Thành công", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Không thể cập nhật trạng thái. Vui lòng thử lại!", "Lỗi");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi cập nhật trạng thái: {ex.Message}", "Lỗi");
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
-        private Control CreateActivityLog(string activity, string time, int width)
+
+        private Color GetStatusColor(TimeFlow.Models.TaskStatus status)
         {
-            FlowLayoutPanel logItem = new FlowLayoutPanel
+            return status switch
             {
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoSize = false,
-                Width = width,
-                Margin = new Padding(0, 0, 0, 12)
+                TimeFlow.Models.TaskStatus.Pending => AppColors.Yellow500,
+                TimeFlow.Models.TaskStatus.InProgress => AppColors.Blue500,
+                TimeFlow.Models.TaskStatus.Completed => AppColors.Green500,
+                TimeFlow.Models.TaskStatus.Cancelled => AppColors.Gray400,
+                _ => AppColors.Gray400
             };
-            logItem.AutoSize = true;
+        }
 
-            Label lblActivity = new Label
+        private Color GetPriorityColor(TaskPriority priority)
+        {
+            return priority switch
             {
-                Text = activity,
-                Font = FontRegular,
-                ForeColor = AppColors.Gray600,
-                MaximumSize = new Size(width, 0),
-                AutoSize = true
+                TaskPriority.Low => AppColors.Green500,
+                TaskPriority.Medium => AppColors.Orange500,
+                TaskPriority.High => AppColors.Red600,
+                _ => AppColors.Gray400
             };
-            Label lblTime = new Label
-            {
-                Text = time,
-                Font = new Font("Segoe UI", 8F, FontStyle.Regular),
-                ForeColor = AppColors.Gray400,
-                AutoSize = true
-            };
+        }
 
-            logItem.Controls.Add(lblActivity);
-            logItem.Controls.Add(lblTime);
-            return logItem;
+        // ✅ Progressive Rendering Methods
+        private void RenderComments()
+        {
+            if (_currentTask == null || !_currentTask.HasComments) return;
+
+            // Find center content panel
+            var centerPanel = FindCenterContentPanel();
+            if (centerPanel == null) return;
+
+            centerPanel.SuspendLayout();
+
+            // Remove "No comments" or "Loading comments" label if exists
+            var labelToRemove = centerPanel.Controls.OfType<Label>()
+                .FirstOrDefault(l => l.Text.Contains("No comments") || l.Text.Contains("Loading comments"));
+            if (labelToRemove != null)
+            {
+                centerPanel.Controls.Remove(labelToRemove);
+            }
+
+            // Render comments (limit to first 10)
+            const int INITIAL_COMMENTS = 10;
+            var commentsToRender = _currentTask.Comments.Take(INITIAL_COMMENTS).ToList();
+
+            // Find spacer index (last control)
+            int spacerIndex = centerPanel.Controls.Count - 1;
+
+            foreach (var comment in commentsToRender)
+            {
+                var commentControl = CreateComment(
+                    comment.DisplayName,
+                    comment.Content,
+                    comment.TimeAgo
+                );
+                
+                // ✅ Add control first
+                centerPanel.Controls.Add(commentControl);
+                // ✅ Then set index to insert before spacer
+                centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
+            }
+
+            // Add "Load more" if needed
+            if (_currentTask.Comments.Count > INITIAL_COMMENTS)
+            {
+                var loadMoreLabel = new Label
+                {
+                    Text = $"+ Load {_currentTask.Comments.Count - INITIAL_COMMENTS} more comments",
+                    Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                    ForeColor = AppColors.Blue500,
+                    Cursor = Cursors.Hand,
+                    AutoSize = true,
+                    Margin = new Padding(0, 10, 0, 0)
+                };
+                loadMoreLabel.Click += (s, e) => LoadMoreComments(centerPanel, INITIAL_COMMENTS);
+                
+                // ✅ Add then set index
+                centerPanel.Controls.Add(loadMoreLabel);
+                centerPanel.Controls.SetChildIndex(loadMoreLabel, spacerIndex);
+            }
+
+            centerPanel.ResumeLayout();
+        }
+
+        private void RenderActivities()
+        {
+            if (_currentTask == null || !_currentTask.HasActivities) return;
+
+            // Find right sidebar panel
+            var rightSidebar = FindRightSidebarPanel();
+            if (rightSidebar == null) return;
+
+            rightSidebar.SuspendLayout();
+
+            // Remove "No activity" or "Loading activities" label if exists
+            var labelToRemove = rightSidebar.Controls.OfType<Label>()
+                .FirstOrDefault(l => l.Text.Contains("No activity") || l.Text.Contains("Loading activities"));
+            if (labelToRemove != null)
+            {
+                rightSidebar.Controls.Remove(labelToRemove);
+            }
+
+            // Render activities (limit to first 10)
+            const int INITIAL_ACTIVITIES = 10;
+            var activitiesToRender = _currentTask.Activities
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(INITIAL_ACTIVITIES)
+                .ToList();
+
+            int contentWidth = 302; // sidebar width - padding
+            
+            // Find spacer index (last control)
+            int spacerIndex = rightSidebar.Controls.Count - 1;
+
+            foreach (var activity in activitiesToRender)
+            {
+                var activityControl = CreateActivityLog(
+                    activity.Description,
+                    activity.TimeAgo,
+                    contentWidth
+                );
+                
+                // ✅ Add control first
+                rightSidebar.Controls.Add(activityControl);
+                // ✅ Then set index to insert before spacer
+                rightSidebar.Controls.SetChildIndex(activityControl, spacerIndex);
+            }
+
+            // Add "Show more" if needed
+            if (_currentTask.Activities.Count > INITIAL_ACTIVITIES)
+            {
+                var showMoreLabel = new Label
+                {
+                    Text = $"+ {_currentTask.Activities.Count - INITIAL_ACTIVITIES} more activities",
+                    Font = new Font("Segoe UI", 9F, FontStyle.Italic),
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 10, 0, 0)
+                };
+                
+                // ✅ Add then set index
+                rightSidebar.Controls.Add(showMoreLabel);
+                rightSidebar.Controls.SetChildIndex(showMoreLabel, spacerIndex);
+            }
+
+            rightSidebar.ResumeLayout();
+        }
+
+        private void LoadMoreComments(FlowLayoutPanel centerPanel, int alreadyLoaded)
+        {
+            centerPanel.SuspendLayout();
+
+            // Remove "Load more" label
+            var loadMoreLabel = centerPanel.Controls.OfType<Label>()
+                .FirstOrDefault(l => l.Text.StartsWith("+ Load"));
+            if (loadMoreLabel != null)
+            {
+                centerPanel.Controls.Remove(loadMoreLabel);
+            }
+
+            // Load next batch
+            const int BATCH_SIZE = 10;
+            var nextBatch = _currentTask.Comments
+                .Skip(alreadyLoaded)
+                .Take(BATCH_SIZE)
+                .ToList();
+
+            // Find spacer index
+            int spacerIndex = centerPanel.Controls.Count - 1;
+
+            foreach (var comment in nextBatch)
+            {
+                var commentControl = CreateComment(
+                    comment.DisplayName,
+                    comment.Content,
+                    comment.TimeAgo
+                );
+                
+                // ✅ Add then set index
+                centerPanel.Controls.Add(commentControl);
+                centerPanel.Controls.SetChildIndex(commentControl, spacerIndex);
+            }
+
+            // Add "Load more" again if needed
+            int totalLoaded = alreadyLoaded + BATCH_SIZE;
+            if (_currentTask.Comments.Count > totalLoaded)
+            {
+                var newLoadMoreLabel = new Label
+                {
+                    Text = $"+ Load {_currentTask.Comments.Count - totalLoaded} more comments",
+                    Font = new Font("Segoe UI", 10F, FontStyle.Italic),
+                    ForeColor = AppColors.Blue500,
+                    Cursor = Cursors.Hand,
+                    AutoSize = true,
+                    Margin = new Padding(0, 10, 0, 0)
+                };
+                newLoadMoreLabel.Click += (s, e) => LoadMoreComments(centerPanel, totalLoaded);
+                
+                // ✅ Add then set index
+                centerPanel.Controls.Add(newLoadMoreLabel);
+                centerPanel.Controls.SetChildIndex(newLoadMoreLabel, spacerIndex);
+            }
+
+            centerPanel.ResumeLayout();
+        }
+
+        private FlowLayoutPanel FindCenterContentPanel()
+        {
+            // Navigate: Form → rootPanel → mainLayout → column[1] → scrollContainer → contentPanel
+            var rootPanel = this.Controls.OfType<Panel>().FirstOrDefault();
+            if (rootPanel == null) return null;
+
+            var mainLayout = rootPanel.Controls.OfType<TableLayoutPanel>().FirstOrDefault();
+            if (mainLayout == null) return null;
+
+            var scrollContainer = mainLayout.Controls.OfType<Panel>().Skip(1).FirstOrDefault();
+            if (scrollContainer == null) return null;
+
+            return scrollContainer.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
+        }
+
+        private FlowLayoutPanel FindRightSidebarPanel()
+        {
+            // Navigate: Form → rootPanel → mainLayout → column[2] → ModernPanel → contentFlow
+            var rootPanel = this.Controls.OfType<Panel>().FirstOrDefault();
+            if (rootPanel == null) return null;
+
+            var mainLayout = rootPanel.Controls.OfType<TableLayoutPanel>().FirstOrDefault();
+            if (mainLayout == null) return null;
+
+            var modernPanel = mainLayout.Controls.OfType<ModernPanel>().FirstOrDefault();
+            if (modernPanel == null) return null;
+
+            return modernPanel.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
         }
 
         private void FormTaskDetail_Load(object sender, EventArgs e)
         {
-
+            // Form load event handler
         }
     }
 }

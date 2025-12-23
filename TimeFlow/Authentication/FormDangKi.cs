@@ -54,7 +54,12 @@ namespace TimeFlow.Authentication
                 return Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
             }
         }
-
+        private void checkShowPassword_CheckedChanged(object sender, EventArgs e)
+        {
+            bool show = checkShowPassword.Checked;
+            passwordTxtbox.UseSystemPasswordChar = !show;
+            confirmTxtbox.UseSystemPasswordChar = !show;
+        }
         private void buttonSignup_Click(object sender, EventArgs e)
         {
             string username = usernameTxtbox.Text.Trim();

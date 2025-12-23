@@ -28,16 +28,17 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.SuspendLayout();
+            SuspendLayout();
             // 
             // FormTaskList
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1024, 600);
-            this.Name = "FormTaskList";
-            this.Text = "My Tasks";
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1024, 600);
+            Name = "FormTaskList";
+            Text = "My Tasks";
+            Load += FormTaskList_Load;
+            ResumeLayout(false);
         }
 
         #endregion

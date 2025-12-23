@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
@@ -229,6 +229,12 @@ namespace TimeFlow.Data.Repositories
         }
 
         // ================== CHECK OPERATIONS ==================
+
+        // Kiem tra user co trong group khong (alias cho IsMember)
+        public bool IsUserInGroup(int userId, int groupId)
+        {
+            return IsMember(groupId, userId);
+        }
 
         // Kiem tra user co phai member cua group khong
         public bool IsMember(int groupId, int userId)

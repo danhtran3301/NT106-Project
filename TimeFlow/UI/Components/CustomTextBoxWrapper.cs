@@ -29,7 +29,12 @@ namespace TimeFlow.UI.Components
 
             this.Controls.Add(_textBox);
         }
-
+        public void SelectAll()
+        {
+            
+            this._textBox.Focus();
+            this._textBox.SelectAll();
+        }
         public string TextBoxText
         {
             get { return _textBox.Text; }
