@@ -5,20 +5,31 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using TimeFlow.Models;
+using TimeFlow.Configuration;
 
 namespace TimeFlow.Services
 {
+    // DTO cho Group Member
+    public class GroupMemberDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; } = "";
+        public string? FullName { get; set; }
+        public string Role { get; set; } = "Member";
+    }
+
     public class TaskApiClient
     {
         private readonly string _serverHost;
         private readonly int _serverPort;
         private readonly int _timeout;
 
-        public TaskApiClient(string serverHost = "127.0.0.1", int serverPort = 1010, int timeout = 5000)
+        public TaskApiClient(string? serverHost = null, int? serverPort = null, int? timeout = null)
         {
-            _serverHost = serverHost;
-            _serverPort = serverPort;
-            _timeout = timeout;
+            // Sử dụng ServerConfig làm mặc định, cho phép override nếu cần
+            _serverHost = serverHost ?? ServerConfig.Host;
+            _serverPort = serverPort ?? ServerConfig.Port;
+            _timeout = timeout ?? ServerConfig.Timeout;
         }
 
         private async Task<string> SendRequestAsync(object request)
@@ -130,7 +141,7 @@ namespace TimeFlow.Services
             }
         }
 
-        public async Task<int> CreateTaskAsync(TaskItem task)
+        public async Task<int> CreateTaskAsync(TaskItem task, int? groupId = null)
         {
             try
             {
@@ -146,7 +157,8 @@ namespace TimeFlow.Services
                         priority = (int)task.Priority,
                         status = (int)task.Status,
                         categoryId = task.CategoryId,
-                        isGroupTask = task.IsGroupTask
+                        isGroupTask = task.IsGroupTask,
+                        groupId = groupId // ✅ Thêm groupId để server tạo GroupTask record
                     }
                 };
 
@@ -651,6 +663,112 @@ namespace TimeFlow.Services
             catch (Exception ex)
             {
                 throw new Exception("Failed to add member: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách thành viên của group
+        /// </summary>
+        public async Task<List<GroupMemberDto>> GetGroupMembersAsync(int groupId)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "get_group_members",
+                    token = SessionManager.Token,
+                    groupId = groupId
+                };
+
+                string responseJson = await SendRequestAsync(request);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusElem) && statusElem.GetString() == "success")
+                {
+                    var list = new List<GroupMemberDto>();
+                    var data = root.GetProperty("data");
+                    
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        list.Add(new GroupMemberDto
+                        {
+                            UserId = item.GetProperty("userId").GetInt32(),
+                            Username = item.GetProperty("username").GetString() ?? "",
+                            FullName = item.TryGetProperty("fullName", out var fn) ? fn.GetString() : null,
+                            Role = item.TryGetProperty("role", out var r) ? r.GetString() ?? "Member" : "Member"
+                        });
+                    }
+                    return list;
+                }
+
+                string err = GetErrorMessage(root);
+                throw new Exception("Server error: " + err);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to get group members: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Tạo Group Task với đầy đủ thông tin bao gồm assignee
+        /// </summary>
+        public async Task<int> CreateGroupTaskAsync(TaskItem task, int groupId, int? assignedTo = null)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "create_task",
+                    token = SessionManager.Token,
+                    data = new
+                    {
+                        title = task.Title,
+                        description = task.Description,
+                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)task.Priority,
+                        status = (int)task.Status,
+                        categoryId = task.CategoryId,
+                        isGroupTask = true,
+                        groupId = groupId,
+                        assignedTo = assignedTo
+                    }
+                };
+
+                string responseJson = await SendRequestAsync(request);
+
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                string status = root.GetProperty("status").GetString();
+                
+                if (status == "success")
+                {
+                    return root.GetProperty("taskId").GetInt32();
+                }
+                else if (status == "validation_error")
+                {
+                    string field = root.TryGetProperty("field", out var f) ? f.GetString() : "";
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.ValidationException(field, message);
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
+                }
+                else
+                {
+                    string errorMsg = GetErrorMessage(root);
+                    throw new Exception("Server error: " + errorMsg);
+                }
+            }
+            catch (Data.Exceptions.ValidationException) { throw; }
+            catch (Data.Exceptions.UnauthorizedException) { throw; }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to create group task: " + ex.Message, ex);
             }
         }
     }

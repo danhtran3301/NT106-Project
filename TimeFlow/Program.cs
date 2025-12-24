@@ -5,6 +5,7 @@ using TimeFlow.Server;
 using TimeFlow.Tasks;
 using TimeFlow.Server;
 using TimeFlow.Authentication;
+using TimeFlow.Configuration;
 
 namespace TimeFlow
 {
@@ -17,6 +18,9 @@ namespace TimeFlow
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            
+            // ✅ Load cấu hình Server từ appsettings.json
+            ServerConfig.Load();
             
             // ✅ FIX: Sử dụng ApplicationContext để quản lý app lifecycle
             _appContext = new ApplicationContext();

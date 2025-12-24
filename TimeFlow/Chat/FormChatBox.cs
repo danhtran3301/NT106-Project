@@ -9,6 +9,7 @@ using System.Threading;
 using System.Windows.Forms;
 using TimeFlow.Models;
 using TimeFlow.Services;
+using TimeFlow.Configuration;
 
 namespace TimeFlow
 {
@@ -30,10 +31,6 @@ namespace TimeFlow
 
         // Thông tin User
         private string _myUsername;
-
-        // Cấu hình Server mặc định
-        private const string SERVER_IP = "127.0.0.1";
-        private const int SERVER_PORT = 1010;
 
         // Trạng thái Chat hiện tại
         private int? _currentGroupId = null; // ID nhóm đang chọn
@@ -66,7 +63,7 @@ namespace TimeFlow
             try
             {
                 _client = new TcpClient();
-                _client.Connect(SERVER_IP, SERVER_PORT);
+                _client.Connect(ServerConfig.Host, ServerConfig.Port);
                 _stream = _client.GetStream();
                 _isConnected = true;
 

@@ -799,7 +799,7 @@ namespace TimeFlow.Tasks
             }
         }
 
-        private async void BtnCreateTask_Click(object sender, EventArgs e)
+        private void BtnCreateTask_Click(object sender, EventArgs e)
         {
             if (!_selectedGroupId.HasValue)
             {
@@ -808,79 +808,23 @@ namespace TimeFlow.Tasks
                 return;
             }
 
-            string taskTitle = ShowInputDialog("New Group Task", "Enter task title:");
-            if (string.IsNullOrWhiteSpace(taskTitle)) return;
-
-            try
+            // ✅ Mở form tạo Group Task đầy đủ
+            using (var createTaskForm = new FormCreateGroupTask(_selectedGroupId.Value, _groupName))
             {
-                // Show progress indicator
-                this.Cursor = Cursors.WaitCursor;
-
-                // Create task using API
-                var newTask = new TaskItem
+                createTaskForm.TaskCreated += (s, args) =>
                 {
-                    Title = taskTitle,
-                    Description = "",
-                    Priority = TaskPriority.Medium,
-                    Status = TimeFlow.Models.TaskStatus.Pending,
-                    CategoryId = 1, // Default category
-                    IsGroupTask = true
+                    // Reload task list sau khi tạo task thành công
+                    if (_contentPanel != null)
+                    {
+                        _contentPanel.SuspendLayout();
+                        _contentPanel.Controls.Clear();
+                        _contentPanel.ResumeLayout(false);
+                        LoadTasksAsync(_contentPanel);
+                    }
                 };
-
-                // ✅ Dùng await thay vì .Wait() để không block UI thread
-                int taskId = await _taskApi.CreateTaskAsync(newTask);
-
-                if (taskId > 0)
-                {
-                    MessageBox.Show($"Task created successfully in '{_groupName}'!", "Success", 
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    
-                    // Reload task list
-                    _contentPanel.SuspendLayout();
-                    _contentPanel.Controls.Clear();
-                    _contentPanel.ResumeLayout(false);
-                    LoadTasksAsync(_contentPanel);
-                }
-                else
-                {
-                    MessageBox.Show("Failed to create task. Please try again.", "Error", 
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                
+                createTaskForm.ShowDialog(this);
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error creating task: {ex.Message}", "Error", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                this.Cursor = Cursors.Default;
-            }
-        }
-
-        private string ShowInputDialog(string title, string prompt)
-        {
-            Form promptForm = new Form()
-            {
-                Width = 400,
-                Height = 180,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = title,
-                StartPosition = FormStartPosition.CenterParent,
-                MaximizeBox = false,
-                MinimizeBox = false
-            };
-
-            Label textLabel = new Label() { Left = 20, Top = 20, Text = prompt, AutoSize = true, Font = new Font("Segoe UI", 10) };
-            TextBox textBox = new TextBox() { Left = 20, Top = 50, Width = 340, Font = new Font("Segoe UI", 10) };
-            Button confirmation = new Button() { Text = "Create", Left = 240, Width = 100, Top = 90, DialogResult = DialogResult.OK, BackColor = AppColors.Blue500, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-
-            promptForm.Controls.Add(textLabel);
-            promptForm.Controls.Add(textBox);
-            promptForm.Controls.Add(confirmation);
-            promptForm.AcceptButton = confirmation;
-
-            return promptForm.ShowDialog() == DialogResult.OK ? textBox.Text.Trim() : "";
         }
 
         private Control CreateGroupTaskItem(TaskItem task)
@@ -1185,6 +1129,60 @@ namespace TimeFlow.Tasks
 
         private void FormGroupTaskList_Load(object sender, EventArgs e)
         {
+        }
+
+        /// <summary>
+        /// Hiển thị dialog nhập text đơn giản
+        /// </summary>
+        private string ShowInputDialog(string title, string prompt)
+        {
+            Form promptForm = new Form()
+            {
+                Width = 400,
+                Height = 180,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = title,
+                StartPosition = FormStartPosition.CenterParent,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                BackColor = Color.White
+            };
+
+            Label textLabel = new Label() 
+            { 
+                Left = 20, 
+                Top = 20, 
+                Text = prompt, 
+                AutoSize = true, 
+                Font = new Font("Segoe UI", 10) 
+            };
+            
+            TextBox textBox = new TextBox() 
+            { 
+                Left = 20, 
+                Top = 50, 
+                Width = 340, 
+                Font = new Font("Segoe UI", 10) 
+            };
+            
+            Button confirmation = new Button() 
+            { 
+                Text = "OK", 
+                Left = 240, 
+                Width = 100, 
+                Top = 90, 
+                DialogResult = DialogResult.OK, 
+                BackColor = AppColors.Blue500, 
+                ForeColor = Color.White, 
+                FlatStyle = FlatStyle.Flat 
+            };
+
+            promptForm.Controls.Add(textLabel);
+            promptForm.Controls.Add(textBox);
+            promptForm.Controls.Add(confirmation);
+            promptForm.AcceptButton = confirmation;
+
+            return promptForm.ShowDialog() == DialogResult.OK ? textBox.Text.Trim() : "";
         }
     }
 }
