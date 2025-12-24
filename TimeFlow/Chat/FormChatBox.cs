@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Windows.Forms;
 using TimeFlow.Models;
+using TimeFlow.Services;
 
 namespace TimeFlow
 {
@@ -39,12 +40,25 @@ namespace TimeFlow
         private string _currentReceiver = ""; // Tên người/nhóm nhận
         private bool _isGroupChat = false;    // Cờ đánh dấu đang chat nhóm
 
-        // --- CONSTRUCTOR KHÔNG THAM SỐ ---
+        // --- CONSTRUCTOR MẶC ĐỊNH ---
         public FormChatBox()
         {
             InitializeComponent();
-            _myUsername = "admin";
+            _myUsername = SessionManager.Username ?? "admin";
             ConnectToServer();
+        }
+
+        // --- CONSTRUCTOR VỚI GROUP ID (Mở chat cho group cụ thể) ---
+        public FormChatBox(int groupId, string groupName) : this()
+        {
+            // Set ngay group đang chat
+            _currentGroupId = groupId;
+            _currentReceiver = groupName;
+            _isGroupChat = true;
+            
+            // Cập nhật UI
+            lblChatTitle.Text = $"💬 {groupName}";
+            this.Text = $"TimeFlow Chat - {groupName}";
         }
 
         private void ConnectToServer()
@@ -56,20 +70,23 @@ namespace TimeFlow
                 _stream = _client.GetStream();
                 _isConnected = true;
 
-                // 1. Gửi gói tin Login
-                var loginPacket = new { type = "login", data = new { username = _myUsername, password = "123" } };
+                // 1. Gửi gói tin Login với password thật (hoặc dùng token)
+                var loginPacket = new { type = "login", data = new { username = _myUsername, password = "Test@1234" } };
                 string json = JsonSerializer.Serialize(loginPacket);
                 SendString(json);
 
                 // 2. Gửi yêu cầu lấy danh sách nhóm (Đợi 0.5s để server xử lý login xong)
                 Thread.Sleep(500);
-                var getGroupsPacket = new { type = "get_my_groups" };
+                var getGroupsPacket = new { type = "get_my_groups", token = SessionManager.Token };
                 SendString(JsonSerializer.Serialize(getGroupsPacket));
 
                 // Bắt đầu luồng lắng nghe tin nhắn
                 StartListening();
 
-                this.Text = $"TimeFlow Chat - Logged in as: {_myUsername}";
+                if (!_isGroupChat)
+                {
+                    this.Text = $"TimeFlow Chat - Logged in as: {_myUsername}";
+                }
                 AppendSystemMessage($"Connected to server as {_myUsername}");
             }
             catch (Exception ex)
@@ -141,23 +158,46 @@ namespace TimeFlow
                                 // Vẽ lên giao diện (Thread safe)
                                 this.Invoke((MethodInvoker)delegate {
                                     RenderGroupsToSidebar(groups);
+                                    
+                                    // Nếu đã có group được chọn sẵn, highlight nó
+                                    if (_currentGroupId.HasValue)
+                                    {
+                                        HighlightSelectedGroup(_currentGroupId.Value);
+                                    }
                                 });
                             }
                         }
 
-                        // CASE 2: Nhận tin nhắn chat
-                        if (type == "receive_message" || type == "receive_group_message")
+                        // CASE 2: Nhận tin nhắn chat nhóm
+                        if (type == "receive_group_message")
+                        {
+                            string sender = root.GetProperty("sender").GetString();
+                            string content = root.GetProperty("content").GetString();
+                            int groupId = root.GetProperty("groupId").GetInt32();
+
+                            // Chỉ hiện tin nhắn nếu đúng group đang chat
+                            if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
+                            {
+                                bool isMe = sender == _myUsername;
+                                this.Invoke((MethodInvoker)delegate {
+                                    AddMessageBubble(content, isMe ? "Me" : sender, isMe);
+                                });
+                            }
+                        }
+
+                        // CASE 3: Nhận tin nhắn chat 1-1
+                        if (type == "receive_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
                             string content = root.GetProperty("content").GetString();
 
-                            // Chỉ hiện tin nhắn nếu:
-                            // 1. Chat 1-1 và đúng người gửi
-                            // 2. Chat Group (cần check thêm groupId từ server trả về nếu muốn chính xác tuyệt đối)
-
-                            this.Invoke((MethodInvoker)delegate {
-                                AddMessageBubble(content, sender, false);
-                            });
+                            // Chat 1-1: hiện nếu đúng người đang chat
+                            if (!_isGroupChat && sender == _currentReceiver)
+                            {
+                                this.Invoke((MethodInvoker)delegate {
+                                    AddMessageBubble(content, sender, false);
+                                });
+                            }
                         }
                     }
                 }
@@ -179,6 +219,7 @@ namespace TimeFlow
                 pnlItem.BackColor = Color.White;
                 pnlItem.Cursor = Cursors.Hand;
                 pnlItem.Margin = new Padding(10, 5, 10, 5);
+                pnlItem.Tag = group.groupId; // Lưu groupId để highlight sau
 
                 // Avatar chữ cái đầu
                 Label lblAvatar = new Label();
@@ -221,8 +262,10 @@ namespace TimeFlow
                     _currentReceiver = group.groupName;
                     _isGroupChat = true;
 
-                    lblChatTitle.Text = group.groupName;
+                    lblChatTitle.Text = $"💬 {group.groupName}";
                     flowChatMessages.Controls.Clear(); // Xóa chat cũ (thực tế nên load lịch sử từ server)
+                    
+                    AppendSystemMessage($"Now chatting in: {group.groupName}");
                 };
 
                 pnlItem.Click += clickEvent;
@@ -235,6 +278,21 @@ namespace TimeFlow
                 pnlItem.Controls.Add(lblDesc);
 
                 flowSidebar.Controls.Add(pnlItem);
+            }
+        }
+
+        private void HighlightSelectedGroup(int groupId)
+        {
+            foreach (Control c in flowSidebar.Controls)
+            {
+                if (c is Panel pnl && pnl.Tag != null && (int)pnl.Tag == groupId)
+                {
+                    pnl.BackColor = Color.FromArgb(230, 240, 255);
+                }
+                else
+                {
+                    c.BackColor = Color.White;
+                }
             }
         }
 
@@ -264,7 +322,6 @@ namespace TimeFlow
 
                 if (_isGroupChat && _currentGroupId != null)
                 {
-
                     packet = new
                     {
                         type = "chat",
@@ -416,5 +473,13 @@ namespace TimeFlow
 
         private void btnAddFile_Click(object sender, EventArgs e) { }
         private void btnCreateGroup_Click(object sender, EventArgs e) { MessageBox.Show("Tính năng tạo nhóm đang phát triển!"); }
+        
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            _isConnected = false;
+            try { _stream?.Close(); } catch { }
+            try { _client?.Close(); } catch { }
+            base.OnFormClosing(e);
+        }
     }
 }

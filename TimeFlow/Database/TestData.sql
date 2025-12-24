@@ -453,6 +453,72 @@ PRINT 'Created 7 activity log entries';
 PRINT '';
 
 -- ====================================================
+-- 9. TẠO MESSAGES CHO GROUP CHAT
+-- ====================================================
+
+-- Messages trong Development Team
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', NULL, N'Welcome to the Development Team! Let''s build something amazing.', 1, @DevGroupId, DATEADD(day, -18, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'testuser', NULL, N'Hi everyone! Excited to join the team.', 1, @DevGroupId, DATEADD(day, -17, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'demouser', NULL, N'Hello! Looking forward to working with you all.', 1, @DevGroupId, DATEADD(day, -16, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', NULL, N'I''ve assigned the authentication task to testuser. Please check the requirements.', 1, @DevGroupId, DATEADD(day, -5, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'testuser', NULL, N'Got it! I''ll start working on JWT implementation today.', 1, @DevGroupId, DATEADD(day, -5, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', NULL, N'demouser, can you help with UI components after finishing your current task?', 1, @DevGroupId, DATEADD(day, -3, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'demouser', NULL, N'Sure! I''ll start on that tomorrow.', 1, @DevGroupId, DATEADD(day, -3, GETDATE()), 1);
+
+-- Messages trong QA Team
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'testuser', NULL, N'Welcome to QA Team! Our goal is to ensure quality in every release.', 1, @QAGroupId, DATEADD(day, -14, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', NULL, N'Thanks for adding me! I''ll help with test case creation.', 1, @QAGroupId, DATEADD(day, -13, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'demouser', NULL, N'Hi! Ready to help with testing.', 1, @QAGroupId, DATEADD(day, -10, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'testuser', NULL, N'admin, I''ve assigned you the test case creation task. Priority is high!', 1, @QAGroupId, DATEADD(day, -2, GETDATE()), 1);
+
+-- Private messages (chat 1-1)
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', N'testuser', N'Hey, how is the authentication module going?', 0, NULL, DATEADD(day, -4, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'testuser', N'admin', N'Going well! Should be done by tomorrow.', 0, NULL, DATEADD(day, -4, GETDATE()), 1);
+
+INSERT INTO Messages (SenderUsername, ReceiverUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt, IsRead)
+VALUES 
+(N'admin', N'testuser', N'Great! Let me know if you need any help.', 0, NULL, DATEADD(day, -4, GETDATE()), 1);
+
+PRINT 'Created 15 messages (12 group messages, 3 private messages)';
+PRINT '';
+
+-- ====================================================
 -- SUMMARY
 -- ====================================================
 

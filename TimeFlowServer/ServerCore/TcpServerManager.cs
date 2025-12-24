@@ -158,6 +158,7 @@ namespace TimeFlowServer.ServerCore
                 _groupRepo,
                 _groupMemberRepo,
                 _messageRepo,
+                _groupTaskRepo,  // ✅ Thêm GroupTaskRepository
                 _jwtManager,
                 _onlineClients,
                 _clientsLock

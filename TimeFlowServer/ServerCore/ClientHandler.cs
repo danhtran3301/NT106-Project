@@ -28,6 +28,7 @@ namespace TimeFlowServer.ServerCore
         private string? _currentUsername;
         private int? _currentUserId;
         private readonly string _clientId;
+        private readonly GroupTaskRepository _groupTaskRepo;
 
         public ClientHandler(
             TcpClient client,
@@ -39,6 +40,7 @@ namespace TimeFlowServer.ServerCore
             GroupRepository groupRepo,             
             GroupMemberRepository groupMemberRepo, 
             MessageRepository messageRepo,
+            GroupTaskRepository groupTaskRepo,  // ✅ Thêm parameter
             JwtManager jwtManager,
             Dictionary<string, TcpClient> onlineClients,
             object clientsLock)
@@ -53,6 +55,7 @@ namespace TimeFlowServer.ServerCore
             _groupRepo = groupRepo;
             _groupMemberRepo = groupMemberRepo;
             _messageRepo = messageRepo;
+            _groupTaskRepo = groupTaskRepo;  // ✅ Gán từ parameter thay vì new
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
@@ -163,6 +166,10 @@ namespace TimeFlowServer.ServerCore
                         await HandleCreateGroupAsync(root);
                         break;
 
+                    case "add_group_member":
+                        await HandleAddGroupMemberAsync(root);
+                        break;
+
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");
                         break;
@@ -183,36 +190,65 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                // 1. Kiểm tra đăng nhập
-                if (!_currentUserId.HasValue)
+                // Authenticate từ token (giống các handler khác)
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
                     return;
                 }
 
                 var data = root.GetProperty("data");
-                string groupName = data.GetProperty("groupName").GetString();
+                string groupName = data.GetProperty("groupName").GetString() ?? string.Empty;
                 string description = data.TryGetProperty("description", out var desc) ? desc.GetString() : "";
 
-                // 2. Tạo Group Model
+                // Validate
+                if (string.IsNullOrWhiteSpace(groupName))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Group name cannot be empty" }));
+                    return;
+                }
+
+                if (_groupRepo.GroupNameExists(groupName))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Group name already exists" }));
+                    return;
+                }
+
+                // Tạo Group Model
                 var newGroup = new Group
                 {
                     GroupName = groupName,
                     Description = description,
-                    CreatedBy = _currentUserId.Value,
+                    CreatedBy = user.UserId,
                     IsActive = true
                 };
 
-                // 3. Lưu vào DB (Hàm Create trong GroupRepo đã xử lý việc thêm Group và add Admin)
+                // Lưu vào DB
                 int groupId = _groupRepo.Create(newGroup);
 
                 if (groupId > 0)
                 {
-                    // Tự động add người tạo vào làm Admin (nếu Repo chưa làm, ta làm thủ công ở đây cho chắc)
-                    // _groupMemberRepo.AddMember(groupId, _currentUserId.Value, GroupRole.Admin);
+                    // Đảm bảo creator là admin
+                    try
+                    {
+                        _groupMemberRepo.AddMember(groupId, user.UserId, GroupRole.Admin);
+                    }
+                    catch
+                    {
+                        // ignore - repo sẽ trả 0 nếu đã tồn tại
+                    }
 
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", groupId = groupId, groupName = groupName }));
-                    Log.Information($"[{_clientId}] Created group '{groupName}' (ID: {groupId})");
+                    Log.Information($"[{_clientId}] Created group '{groupName}' (ID: {groupId}) by {username}");
                 }
                 else
                 {
@@ -230,16 +266,26 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                if (!_currentUserId.HasValue)
+                // Authenticate từ token (giống các handler khác)
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not logged in" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
                     return;
                 }
 
-                Log.Information($"[{_clientId}] Getting groups for UserID: {_currentUserId}");
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                Log.Information($"[{_clientId}] Getting groups for UserID: {user.UserId} ({username})");
 
                 // Gọi Repo lấy danh sách nhóm
-                var groups = _groupRepo.GetByUserId(_currentUserId.Value);
+                var groups = _groupRepo.GetByUserId(user.UserId);
 
                 // Tạo response JSON
                 var response = new
@@ -255,10 +301,12 @@ namespace TimeFlowServer.ServerCore
                 };
 
                 await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {groups.Count} groups for {username}");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error getting groups");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
         }
         private async Task HandleLoginAsync(JsonElement root)
@@ -448,7 +496,7 @@ namespace TimeFlowServer.ServerCore
 
         private async Task HandleChatAsync(JsonElement root)
         {
-            if (string.IsNullOrEmpty(_currentUsername)) return;
+            if (string.IsNullOrEmpty(_currentUsername) || !_currentUserId.HasValue) return;
 
             try
             {
@@ -465,27 +513,40 @@ namespace TimeFlowServer.ServerCore
                 if (isGroup)
                 {
                     // --- XỬ LÝ CHAT NHÓM ---
-                    int groupId = int.Parse(receiver); // Receiver lúc này là GroupId
+                    if (!int.TryParse(receiver, out int groupId))
+                    {
+                        await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Invalid group id" }));
+                        return;
+                    }
+
+                    // Kiểm tra group tồn tại
+                    var group = _groupRepo.GetById(groupId);
+                    if (group == null || !group.IsActive)
+                    {
+                        await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Group not found" }));
+                        return;
+                    }
+
+                    // Kiểm tra sender có phải là member
+                    if (!_groupMemberRepo.IsMember(groupId, _currentUserId.Value))
+                    {
+                        await SendResponseAsync(JsonSerializer.Serialize(new { status = "unauthorized", message = "You are not a member of this group" }));
+                        return;
+                    }
 
                     // 1. Lưu vào Database
                     _messageRepo.AddGroupMessage(_currentUsername, groupId, content);
 
-                    // 2. Lấy danh sách thành viên trong nhóm (Dùng GroupMemberRepo đã có)
+                    // 2. Lấy danh sách thành viên trong nhóm
                     var members = _groupMemberRepo.GetByGroupId(groupId);
 
-                    // 3. Gửi cho từng thành viên đang online
+                    // 3. Gửi cho từng thành viên đang online (bao gồm cả người gửi để đồng bộ UI)
                     foreach (var member in members)
                     {
-                        // Lấy username của member (Cần join bảng User hoặc lấy từ cache nếu có)
-                        // Giả sử GroupMember có property User hoặc ta query thêm
-                        // Ở đây ta cần Username để tra trong _onlineClients
                         var user = _userRepo.GetById(member.UserId);
                         if (user == null) continue;
 
                         string memberUsername = user.Username;
-
-                        // Không gửi lại cho chính mình (tuỳ chọn)
-                        if (memberUsername == _currentUsername) continue;
 
                         TcpClient? clientToSend = null;
                         lock (_clientsLock)
@@ -512,35 +573,57 @@ namespace TimeFlowServer.ServerCore
                                 byte[] bytes = Encoding.UTF8.GetBytes(json);
                                 await clientToSend.GetStream().WriteAsync(bytes, 0, bytes.Length);
                             }
-                            catch { /* Log error */ }
+                            catch (Exception ex)
+                            {
+                                Log.Warning(ex, "Failed to send group message to online member");
+                            }
                         }
                     }
                     Log.Information($"[GROUP CHAT] {_currentUsername} sent to Group {groupId}");
                 }
                 else
                 {
-                    // --- XỬ LÝ CHAT 1-1 (CŨ) ---
+                    // --- XỬ LÝ CHAT 1-1 ---
 
                     // 1. Lưu vào DB
                     _messageRepo.AddMessage(_currentUsername, receiver, content);
 
-                    // 2. Gửi cho người nhận
+                    // 2. Gửi cho người nhận nếu đang online
                     TcpClient? receiverClient = null;
                     lock (_clientsLock)
                     {
                         if (_onlineClients.TryGetValue(receiver, out var c)) receiverClient = c;
                     }
 
-                    if (receiverClient != null)
+                    if (receiverClient != null && receiverClient.Connected)
                     {
-                        var packet = new
+                        try
                         {
-                            type = "receive_message",
-                            sender = _currentUsername,
-                            content = content,
-                            timestamp = DateTime.Now.ToString("HH:mm")
-                        };
-                        // ... Gửi packet ...
+                            var packet = new
+                            {
+                                type = "receive_message",
+                                sender = _currentUsername,
+                                content = content,
+                                timestamp = DateTime.Now.ToString("HH:mm")
+                            };
+
+                            string json = JsonSerializer.Serialize(packet);
+                            byte[] bytes = Encoding.UTF8.GetBytes(json);
+                            await receiverClient.GetStream().WriteAsync(bytes, 0, bytes.Length);
+
+                            // Optionally send delivery ack to sender
+                            await SendResponseAsync(JsonSerializer.Serialize(new { status = "sent", to = receiver }));
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, "Failed to send 1-1 message");
+                            await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to deliver message" }));
+                        }
+                    }
+                    else
+                    {
+                        // Receiver offline - inform sender that message was saved
+                        await SendResponseAsync(JsonSerializer.Serialize(new { status = "saved", to = receiver }));
                     }
                 }
             }
@@ -579,10 +662,29 @@ namespace TimeFlowServer.ServerCore
 
                 var tasks = _taskRepo.GetByUserId(userId);
 
-                var response = new
+                // ✅ Build response với GroupTask info
+                var taskDataList = new List<object>();
+                foreach (var t in tasks)
                 {
-                    status = "success",
-                    data = tasks.Select(t => new
+                    // Lấy GroupTask info nếu là group task
+                    object groupTaskInfo = null;
+                    if (t.IsGroupTask)
+                    {
+                        var groupTask = _groupTaskRepo.GetByTaskId(t.TaskId);
+                        if (groupTask != null)
+                        {
+                            groupTaskInfo = new
+                            {
+                                groupTaskId = groupTask.GroupTaskId,
+                                groupId = groupTask.GroupId,
+                                assignedTo = groupTask.AssignedTo,
+                                assignedBy = groupTask.AssignedBy,
+                                assignedAt = groupTask.AssignedAt?.ToString("yyyy-MM-dd HH:mm:ss")
+                            };
+                        }
+                    }
+
+                    taskDataList.Add(new
                     {
                         taskId = t.TaskId,
                         title = t.Title,
@@ -593,8 +695,15 @@ namespace TimeFlowServer.ServerCore
                         categoryId = t.CategoryId,
                         isGroupTask = t.IsGroupTask,
                         createdAt = t.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                        updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
-                    })
+                        updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        groupTask = groupTaskInfo
+                    });
+                }
+
+                var response = new
+                {
+                    status = "success",
+                    data = taskDataList
                 };
 
                 await SendResponseAsync(JsonSerializer.Serialize(response));
@@ -1173,5 +1282,130 @@ namespace TimeFlowServer.ServerCore
                 Log.Warning(ex, $"[{_clientId}] Cleanup error");
             }
         }
+
+        private async Task HandleAddGroupMemberAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token (giống các handler khác)
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var currentUser = _userRepo.GetByUsername(username);
+                if (currentUser == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
+                int groupId = data.GetProperty("groupId").GetInt32();
+                string usernameToAdd = data.GetProperty("username").GetString() ?? "";
+
+                Log.Information($"[{_clientId}] Adding member '{usernameToAdd}' to GroupId={groupId}");
+
+                // Kiểm tra quyền admin
+                if (!_groupMemberRepo.IsAdmin(groupId, currentUser.UserId))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Only admins can add members" }));
+                    Log.Warning($"[{_clientId}] User {currentUser.UserId} is not admin of group {groupId}");
+                    return;
+                }
+
+                // Tìm user theo username
+                var userToAdd = _userRepo.GetByUsername(usernameToAdd);
+                if (userToAdd == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    Log.Warning($"[{_clientId}] User '{usernameToAdd}' not found");
+                    return;
+                }
+
+                // Thêm member
+                int result = _groupMemberRepo.AddMember(groupId, userToAdd.UserId);
+                
+                if (result > 0)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", message = $"Added {usernameToAdd} to group" }));
+                    Log.Information($"[{_clientId}] ✓ Added {usernameToAdd} to GroupId={groupId}");
+                    
+                    // Broadcast event "group_member_added" to all group members
+                    await BroadcastGroupMemberAddedAsync(groupId, userToAdd.UserId, usernameToAdd);
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User already in group" }));
+                    Log.Warning($"[{_clientId}] User {usernameToAdd} already in group {groupId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error adding member");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
+        }
+
+        private async Task BroadcastGroupMemberAddedAsync(int groupId, int newUserId, string newUsername)
+        {
+            try
+            {
+                // Get all members of the group
+                var members = _groupMemberRepo.GetByGroupId(groupId);
+                var group = _groupRepo.GetById(groupId);
+
+                if (group == null) return;
+
+                // Broadcast to all online members
+                foreach (var member in members)
+                {
+                    var user = _userRepo.GetById(member.UserId);
+                    if (user == null) continue;
+
+                    TcpClient? clientToSend = null;
+                    lock (_clientsLock)
+                    {
+                        if (_onlineClients.TryGetValue(user.Username, out var c))
+                        {
+                            clientToSend = c;
+                        }
+                    }
+
+                    if (clientToSend != null && clientToSend.Connected)
+                    {
+                        try
+                        {
+                            var packet = new
+                            {
+                                type = "group_member_added",
+                                groupId = groupId,
+                                groupName = group.GroupName,
+                                newUserId = newUserId,
+                                newUsername = newUsername
+                            };
+                            string json = JsonSerializer.Serialize(packet);
+                            byte[] bytes = Encoding.UTF8.GetBytes(json);
+                            await clientToSend.GetStream().WriteAsync(bytes, 0, bytes.Length);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Warning(ex, $"Failed to broadcast group_member_added to {user.Username}");
+                        }
+                    }
+                }
+
+                Log.Information($"[BROADCAST] group_member_added: GroupId={groupId}, NewUser={newUsername}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error broadcasting group_member_added");
+            }
+        }
+
+        
     }
 }

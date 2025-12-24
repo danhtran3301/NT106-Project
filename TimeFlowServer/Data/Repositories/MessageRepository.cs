@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.Data.SqlClient;
+using TimeFlow.Data.Configuration;
 
 namespace TimeFlow.Data.Repositories
 {
@@ -21,18 +22,22 @@ namespace TimeFlow.Data.Repositories
 
         public MessageRepository(string connectionString)
         {
-            _connectionString = connectionString;
+            _connectionString = string.IsNullOrWhiteSpace(connectionString)
+                ? DbConfig.GetConnectionString()
+                : connectionString;
         }
 
         public MessageRepository(DatabaseHelper dbHelper)
         {
-            this.dbHelper = dbHelper;
+            this.dbHelper = dbHelper ?? throw new ArgumentNullException(nameof(dbHelper));
+            _connectionString = DbConfig.GetConnectionString();
         }
 
         // 1. Gửi tin nhắn cá nhân
         public void AddMessage(string sender, string receiver, string content)
         {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var connStr = _connectionString ?? DbConfig.GetConnectionString();
+            using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 string query = "INSERT INTO Messages (SenderUsername, ReceiverUsername, Content, Timestamp) VALUES (@s, @r, @c, GETDATE())";
@@ -47,7 +52,8 @@ namespace TimeFlow.Data.Repositories
         }
         public void AddGroupMessage(string sender, int groupId, string content)
         {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var connStr = _connectionString ?? DbConfig.GetConnectionString();
+            using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
                 string query = "INSERT INTO Messages (SenderUsername, GroupId, Content, Timestamp) VALUES (@s, @g, @c, GETDATE())";
@@ -63,14 +69,15 @@ namespace TimeFlow.Data.Repositories
         public List<MessageData> GetHistory(string user1, string user2)
         {
             var list = new List<MessageData>();
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var connStr = _connectionString ?? DbConfig.GetConnectionString();
+            using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
-                string query = @"SELECT SenderUsername, ReceiverUsername, Content, Timestamp 
-                                 FROM Messages 
-                                 WHERE (SenderUsername = @u1 AND ReceiverUsername = @u2) 
-                                    OR (SenderUsername = @u2 AND ReceiverUsername = @u1)
-                                 ORDER BY Timestamp ASC";
+                string query = @"SELECT SenderUsername, ReceiverUsername, Content, Timestamp
+                                FROM Messages
+                                WHERE (SenderUsername = @u1 AND ReceiverUsername = @u2)
+                                    OR (SenderUsername = @u2 AND ReceiverUsername = @u1)
+                                ORDER BY Timestamp ASC";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
@@ -97,13 +104,14 @@ namespace TimeFlow.Data.Repositories
         public List<MessageData> GetGroupHistory(int groupId)
         {
             var list = new List<MessageData>();
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var connStr = _connectionString ?? DbConfig.GetConnectionString();
+            using (SqlConnection conn = new SqlConnection(connStr))
             {
                 conn.Open();
-                string query = @"SELECT SenderUsername, GroupId, Content, Timestamp 
-                                 FROM Messages 
-                                 WHERE GroupId = @g
-                                 ORDER BY Timestamp ASC";
+                string query = @"SELECT SenderUsername, GroupId, Content, Timestamp
+                                FROM Messages
+                                WHERE GroupId = @g
+                                ORDER BY Timestamp ASC";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {

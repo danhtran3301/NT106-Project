@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Net.Sockets;
-using System.Text;
 using System.Windows.Forms;
 using TimeFlow.Models;
 using TimeFlow.Services;
@@ -23,15 +21,6 @@ namespace TimeFlow.Tasks
         private readonly Color HeaderIconColor = AppColors.Gray600;
         private readonly TaskApiClient _taskApi;
         private List<TaskItem> _currentTasks;
-        private readonly TcpClient _tcpClient;
-        private readonly string _username;
-        private const string SERVER_IP = "127.0.0.1";
-        private const int SERVER_PORT = 1010;
-        private Button btnAddGroup;       // Nút + tạo nhóm
-        private CustomButton btnAddMember;  // Nút thêm thành viên
-        // ✅ Caching
-        private Control _cachedLeftMenu;
-        private Control _cachedHeaderBar;
         
         // ✅ Virtual scrolling
         private const int INITIAL_TASKS_TO_RENDER = 20;
@@ -41,6 +30,10 @@ namespace TimeFlow.Tasks
         // ✅ Group-specific properties
         private int? _selectedGroupId;
         private string _groupName = "All Groups";
+        
+        // ✅ Danh sách groups và left menu panel
+        private List<Group> _groups = new List<Group>();
+        private FlowLayoutPanel _groupsMenuPanel;
 
         public FormGroupTaskList(int? groupId = null, string groupName = "All Groups")
         {
@@ -153,20 +146,6 @@ namespace TimeFlow.Tasks
             arrowButton.Click += (sender, e) => { this.Close(); };
             leftContainer.Controls.Add(arrowButton);
 
-            CustomButton btnAddMember = new CustomButton
-            {
-                Text = "+ User",
-                BackColor = Color.White,
-                ForeColor = AppColors.Blue500,
-                Width = 80,
-                Height = 36,
-                BorderThickness = 1,
-                BorderColor = AppColors.Blue500,
-                Margin = new Padding(0, 0, 5, 0)
-            };
-            btnAddMember.Click += BtnAddMember_Click; // Sự kiện click
-            leftContainer.Controls.Add(btnAddMember);
-
             Label titleLabel = new Label
             {
                 Text = $"👥 {_groupName}",
@@ -180,20 +159,33 @@ namespace TimeFlow.Tasks
             leftContainer.Controls.Add(titleLabel);
             headerTable.Controls.Add(leftContainer, 0, 0);
 
-            CustomButton btnAddGroup = new CustomButton
+            FlowLayoutPanel rightContainer = new FlowLayoutPanel
             {
-                Text = "+",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = AppColors.Blue500,
-                Dock = DockStyle.Right,
-                Width = 30,
-                Height = 30,
-                Cursor = Cursors.Hand,
-                TextAlign = ContentAlignment.MiddleCenter
+                FlowDirection = FlowDirection.LeftToRight, // ✅ Đổi sang LeftToRight để dễ kiểm soát
+                AutoSize = true,
+                WrapContents = false,
+                Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
+                Margin = new Padding(0)
             };
-            btnAddGroup.Click += BtnAddGroup_Click; // Sự kiện click
 
-          
+            // ✅ Nút Group Chat với text rõ ràng
+            CustomButton chatButton = new CustomButton
+            {
+                Text = "💬 Group Chat",
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = AppColors.Blue500,
+                BackColor = Color.White,
+                HoverColor = AppColors.Blue50,
+                BorderRadius = 4,
+                Width = 130,
+                Height = 36,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Margin = new Padding(0, 0, 10, 0),
+                BorderThickness = 1,
+                BorderColor = AppColors.Blue500
+            };
+            chatButton.Click += BtnChat_Click;
+            rightContainer.Controls.Add(chatButton);
 
             CustomButton closeButton = new CustomButton
             {
@@ -209,39 +201,9 @@ namespace TimeFlow.Tasks
                 Margin = new Padding(0)
             };
             closeButton.Click += (sender, e) => { this.Close(); };
-            headerTable.Controls.Add(closeButton, 2, 0);
+            rightContainer.Controls.Add(closeButton);
 
-            CustomButton btnCreateTask = new CustomButton
-            {
-                Text = "+ New Task",
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                BackColor = AppColors.Blue500,
-                ForeColor = Color.White,
-                HoverColor = AppColors.Blue600,
-                BorderRadius = 4,
-                Width = 100,
-                Height = 36,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 0, 10, 0) // Cách nút Chat ra
-            };
-            btnCreateTask.Click += BtnCreateTask_Click;
-
-            CustomButton chatButton = new CustomButton
-            {
-                Text = "💬",
-                Font = new Font("Segoe UI Emoji", 14F),
-                ForeColor = AppColors.Blue500,
-                BackColor = Color.White,
-                HoverColor = AppColors.Blue50,
-                BorderRadius = 4,
-                Width = 40,
-                Height = 40,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 0, 8, 0)
-            };
-            chatButton.Click += BtnChat_Click; // Liên kết với Event bên file Logic
-            headerTable.Controls.Add(chatButton);
-
+            headerTable.Controls.Add(rightContainer, 2, 0);
 
             Panel separator = new Panel
             {
@@ -273,7 +235,7 @@ namespace TimeFlow.Tasks
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
-                Padding = new Padding(24, 20, 24, 16),
+                Padding = new Padding(24, 70, 24, 16),
                 BackColor = Color.White,
                 Margin = new Padding(0)
             };
@@ -290,21 +252,65 @@ namespace TimeFlow.Tasks
 
             int buttonHeight = 40;
 
-            // Groups section
+            // Groups section header
+            TableLayoutPanel groupsHeader = new TableLayoutPanel
+            {
+                ColumnCount = 2,
+                ColumnStyles =
+                {
+                    new ColumnStyle(SizeType.Percent, 100F),
+                    new ColumnStyle(SizeType.Absolute, 36F)
+                },
+                RowCount = 1,
+                Width = 252,
+                Height = 36,
+                Margin = new Padding(0, 0, 0, 12)
+            };
+
             Label groupsTitle = new Label
             {
                 Text = "YOUR GROUPS",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = AppColors.Gray700,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 16)
+                AutoSize = false,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
             };
-            menuPanel.Controls.Add(groupsTitle);
+            groupsHeader.Controls.Add(groupsTitle, 0, 0);
 
-            // TODO: Load actual groups from server
-            menuPanel.Controls.Add(CreateMenuButton("All Groups", AppColors.Blue500, Color.White, buttonHeight, AppColors.Blue600));
-            menuPanel.Controls.Add(CreateMenuButton("Development Team", AppColors.Green500, Color.White, buttonHeight, AppColors.Green600));
-            menuPanel.Controls.Add(CreateMenuButton("QA Team", AppColors.Orange500, Color.White, buttonHeight, AppColors.Orange600));
+            CustomButton btnAddGroup = new CustomButton
+            {
+                Text = "+",
+                Font = new Font("Segoe UI", 14F, FontStyle.Bold),
+                ForeColor = AppColors.Blue500,
+                BackColor = Color.White,
+                HoverColor = AppColors.Blue50,
+                BorderRadius = 4,
+                Width = 36,
+                Height = 36,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Cursor = Cursors.Hand,
+                BorderThickness = 1,
+                BorderColor = AppColors.Blue500
+            };
+            btnAddGroup.Click += BtnAddGroup_Click;
+            groupsHeader.Controls.Add(btnAddGroup, 1, 0);
+
+            menuPanel.Controls.Add(groupsHeader);
+
+            // Container for groups (will be populated by LoadGroupsAsync)
+            _groupsMenuPanel = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                Width = 252,
+                AutoSize = true,
+                Margin = new Padding(0)
+            };
+            menuPanel.Controls.Add(_groupsMenuPanel);
+
+            // Load groups from server
+            LoadGroupsAsync();
 
             // Filter section
             Label filterTitle = new Label
@@ -313,7 +319,7 @@ namespace TimeFlow.Tasks
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = AppColors.Gray700,
                 AutoSize = true,
-                Margin = new Padding(0, 30, 0, 16)
+                Margin = new Padding(0, 24, 0, 12)
             };
             menuPanel.Controls.Add(filterTitle);
 
@@ -322,6 +328,106 @@ namespace TimeFlow.Tasks
             menuPanel.Controls.Add(CreateMenuButton("Unassigned", Color.White, AppColors.Gray700, buttonHeight, AppColors.Gray100, 1, AppColors.Gray300));
 
             return menuWrapper;
+        }
+
+        private async void LoadGroupsAsync()
+        {
+            try
+            {
+                if (_groupsMenuPanel == null) return;
+                
+                _groupsMenuPanel.SuspendLayout();
+                _groupsMenuPanel.Controls.Clear();
+
+                // Show loading
+                Label loadingLabel = new Label
+                {
+                    Text = "⏳ Loading...",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 8, 0, 8)
+                };
+                _groupsMenuPanel.Controls.Add(loadingLabel);
+                _groupsMenuPanel.ResumeLayout(true);
+
+                _groups = await _taskApi.GetMyGroupsAsync();
+
+                _groupsMenuPanel.SuspendLayout();
+                _groupsMenuPanel.Controls.Remove(loadingLabel);
+
+                // All Groups button
+                var allGroupsBtn = CreateMenuButton(
+                    "📁 All Groups",
+                    !_selectedGroupId.HasValue ? AppColors.Blue500 : Color.White,
+                    !_selectedGroupId.HasValue ? Color.White : AppColors.Gray700,
+                    40,
+                    !_selectedGroupId.HasValue ? AppColors.Blue600 : AppColors.Gray100
+                );
+                allGroupsBtn.Click += (s, e) => OnGroupSelected(null, "All Groups");
+                _groupsMenuPanel.Controls.Add(allGroupsBtn);
+
+                foreach (var group in _groups)
+                {
+                    bool isSelected = _selectedGroupId.HasValue && _selectedGroupId.Value == group.GroupId;
+                    var btn = CreateMenuButton(
+                        $"👥 {group.GroupName}",
+                        isSelected ? AppColors.Blue500 : Color.White,
+                        isSelected ? Color.White : AppColors.Gray700,
+                        40,
+                        isSelected ? AppColors.Blue600 : AppColors.Gray100
+                    );
+                    
+                    int capturedGroupId = group.GroupId;
+                    string capturedGroupName = group.GroupName;
+                    btn.Click += (s, e) => OnGroupSelected(capturedGroupId, capturedGroupName);
+                    _groupsMenuPanel.Controls.Add(btn);
+                }
+
+                _groupsMenuPanel.ResumeLayout(true);
+            }
+            catch (Exception ex)
+            {
+                _groupsMenuPanel.SuspendLayout();
+                _groupsMenuPanel.Controls.Clear();
+                
+                Label errorLabel = new Label
+                {
+                    Text = "Failed to load groups",
+                    Font = FontRegular,
+                    ForeColor = AppColors.Red500,
+                    AutoSize = true,
+                    Margin = new Padding(0, 8, 0, 8)
+                };
+                _groupsMenuPanel.Controls.Add(errorLabel);
+                _groupsMenuPanel.ResumeLayout();
+                
+                MessageBox.Show($"Failed to load groups: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void OnGroupSelected(int? groupId, string groupName)
+        {
+            if (_selectedGroupId == groupId) return;
+            
+            _selectedGroupId = groupId;
+            _groupName = groupName;
+            
+            // Refresh groups menu
+            LoadGroupsAsync();
+            
+            // Refresh header title
+            this.Text = $"👥 {groupName}";
+            
+            // Reload tasks
+            if (_contentPanel != null)
+            {
+                _contentPanel.SuspendLayout();
+                _contentPanel.Controls.Clear();
+                _contentPanel.ResumeLayout(false);
+                LoadTasksAsync(_contentPanel);
+            }
         }
 
         private CustomButton CreateMenuButton(string text, Color backColor, Color foreColor, int height, Color? hoverColor = null, int borderThickness = 0, Color? borderColor = null)
@@ -349,42 +455,31 @@ namespace TimeFlow.Tasks
 
             return button;
         }
+
         private void BtnAddGroup_Click(object sender, EventArgs e)
         {
-            string groupName = ShowInputDialog("Create New Group", "Enter group name:");
-            if (string.IsNullOrWhiteSpace(groupName)) return;
-
-            try
+            using (var createGroupForm = new FormCreateGroup())
             {
-                // Gửi request tạo nhóm
-                var packet = new
+                createGroupForm.GroupCreated += (s, args) =>
                 {
-                    type = "create_group",
-                    token = "TOKEN_CUA_USER", // Bạn cần lấy token từ biến global (Program.UserToken)
-                    data = new
+                    // Reload groups list
+                    LoadGroupsAsync();
+                    
+                    // Auto-select the new group
+                    _selectedGroupId = args.GroupId;
+                    _groupName = args.GroupName;
+                    this.Text = $"👥 {args.GroupName}";
+                    
+                    if (_contentPanel != null)
                     {
-                        groupName = groupName,
-                        description = "Created via Desktop App"
+                        _contentPanel.SuspendLayout();
+                        _contentPanel.Controls.Clear();
+                        _contentPanel.ResumeLayout(false);
+                        LoadTasksAsync(_contentPanel);
                     }
                 };
-
-                // Gửi qua TCP (Sử dụng _tcpClient đã có)
-                if (_tcpClient != null && _tcpClient.Connected)
-                {
-                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
-                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
-                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
-
-                    // Lưu ý: Thực tế bạn cần lắng nghe phản hồi từ server để reload lại list
-                    // Ở đây ta tạm thời reload thủ công hoặc thông báo
-                    MessageBox.Show("Request sent! Please refresh to see new group.");
-
-                    // Gọi lại hàm load danh sách nhóm (Cần viết thêm hàm LoadGroupsAsync tương tự LoadTasksAsync)
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error creating group: " + ex.Message);
+                
+                createGroupForm.ShowDialog(this);
             }
         }
 
@@ -396,7 +491,7 @@ namespace TimeFlow.Tasks
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
-                Padding = new Padding(32, 20, 32, 24),
+                Padding = new Padding(32, 70, 32, 24), // ✅ Thêm padding-top 70px để tránh bị header che
                 BackColor = AppColors.Gray100,
             };
 
@@ -465,17 +560,18 @@ namespace TimeFlow.Tasks
             int assignedCount = tasks.Count(t => t.GroupTask?.AssignedTo != null);
             int unassignedCount = tasks.Count(t => t.GroupTask?.AssignedTo == null);
 
-            // Header
+            // ✅ Header với title và action buttons
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
                 ColumnCount = 2,
                 ColumnStyles =
                 {
                     new ColumnStyle(SizeType.Percent, 100F),
-                    new ColumnStyle(SizeType.Absolute, 180F)
+                    new ColumnStyle(SizeType.AutoSize)
                 },
                 RowCount = 1,
-                Margin = new Padding(0, 0, 0, 24),
+                Height = 50,
+                Margin = new Padding(0, 0, 0, 16),
                 BackColor = Color.Transparent,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right
             };
@@ -487,26 +583,83 @@ namespace TimeFlow.Tasks
                 }
             };
 
+            // Left: Title và stats
+            FlowLayoutPanel leftPanel = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                AutoSize = true,
+                Dock = DockStyle.Fill
+            };
+            
             Label title = new Label
             {
-                Text = "Group Tasks",
+                Text = _selectedGroupId.HasValue ? $"📋 {_groupName}" : "📋 All Group Tasks",
                 Font = new Font("Segoe UI", 16F, FontStyle.Bold),
                 ForeColor = AppColors.Gray800,
-                AutoSize = true,
-                Anchor = AnchorStyles.Left | AnchorStyles.Top | AnchorStyles.Bottom
+                AutoSize = true
             };
-            headerLayout.Controls.Add(title, 0, 0);
+            leftPanel.Controls.Add(title);
 
             Label stats = new Label
             {
                 Text = $"{assignedCount} assigned | {unassignedCount} unassigned",
                 Font = FontRegular,
-                ForeColor = AppColors.Gray600,
-                AutoSize = true,
-                Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
-                TextAlign = ContentAlignment.BottomRight,
+                ForeColor = AppColors.Gray500,
+                AutoSize = true
             };
-            headerLayout.Controls.Add(stats, 1, 0);
+            leftPanel.Controls.Add(stats);
+            headerLayout.Controls.Add(leftPanel, 0, 0);
+
+            // Right: Action buttons - chỉ hiện khi đã chọn group cụ thể
+            if (_selectedGroupId.HasValue)
+            {
+                FlowLayoutPanel actionPanel = new FlowLayoutPanel
+                {
+                    FlowDirection = FlowDirection.LeftToRight,
+                    AutoSize = true,
+                    WrapContents = false, // ✅ Không wrap xuống dòng
+                    Anchor = AnchorStyles.Right | AnchorStyles.Top,
+                    Margin = new Padding(0),
+                    Height = 40
+                };
+
+                // Add Member button
+                CustomButton btnAddMember = new CustomButton
+                {
+                    Text = "👤 Add Member",
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    BackColor = AppColors.Green500,
+                    ForeColor = Color.White,
+                    HoverColor = AppColors.Green600,
+                    BorderRadius = 6,
+                    Width = 130,
+                    Height = 36,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Margin = new Padding(0, 0, 10, 0) // ✅ Margin phải để cách nút kế tiếp
+                };
+                btnAddMember.Click += BtnAddMember_Click;
+                actionPanel.Controls.Add(btnAddMember);
+
+                // Add Task button
+                CustomButton btnAddTask = new CustomButton
+                {
+                    Text = "📝 Add Task",
+                    Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                    BackColor = AppColors.Blue500,
+                    ForeColor = Color.White,
+                    HoverColor = AppColors.Blue600,
+                    BorderRadius = 6,
+                    Width = 110,
+                    Height = 36,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Margin = new Padding(0)
+                };
+                btnAddTask.Click += BtnCreateTask_Click;
+                actionPanel.Controls.Add(btnAddTask);
+
+                headerLayout.Controls.Add(actionPanel, 1, 0);
+            }
+
             contentPanel.Controls.Add(headerLayout);
 
             // Column headers
@@ -555,6 +708,41 @@ namespace TimeFlow.Tasks
             AddHeaderLabel("PRIORITY", 4);
             contentPanel.Controls.Add(columnHeader);
 
+            // ✅ Nếu không có tasks, hiện empty state
+            if (tasks.Count == 0)
+            {
+                Panel emptyState = new Panel
+                {
+                    Height = 200,
+                    BackColor = Color.Transparent,
+                    Anchor = AnchorStyles.Left | AnchorStyles.Right
+                };
+                emptyState.SizeChanged += (sender, e) =>
+                {
+                    if (emptyState.Parent is FlowLayoutPanel parent)
+                    {
+                        emptyState.Width = parent.ClientSize.Width - parent.Padding.Left - parent.Padding.Right;
+                    }
+                };
+
+                Label emptyLabel = new Label
+                {
+                    Text = _selectedGroupId.HasValue 
+                        ? "📭 No tasks in this group yet.\nClick 'Add Task' to create the first one!"
+                        : "📭 No group tasks found.\nSelect a group from the left menu.",
+                    Font = new Font("Segoe UI", 12F),
+                    ForeColor = AppColors.Gray500,
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Dock = DockStyle.Fill
+                };
+                emptyState.Controls.Add(emptyLabel);
+                contentPanel.Controls.Add(emptyState);
+                
+                contentPanel.ResumeLayout();
+                return;
+            }
+
             // Render tasks
             _tasksRendered = 0;
             int tasksToRender = Math.Min(INITIAL_TASKS_TO_RENDER, tasks.Count);
@@ -592,8 +780,18 @@ namespace TimeFlow.Tasks
         {
             try
             {
-                FormChatBox chatForm = new FormChatBox();
-                chatForm.Show();
+                if (_selectedGroupId.HasValue)
+                {
+                    // Mở chat cho group đang chọn
+                    FormChatBox chatForm = new FormChatBox(_selectedGroupId.Value, _groupName);
+                    chatForm.Show();
+                }
+                else
+                {
+                    // Chưa chọn group - mở chat chung
+                    MessageBox.Show("Please select a group first to open group chat!", "No Group Selected", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -601,11 +799,12 @@ namespace TimeFlow.Tasks
             }
         }
 
-        private void BtnCreateTask_Click(object sender, EventArgs e)
+        private async void BtnCreateTask_Click(object sender, EventArgs e)
         {
             if (!_selectedGroupId.HasValue)
             {
-                MessageBox.Show("Please select a group first!");
+                MessageBox.Show("Please select a group first!", "No Group Selected", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -614,39 +813,48 @@ namespace TimeFlow.Tasks
 
             try
             {
-                var packet = new
+                // Show progress indicator
+                this.Cursor = Cursors.WaitCursor;
+
+                // Create task using API
+                var newTask = new TaskItem
                 {
-                    type = "create_task",
-                    token = "TOKEN_CUA_USER", // Lấy từ biến global
-                    data = new
-                    {
-                        title = taskTitle,
-                        description = "",
-                        priority = 1, // Medium
-                        status = 0,   // Pending
-                        categoryId = 1, // Default category
-                        isGroupTask = true,
-                        groupId = _selectedGroupId.Value // QUAN TRỌNG: Gửi ID nhóm hiện tại
-                    }
+                    Title = taskTitle,
+                    Description = "",
+                    Priority = TaskPriority.Medium,
+                    Status = TimeFlow.Models.TaskStatus.Pending,
+                    CategoryId = 1, // Default category
+                    IsGroupTask = true
                 };
 
-                if (_tcpClient != null && _tcpClient.Connected)
-                {
-                    string json = System.Text.Json.JsonSerializer.Serialize(packet);
-                    byte[] bytes = System.Text.Encoding.UTF8.GetBytes(json);
-                    _tcpClient.GetStream().Write(bytes, 0, bytes.Length);
+                // ✅ Dùng await thay vì .Wait() để không block UI thread
+                int taskId = await _taskApi.CreateTaskAsync(newTask);
 
-                    MessageBox.Show("Task creation requested!");
-                    // Sau này nên lắng nghe sự kiện "task_created" từ server để auto refresh
-                    // Tạm thời reload lại list sau 1s
-                    System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
-                        this.Invoke((MethodInvoker)delegate { LoadTasksAsync(_contentPanel); })
-                    );
+                if (taskId > 0)
+                {
+                    MessageBox.Show($"Task created successfully in '{_groupName}'!", "Success", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    
+                    // Reload task list
+                    _contentPanel.SuspendLayout();
+                    _contentPanel.Controls.Clear();
+                    _contentPanel.ResumeLayout(false);
+                    LoadTasksAsync(_contentPanel);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to create task. Please try again.", "Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error creating task: " + ex.Message);
+                MessageBox.Show($"Error creating task: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
 
@@ -774,77 +982,54 @@ namespace TimeFlow.Tasks
             return taskItemPanel;
         }
 
-
         // --- SỰ KIỆN: THÊM THÀNH VIÊN ---
-        private void BtnAddMember_Click(object sender, EventArgs e)
+        private async void BtnAddMember_Click(object sender, EventArgs e)
         {
             if (!_selectedGroupId.HasValue)
             {
-                MessageBox.Show("Please select a group first from the left menu!");
+                MessageBox.Show("Please select a group first from the left menu!", "No Group Selected", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             string username = ShowInputDialog("Add Member", "Enter username to invite:");
             if (string.IsNullOrWhiteSpace(username)) return;
 
-            SendOneTimeRequest(new
-            {
-                type = "add_group_member",
-                token = "admin",
-                data = new { groupId = _selectedGroupId.Value, username = username }
-            });
-        }
-
-        // --- HELPER: GỬI REQUEST LÊN SERVER ---
-        private void SendOneTimeRequest(object packet)
-        {
             try
             {
-                using (TcpClient client = new TcpClient())
+                // Show progress indicator
+                this.Cursor = Cursors.WaitCursor;
+
+                // ✅ Dùng await thay vì .Wait() để không block UI thread
+                bool success = await _taskApi.AddGroupMemberAsync(_selectedGroupId.Value, username);
+
+                if (success)
                 {
-                    // Kết nối nhanh (Timeout 2s)
-                    var result = client.BeginConnect(SERVER_IP, SERVER_PORT, null, null);
-                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(2));
-
-                    if (!success) throw new Exception("Connection timeout");
-                    client.EndConnect(result);
-
-                    using (NetworkStream stream = client.GetStream())
-                    {
-                        // 1. Gửi Login giả để server nhận diện User (quan trọng để có _currentUserId)
-                        // Dùng _username đã truyền vào constructor
-                        var loginPacket = new { type = "login", data = new { username = _username ?? "admin", password = "123" } };
-                        byte[] loginBytes = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(loginPacket));
-                        stream.Write(loginBytes, 0, loginBytes.Length);
-
-                        // Đợi xíu cho server xử lý login
-                        System.Threading.Thread.Sleep(100);
-
-                        // 2. Gửi Lệnh chính (Tạo nhóm / Thêm user)
-                        string json = System.Text.Json.JsonSerializer.Serialize(packet);
-                        byte[] bytes = Encoding.UTF8.GetBytes(json);
-                        stream.Write(bytes, 0, bytes.Length);
-
-                        // 3. Đọc phản hồi (Cơ bản)
-                        byte[] buffer = new byte[1024];
-                        int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                        string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-
-                        if (response.Contains("\"status\":\"success\"") || response.Contains("\"status\":\"registered\""))
-                        {
-                            MessageBox.Show("Success!", "Notification", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        }
-                        else
-                        {
-                            // Hiển thị lỗi từ server nếu có
-                            MessageBox.Show("Server response: " + response, "Info");
-                        }
-                    }
+                    MessageBox.Show($"User '{username}' added to group '{_groupName}' successfully!", "Success", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to add member. Please check the username and try again.", "Error", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Connection Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string errorMsg = ex.Message;
+                
+                // Extract inner exception message if available
+                if (ex.InnerException != null)
+                {
+                    errorMsg = ex.InnerException.Message;
+                }
+
+                MessageBox.Show($"Error adding member: {errorMsg}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
             }
         }
 
