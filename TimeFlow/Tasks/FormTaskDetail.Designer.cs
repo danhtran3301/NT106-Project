@@ -518,7 +518,7 @@ namespace TimeFlow.Tasks
             };
             mainSidebarPanel.Controls.Add(contentFlow);
 
-            if (_currentTask.IsGroupTask && _currentTask.HasAssignees)
+            if (_currentTask.IsGroupTask)
             {
                 contentFlow.Controls.Add(new Label
                 {
@@ -529,16 +529,25 @@ namespace TimeFlow.Tasks
                     Margin = new Padding(0, 0, 0, 5)
                 });
 
-                string assigneeText = string.Join(", ", _currentTask.Assignees.Take(3));
-                if (_currentTask.Assignees.Count > 3)
+                string assigneeText;
+                if (_currentTask.HasAssignees)
                 {
-                    assigneeText += $" and {_currentTask.Assignees.Count - 3} more";
+                    assigneeText = string.Join(", ", _currentTask.Assignees.Take(3));
+                    if (_currentTask.Assignees.Count > 3)
+                    {
+                        assigneeText += $" and {_currentTask.Assignees.Count - 3} more";
+                    }
+                }
+                else
+                {
+                    assigneeText = "⚠ Unassigned";
                 }
 
                 contentFlow.Controls.Add(new Label
                 {
                     Text = $"Assigned to: {assigneeText}",
                     Font = FontRegular,
+                    ForeColor = _currentTask.HasAssignees ? AppColors.Gray800 : AppColors.Red500,
                     AutoSize = true,
                     MaximumSize = new Size(contentWidth, 0),
                     Margin = new Padding(0, 0, 0, 15)

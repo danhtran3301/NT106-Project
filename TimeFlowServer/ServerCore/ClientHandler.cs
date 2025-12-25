@@ -1370,7 +1370,9 @@ namespace TimeFlowServer.ServerCore
                 var assignees = new List<string>();
                 if (task.IsGroupTask)
                 {
+                    Log.Information($"[{_clientId}] Task {taskId} is a group task, getting assignees...");
                     assignees = GetAssigneeNames(taskId);
+                    Log.Information($"[{_clientId}] Got {assignees.Count} assignee(s) for task {taskId}: {string.Join(", ", assignees)}");
                 }
 
                 // Calculate progress based on status
@@ -1447,34 +1449,46 @@ namespace TimeFlowServer.ServerCore
             
             try
             {
-                using (var conn = new Microsoft.Data.SqlClient.SqlConnection(TimeFlow.Data.Configuration.DbConfig.GetConnectionString()))
+                Log.Information($"[{_clientId}] Getting assignee names for task {taskId}");
+                
+                // Lấy GroupTask theo TaskId
+                var groupTask = _groupTaskRepo.GetByTaskId(taskId);
+                
+                if (groupTask == null)
                 {
-                    conn.Open();
-                    var query = @"
-                        SELECT u.Username, u.FullName
-                        FROM GroupTasks gt
-                        INNER JOIN Users u ON gt.AssignedTo = u.UserId
-                        WHERE gt.TaskId = @TaskId AND gt.AssignedTo IS NOT NULL
-                    ";
+                    Log.Warning($"[{_clientId}] GroupTask not found for taskId {taskId}");
+                    return assignees;
+                }
+                
+                Log.Information($"[{_clientId}] Found GroupTask: GroupTaskId={groupTask.GroupTaskId}, AssignedTo={groupTask.AssignedTo}");
+                
+                if (groupTask.AssignedTo.HasValue)
+                {
+                    // Lấy thông tin user được assign
+                    var assignedUser = _userRepo.GetById(groupTask.AssignedTo.Value);
                     
-                    using (var cmd = new Microsoft.Data.SqlClient.SqlCommand(query, conn))
+                    if (assignedUser == null)
                     {
-                        cmd.Parameters.AddWithValue("@TaskId", taskId);
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                string fullName = reader.IsDBNull(1) ? null : reader.GetString(1);
-                                string username = reader.GetString(0);
-                                assignees.Add(!string.IsNullOrEmpty(fullName) ? fullName : username);
-                            }
-                        }
+                        Log.Warning($"[{_clientId}] User not found for AssignedTo={groupTask.AssignedTo.Value}");
+                        return assignees;
                     }
+                    
+                    // Ưu tiên FullName, nếu không có thì dùng Username
+                    string displayName = !string.IsNullOrEmpty(assignedUser.FullName) 
+                        ? assignedUser.FullName 
+                        : assignedUser.Username;
+                    
+                    assignees.Add(displayName);
+                    Log.Information($"[{_clientId}] Added assignee: {displayName}");
+                }
+                else
+                {
+                    Log.Information($"[{_clientId}] Task {taskId} has no assignee (AssignedTo is null)");
                 }
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Failed to get assignee names");
+                Log.Error(ex, $"[{_clientId}] Failed to get assignee names for task {taskId}: {ex.Message}");
             }
             
             return assignees;
