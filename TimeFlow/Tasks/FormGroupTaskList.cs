@@ -874,9 +874,26 @@ namespace TimeFlow.Tasks
             nameLabel.Click += (sender, e) => OpenTaskDetail(task);
             taskLayout.Controls.Add(nameLabel, 0, 0);
 
-            // Assignee
-            string assigneeText = task.GroupTask?.AssignedTo != null ? "Assigned" : "⚠ Unassigned";
-            Color assigneeColor = task.GroupTask?.AssignedTo != null ? AppColors.Gray700 : AppColors.Red500;
+            // ✅ SỬA: Hiển thị tên assignee thay vì chỉ "Assigned"
+            string assigneeText = "⚠ Unassigned";
+            Color assigneeColor = AppColors.Red500;
+            
+            if (task.GroupTask?.AssignedTo != null)
+            {
+                // Ưu tiên hiển thị FullName, nếu không có thì Username
+                if (task.GroupTask.AssignedUser != null)
+                {
+                    string displayName = !string.IsNullOrEmpty(task.GroupTask.AssignedUser.FullName) 
+                        ? task.GroupTask.AssignedUser.FullName 
+                        : task.GroupTask.AssignedUser.Username;
+                    assigneeText = $"👤 {displayName}";
+                }
+                else
+                {
+                    assigneeText = $"👤 User #{task.GroupTask.AssignedTo}";
+                }
+                assigneeColor = AppColors.Gray700;
+            }
             
             Label assigneeLabel = new Label 
             { 

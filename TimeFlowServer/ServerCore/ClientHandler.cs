@@ -174,6 +174,11 @@ namespace TimeFlowServer.ServerCore
                         await HandleGetGroupMembersAsync(root);
                         break;
 
+                    // ✅ MỚI: Lấy lịch sử chat nhóm
+                    case "get_group_chat_history":
+                        await HandleGetGroupChatHistoryAsync(root);
+                        break;
+
                     default:
                         Log.Warning($"[{_clientId}] Unknown message type: {type}");
                         break;
@@ -189,6 +194,69 @@ namespace TimeFlowServer.ServerCore
             }
         }
 
+        // ✅ MỚI: Handler lấy lịch sử chat nhóm
+        private async Task HandleGetGroupChatHistoryAsync(JsonElement root)
+        {
+            try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int groupId = root.GetProperty("groupId").GetInt32();
+                Log.Information($"[{_clientId}] Getting chat history for GroupId: {groupId}");
+
+                // Kiểm tra user có phải member của group không
+                if (!_groupMemberRepo.IsMember(groupId, user.UserId))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "You are not a member of this group" }));
+                    return;
+                }
+
+                // Lấy lịch sử chat
+                var messages = _messageRepo.GetGroupHistory(groupId);
+                
+                // Build response
+                var messageList = new List<object>();
+                foreach (var msg in messages)
+                {
+                    messageList.Add(new
+                    {
+                        sender = msg.Sender,
+                        content = msg.Content,
+                        timestamp = msg.Time.ToString("HH:mm dd/MM")
+                    });
+                }
+
+                var response = new
+                {
+                    type = "group_chat_history",
+                    status = "success",
+                    groupId = groupId,
+                    messages = messageList
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {messageList.Count} messages for GroupId={groupId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting group chat history");
+                await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = ex.Message }));
+            }
+        }
 
         private async Task HandleCreateGroupAsync(JsonElement root)
         {
@@ -446,6 +514,7 @@ namespace TimeFlowServer.ServerCore
                     if (user != null && user.IsActive)
                     {
                         _currentUsername = username;
+                        _currentUserId = user.UserId;  // ✅ SỬA: Set _currentUserId
 
                         // Cap nhat last login
                         _userRepo.UpdateLastLogin(user.UserId);
@@ -474,7 +543,7 @@ namespace TimeFlowServer.ServerCore
 
                         await SendResponseAsync(JsonSerializer.Serialize(response));
 
-                        Log.Information($"[{_clientId}] ✓ User '{username}' auto-logged in successfully");
+                        Log.Information($"[{_clientId}] ✓ User '{username}' (ID: {user.UserId}) auto-logged in successfully");
 
                         // Log activity
                         _activityLogRepo.LogActivity(user.UserId, null, "AutoLogin", "User auto-logged in via token");
@@ -687,11 +756,35 @@ namespace TimeFlowServer.ServerCore
                         var groupTask = _groupTaskRepo.GetByTaskId(t.TaskId);
                         if (groupTask != null)
                         {
+                            // ✅ Lấy username của assignee
+                            string? assignedToUsername = null;
+                            string? assignedToFullName = null;
+                            if (groupTask.AssignedTo.HasValue)
+                            {
+                                var assignedUser = _userRepo.GetById(groupTask.AssignedTo.Value);
+                                if (assignedUser != null)
+                                {
+                                    assignedToUsername = assignedUser.Username;
+                                    assignedToFullName = assignedUser.FullName;
+                                }
+                            }
+
+                            // ✅ Lấy group name
+                            string? groupName = null;
+                            var group = _groupRepo.GetById(groupTask.GroupId);
+                            if (group != null)
+                            {
+                                groupName = group.GroupName;
+                            }
+
                             groupTaskInfo = new
                             {
                                 groupTaskId = groupTask.GroupTaskId,
                                 groupId = groupTask.GroupId,
+                                groupName = groupName,
                                 assignedTo = groupTask.AssignedTo,
+                                assignedToUsername = assignedToUsername,
+                                assignedToFullName = assignedToFullName,
                                 assignedBy = groupTask.AssignedBy,
                                 assignedAt = groupTask.AssignedAt?.ToString("yyyy-MM-dd HH:mm:ss")
                             };

@@ -41,7 +41,7 @@ namespace TimeFlow
         public FormChatBox()
         {
             InitializeComponent();
-            _myUsername = SessionManager.Username ?? "admin";
+            _myUsername = SessionManager.Username ?? "Guest";
             ConnectToServer();
         }
 
@@ -56,6 +56,12 @@ namespace TimeFlow
             // Cập nhật UI
             lblChatTitle.Text = $"💬 {groupName}";
             this.Text = $"TimeFlow Chat - {groupName}";
+            
+            // Load lịch sử chat cho group này sau khi connected
+            if (_isConnected)
+            {
+                LoadGroupChatHistory(groupId);
+            }
         }
 
         private void ConnectToServer()
@@ -67,10 +73,21 @@ namespace TimeFlow
                 _stream = _client.GetStream();
                 _isConnected = true;
 
-                // 1. Gửi gói tin Login với password thật (hoặc dùng token)
-                var loginPacket = new { type = "login", data = new { username = _myUsername, password = "Test@1234" } };
-                string json = JsonSerializer.Serialize(loginPacket);
-                SendString(json);
+                // ✅ SỬA: Dùng autologin với token từ SessionManager thay vì login với password hardcoded
+                if (!string.IsNullOrEmpty(SessionManager.Token))
+                {
+                    var autoLoginPacket = new { type = "autologin", token = SessionManager.Token };
+                    string json = JsonSerializer.Serialize(autoLoginPacket);
+                    SendString(json);
+                }
+                else
+                {
+                    // Fallback: Nếu không có token, thông báo lỗi
+                    MessageBox.Show("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "Lỗi", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    this.Close();
+                    return;
+                }
 
                 // 2. Gửi yêu cầu lấy danh sách nhóm (Đợi 0.5s để server xử lý login xong)
                 Thread.Sleep(500);
@@ -85,11 +102,36 @@ namespace TimeFlow
                     this.Text = $"TimeFlow Chat - Logged in as: {_myUsername}";
                 }
                 AppendSystemMessage($"Connected to server as {_myUsername}");
+                
+                // ✅ Load lịch sử chat nếu đã chọn group
+                if (_currentGroupId.HasValue)
+                {
+                    LoadGroupChatHistory(_currentGroupId.Value);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Không thể kết nối tới Chat Server: " + ex.Message);
                 this.Text = "TimeFlow Chat - Disconnected";
+            }
+        }
+
+        // ✅ MỚI: Load lịch sử chat cho group
+        private void LoadGroupChatHistory(int groupId)
+        {
+            try
+            {
+                var request = new 
+                { 
+                    type = "get_group_chat_history", 
+                    token = SessionManager.Token,
+                    groupId = groupId 
+                };
+                SendString(JsonSerializer.Serialize(request));
+            }
+            catch (Exception ex)
+            {
+                AppendSystemMessage($"Failed to load chat history: {ex.Message}");
             }
         }
 
@@ -144,6 +186,26 @@ namespace TimeFlow
                     {
                         string type = typeElem.GetString();
 
+                        // ✅ CASE: Autologin response
+                        if (root.TryGetProperty("status", out JsonElement statusElem))
+                        {
+                            string status = statusElem.GetString();
+                            if (status == "autologin_success")
+                            {
+                                this.Invoke((MethodInvoker)delegate {
+                                    AppendSystemMessage("✓ Authenticated successfully");
+                                });
+                                return;
+                            }
+                            else if (status == "autologin_fail")
+                            {
+                                this.Invoke((MethodInvoker)delegate {
+                                    AppendSystemMessage("⚠ Authentication failed. Please re-login.");
+                                });
+                                return;
+                            }
+                        }
+
                         // CASE 1: Nhận danh sách nhóm
                         if (type == "my_groups_list")
                         {
@@ -194,6 +256,39 @@ namespace TimeFlow
                                 this.Invoke((MethodInvoker)delegate {
                                     AddMessageBubble(content, sender, false);
                                 });
+                            }
+                        }
+                        
+                        // ✅ CASE 4: Nhận lịch sử chat nhóm
+                        if (type == "group_chat_history")
+                        {
+                            if (root.GetProperty("status").GetString() == "success")
+                            {
+                                int groupId = root.GetProperty("groupId").GetInt32();
+                                
+                                // Chỉ render nếu đúng group đang xem
+                                if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
+                                {
+                                    this.Invoke((MethodInvoker)delegate {
+                                        flowChatMessages.Controls.Clear();
+                                        
+                                        if (root.TryGetProperty("messages", out JsonElement messagesElem))
+                                        {
+                                            foreach (var msg in messagesElem.EnumerateArray())
+                                            {
+                                                string sender = msg.GetProperty("sender").GetString();
+                                                string content = msg.GetProperty("content").GetString();
+                                                bool isMe = sender == _myUsername;
+                                                AddMessageBubble(content, isMe ? "Me" : sender, isMe);
+                                            }
+                                        }
+                                        
+                                        if (flowChatMessages.Controls.Count == 0)
+                                        {
+                                            AppendSystemMessage("No messages yet. Start the conversation!");
+                                        }
+                                    });
+                                }
                             }
                         }
                     }
@@ -260,7 +355,10 @@ namespace TimeFlow
                     _isGroupChat = true;
 
                     lblChatTitle.Text = $"💬 {group.groupName}";
-                    flowChatMessages.Controls.Clear(); // Xóa chat cũ (thực tế nên load lịch sử từ server)
+                    flowChatMessages.Controls.Clear(); // Xóa chat cũ
+                    
+                    // ✅ Load lịch sử chat từ server
+                    LoadGroupChatHistory(group.groupId);
                     
                     AppendSystemMessage($"Now chatting in: {group.groupName}");
                 };

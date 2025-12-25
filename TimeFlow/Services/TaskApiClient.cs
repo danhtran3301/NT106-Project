@@ -122,6 +122,26 @@ namespace TimeFlow.Services
                                 AssignedAt = groupTaskElem.TryGetProperty("assignedAt", out var assignedAt) && !string.IsNullOrEmpty(assignedAt.GetString())
                                     ? DateTime.Parse(assignedAt.GetString()!) : null
                             };
+                            
+                            // ✅ Parse additional fields
+                            if (groupTaskElem.TryGetProperty("groupName", out var groupNameElem) && groupNameElem.ValueKind == JsonValueKind.String)
+                            {
+                                // Lưu vào navigation property nếu cần
+                                task.GroupTask.Group = new Group { GroupName = groupNameElem.GetString() ?? "" };
+                            }
+                            
+                            if (groupTaskElem.TryGetProperty("assignedToUsername", out var atUsername) && atUsername.ValueKind == JsonValueKind.String)
+                            {
+                                var username = atUsername.GetString();
+                                var fullName = groupTaskElem.TryGetProperty("assignedToFullName", out var atFullName) && atFullName.ValueKind == JsonValueKind.String
+                                    ? atFullName.GetString() : null;
+                                
+                                task.GroupTask.AssignedUser = new User 
+                                { 
+                                    Username = username ?? "", 
+                                    FullName = fullName 
+                                };
+                            }
                         }
 
                         tasks.Add(task);
