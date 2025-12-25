@@ -1,23 +1,19 @@
 ﻿using System.Net;
 using System.Net.Sockets;
-using Serilog;
-using TimeFlowServer.Security;
 using TimeFlow.Data.Repositories;
+using TimeFlowServer.Security;
+using Serilog;
 
 namespace TimeFlowServer.ServerCore
 {
-    // Quan ly TCP Server chinh - xu ly ket noi client va lifecycle cua server
     public class TcpServerManager
     {
-        private readonly string _connectionString;
-        private readonly int _port;
-        private TcpListener? _listener;
-        private bool _isRunning;
-        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly TcpListener _listener;
+        private readonly JwtManager _jwtManager;
 
-        // Repositories
+        // --- Danh sách Repositories ---
         private readonly UserRepository _userRepo;
-        private readonly ActivityLogRepository _activityLogRepo;
+        private readonly ActivityLogRepository _activityRepo;
         private readonly TaskRepository _taskRepo;
         private readonly GroupRepository _groupRepo;
         private readonly GroupMemberRepository _groupMemberRepo;
@@ -26,179 +22,106 @@ namespace TimeFlowServer.ServerCore
         private readonly CategoryRepository _categoryRepo;
         private readonly CommentRepository _commentRepo;
 
-        // Security
-        private readonly JwtManager _jwtManager;
+        // --- Các Repo mới cho Chat/Group ---
+        private readonly MessageRepository _messageRepo;
+        private readonly GroupTaskRepository _groupTaskRepo;
+        private readonly GroupRepository _groupRepo;
+        private readonly GroupMemberRepository _groupMemberRepo;
+        private readonly ContactRepository _contactRepo;
 
-        // Quan ly cac client dang online
-        private readonly Dictionary<string, TcpClient> _onlineClients;
+        // Quản lý client online
+        private readonly Dictionary<string, TcpClient> _onlineClients = new Dictionary<string, TcpClient>();
         private readonly object _clientsLock = new object();
 
-        public TcpServerManager(string connectionString, int port)
+        private bool _isRunning;
+
+        // Constructor cập nhật đầy đủ tham số
+        public TcpServerManager(
+            string ipAddress,
+            int port,
+            JwtManager jwtManager,
+            UserRepository userRepo,
+            ActivityLogRepository activityRepo,
+            TaskRepository taskRepo,
+            CategoryRepository categoryRepo,
+            CommentRepository commentRepo,
+            // Thêm tham số mới
+            MessageRepository messageRepo,
+            GroupTaskRepository groupTaskRepo,
+            GroupRepository groupRepo,
+            GroupMemberRepository groupMemberRepo,
+            ContactRepository contactRepo)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-            _port = port;
-            _cancellationTokenSource = new CancellationTokenSource();
-            _onlineClients = new Dictionary<string, TcpClient>();
+            _jwtManager = jwtManager;
+            _userRepo = userRepo;
+            _activityRepo = activityRepo;
+            _taskRepo = taskRepo;
+            _categoryRepo = categoryRepo;
+            _commentRepo = commentRepo;
 
             // Khoi tao repositories voi connection string
             var dbHelper = new TimeFlow.Data.DatabaseHelper(connectionString);
             _userRepo = new UserRepository(dbHelper);
             _activityLogRepo = new ActivityLogRepository(dbHelper);
             _taskRepo = new TaskRepository(dbHelper);
-            _groupRepo = new GroupRepository(dbHelper);
-            _groupMemberRepo = new GroupMemberRepository(dbHelper);
-            _messageRepo = new MessageRepository(dbHelper);
-            _groupTaskRepo = new GroupTaskRepository(dbHelper);
             _categoryRepo = new CategoryRepository(dbHelper);
             _commentRepo = new CommentRepository(dbHelper);
 
-            // Khoi tao JWT manager (lay secret tu config)
-            _jwtManager = new JwtManager("your_super_secret_jwt_key_change_in_production_minimum_32_characters_long_for_security");
+            IPAddress localAddr = IPAddress.Parse(ipAddress);
+            _listener = new TcpListener(localAddr, port);
         }
 
-        // Khoi dong TCP server
-        public async Task StartAsync()
+        public void Start()
         {
-            try
-            {
-                // Kiem tra ket noi database truoc
-                Log.Information("Testing database connection...");
-                var testDb = new TimeFlow.Data.DatabaseHelper(_connectionString);
-                if (testDb.TestConnection())
-                {
-                    Log.Information("✓ Database connection successful!");
-                    Log.Information($"✓ Connection: {GetDatabaseInfo()}");
+            if (_isRunning) return;
 
-                    // Kiem tra bang Users
-                    var usersCount = testDb.ExecuteScalar("SELECT COUNT(*) FROM Users", null);
-                    Log.Information($"✓ Users table accessible with {usersCount} users");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "✗ Database connection failed!");
-                throw;
-            }
-
-            // Khoi dong TCP listener
-            _listener = new TcpListener(IPAddress.Any, _port);
             _listener.Start();
             _isRunning = true;
+            Log.Information("Server started on " + _listener.LocalEndpoint);
 
-            Log.Information($"✓ Server started successfully on port {_port}");
-            Log.Information($"✓ Listening on all network interfaces (0.0.0.0:{_port})");
-            Log.Information("Waiting for client connections...");
-
-            // Vong lap chap nhan clients
-            await AcceptClientsAsync(_cancellationTokenSource.Token);
-        }
-
-        // Dung server mot cach graceful
-        public void Stop()
-        {
-            if (!_isRunning) return;
-
-            Log.Information("Stopping server...");
-            _isRunning = false;
-            _cancellationTokenSource.Cancel();
-
-            // Ngat ket noi tat ca clients
-            lock (_clientsLock)
+            // Chấp nhận kết nối liên tục
+            Task.Run(async () =>
             {
-                foreach (var client in _onlineClients.Values)
+                while (_isRunning)
                 {
-                    try { client.Close(); } catch { }
-                }
-                _onlineClients.Clear();
-            }
-
-            // Dung listener
-            _listener?.Stop();
-            Log.Information("Server stopped successfully");
-        }
-
-        private async Task AcceptClientsAsync(CancellationToken cancellationToken)
-        {
-            while (_isRunning && !cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    TcpClient client = await _listener!.AcceptTcpClientAsync(cancellationToken);
-                    
-                    var clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
-                    Log.Information($"[NEW CONNECTION] Client connected from {clientEndpoint}");
-
-                    // Xu ly client trong task rieng
-                    _ = Task.Run(() => HandleClientAsync(client, cancellationToken), cancellationToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    if (_isRunning)
+                    try
                     {
-                        Log.Error(ex, "Error accepting client connection");
+                        TcpClient client = await _listener.AcceptTcpClientAsync();
+                        Log.Information($"New connection from {client.Client.RemoteEndPoint}");
+                        _ = HandleClientAsync(client);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_isRunning) Log.Error(ex, "Error accepting client");
                     }
                 }
-            }
+            });
         }
 
-        private async Task HandleClientAsync(TcpClient client, CancellationToken cancellationToken)
+        public void Stop()
         {
-            var clientEndpoint = client.Client.RemoteEndPoint?.ToString() ?? "Unknown";
+            _isRunning = false;
+            _listener.Stop();
+            Log.Information("Server stopped.");
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            // Tạo ClientHandler với đầy đủ Repository
             var handler = new ClientHandler(
                 client,
                 _userRepo,
-                _activityLogRepo,
+                _activityRepo,
                 _taskRepo,
                 _categoryRepo,
                 _commentRepo,
-                _groupRepo,
-                _groupMemberRepo,
-                _messageRepo,
-                _groupTaskRepo,  // ✅ Thêm GroupTaskRepository
                 _jwtManager,
                 _onlineClients,
                 _clientsLock
             );
 
-            try
-            {
-                await handler.HandleAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, $"Error handling client {clientEndpoint}");
-            }
-            finally
-            {
-                Log.Information($"[DISCONNECTED] Client {clientEndpoint} disconnected");
-            }
-        }
-
-        public int GetOnlineCount()
-        {
-            lock (_clientsLock)
-            {
-                return _onlineClients.Count;
-            }
-        }
-
-        public bool IsRunning => _isRunning;
-
-        private string GetDatabaseInfo()
-        {
-            try
-            {
-                var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(_connectionString);
-                return $"{builder.DataSource}/{builder.InitialCatalog}";
-            }
-            catch
-            {
-                return "Connection string parsing failed";
-            }
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            await handler.HandleAsync(cts.Token);
         }
     }
 }

@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace TimeFlow
 {
-    partial class FormChatBox
+    partial class ChatForm
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -212,21 +212,19 @@ namespace TimeFlow
 
         #endregion
 
-        private System.Windows.Forms.TableLayoutPanel tableLayoutMain;
-        private System.Windows.Forms.Panel pnlLeftHeader;
+        private System.Windows.Forms.FlowLayoutPanel flowSidebar;
+        private System.Windows.Forms.Panel pnlRight;
+        private System.Windows.Forms.Panel pnlHeader;
+        private System.Windows.Forms.FlowLayoutPanel flowChatMessages;
+        private System.Windows.Forms.Panel pnlInputArea;
+        private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.Button btnBack;
-        private System.Windows.Forms.Button btnCreateGroup;
         private System.Windows.Forms.Label lblHeaderTitle;
         private System.Windows.Forms.Panel pnlRightHeader;
         private System.Windows.Forms.Label lblChatTitle;
-        private System.Windows.Forms.Button btnClose;
-        private System.Windows.Forms.FlowLayoutPanel flowSidebar;
-        private System.Windows.Forms.Panel pnlChatContainer;
-        private System.Windows.Forms.FlowLayoutPanel flowChatMessages;
-        private System.Windows.Forms.Panel pnlInput;
-        private System.Windows.Forms.Button btnAddFile;
-        private System.Windows.Forms.Button btnSend;
         private System.Windows.Forms.Panel pnlInputBackground;
         private System.Windows.Forms.TextBox txtMessage;
+        private System.Windows.Forms.Button btnSend;
+        private System.Windows.Forms.Button btnAddFile;
     }
 }
