@@ -139,13 +139,25 @@ namespace TimeFlow
 
         private void SendString(string data)
         {
-            if (!_isConnected) return;
+            if (!_isConnected)
+            {
+                System.Diagnostics.Debug.WriteLine("[CLIENT] Cannot send: Not connected");
+                return;
+            }
             try
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(data);
                 _stream.Write(bytes, 0, bytes.Length);
+                System.Diagnostics.Debug.WriteLine($"[CLIENT] Sent: {data.Substring(0, Math.Min(100, data.Length))}...");
             }
-            catch { _isConnected = false; }
+            catch (Exception ex)
+            {
+                _isConnected = false;
+                System.Diagnostics.Debug.WriteLine($"[CLIENT] Send error: {ex.Message}");
+                this.Invoke((MethodInvoker)delegate {
+                    AppendSystemMessage($"⚠ Send failed: {ex.Message}");
+                });
+            }
         }
 
         private void StartListening()
@@ -158,14 +170,27 @@ namespace TimeFlow
                     try
                     {
                         int bytesRead = _stream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead == 0) break; // Ngắt kết nối
+                        if (bytesRead == 0)
+                        {
+                            // Ngắt kết nối
+                            _isConnected = false;
+                            this.Invoke((MethodInvoker)delegate {
+                                AppendSystemMessage("⚠ Connection lost. Please reconnect.");
+                            });
+                            break;
+                        }
 
                         string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        System.Diagnostics.Debug.WriteLine($"[CLIENT] Received: {json}");
                         ProcessIncomingMessage(json);
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         _isConnected = false;
+                        this.Invoke((MethodInvoker)delegate {
+                            AppendSystemMessage($"⚠ Connection error: {ex.Message}");
+                        });
+                        System.Diagnostics.Debug.WriteLine($"[CLIENT] Listen error: {ex.Message}");
                         break;
                     }
                 }
@@ -234,6 +259,8 @@ namespace TimeFlow
                             string content = root.GetProperty("content").GetString();
                             int groupId = root.GetProperty("groupId").GetInt32();
 
+                            System.Diagnostics.Debug.WriteLine($"[CLIENT] Received group message from {sender} in group {groupId}");
+
                             // Chỉ hiện tin nhắn nếu đúng group đang chat
                             if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
                             {
@@ -241,6 +268,11 @@ namespace TimeFlow
                                 this.Invoke((MethodInvoker)delegate {
                                     AddMessageBubble(content, isMe ? "Me" : sender, isMe);
                                 });
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[CLIENT] Message ignored: Current group={_currentGroupId}, Message group={groupId}");
+                                // TODO: Có thể thêm notification cho tin nhắn từ group khác
                             }
                         }
 
@@ -289,6 +321,34 @@ namespace TimeFlow
                                         }
                                     });
                                 }
+                            }
+                        }
+
+                        // ✅ CASE 5: Response từ server sau khi gửi tin nhắn
+                        if (type == "chat_response")
+                        {
+                            string status = root.GetProperty("status").GetString();
+                            if (status == "success")
+                            {
+                                // Tin nhắn đã gửi thành công - không cần làm gì vì đã hiển thị rồi
+                                this.Invoke((MethodInvoker)delegate {
+                                    // Có thể thêm visual feedback nếu cần
+                                });
+                            }
+                            else if (status == "error" || status == "unauthorized")
+                            {
+                                string errorMsg = root.TryGetProperty("message", out var msgElem) 
+                                    ? msgElem.GetString() 
+                                    : "Failed to send message";
+                                
+                                this.Invoke((MethodInvoker)delegate {
+                                    MessageBox.Show(errorMsg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                    // Xóa tin nhắn đã hiển thị nếu gửi thất bại
+                                    if (flowChatMessages.Controls.Count > 0)
+                                    {
+                                        flowChatMessages.Controls.RemoveAt(flowChatMessages.Controls.Count - 1);
+                                    }
+                                });
                             }
                         }
                     }
@@ -400,14 +460,16 @@ namespace TimeFlow
 
             if (!_isConnected)
             {
-                MessageBox.Show("Mất kết nối server!");
+                MessageBox.Show("Mất kết nối server! Vui lòng kiểm tra kết nối.", "Lỗi kết nối", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             // Kiểm tra xem đã chọn ai để chat chưa
             if (string.IsNullOrEmpty(_currentReceiver) && _currentGroupId == null)
             {
-                MessageBox.Show("Vui lòng chọn một nhóm hoặc user để chat!");
+                MessageBox.Show("Vui lòng chọn một nhóm hoặc user để chat!", "Chưa chọn người nhận", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -435,13 +497,27 @@ namespace TimeFlow
                     };
                 }
 
-                SendString(JsonSerializer.Serialize(packet));
-                AddMessageBubble(content, "Me", true);
+                // Hiển thị tin nhắn ngay (optimistic UI)
+                string messageToShow = content;
+                AddMessageBubble(messageToShow, "Me", true);
                 txtMessage.Clear();
+
+                // Gửi đến server
+                SendString(JsonSerializer.Serialize(packet));
+                
+                // Log để debug
+                System.Diagnostics.Debug.WriteLine($"[CLIENT] Sent message: {content} to {( _isGroupChat ? $"Group {_currentGroupId}" : _currentReceiver)}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Lỗi gửi tin: " + ex.Message);
+                MessageBox.Show($"Lỗi gửi tin: {ex.Message}\n\nChi tiết: {ex.StackTrace}", "Lỗi", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                // Xóa tin nhắn đã hiển thị nếu gửi thất bại
+                if (flowChatMessages.Controls.Count > 0)
+                {
+                    flowChatMessages.Controls.RemoveAt(flowChatMessages.Controls.Count - 1);
+                }
             }
         }
 
