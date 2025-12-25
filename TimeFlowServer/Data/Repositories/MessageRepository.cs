@@ -30,7 +30,8 @@ namespace TimeFlow.Data.Repositories
         public MessageRepository(DatabaseHelper dbHelper)
         {
             this.dbHelper = dbHelper ?? throw new ArgumentNullException(nameof(dbHelper));
-            _connectionString = DbConfig.GetConnectionString();
+            // ✅ SỬA: Lấy connection string từ dbHelper thay vì DbConfig
+            _connectionString = dbHelper.GetConnectionString();
         }
 
         // 1. Gửi tin nhắn cá nhân (1-1)
@@ -58,9 +59,20 @@ namespace TimeFlow.Data.Repositories
         public void AddGroupMessage(string sender, int groupId, string content)
         {
             var connStr = _connectionString ?? DbConfig.GetConnectionString();
+            
             using (SqlConnection conn = new SqlConnection(connStr))
             {
-                conn.Open();
+                try
+                {
+                    conn.Open();
+                }
+                catch (Exception ex)
+                {
+                    // Log connection string (ẩn password) để debug
+                    var connStrForLog = connStr?.Replace("Password=", "Password=***") ?? "null";
+                    throw new Exception($"Failed to connect to database. Server: {GetServerFromConnectionString(connStr)}", ex);
+                }
+                
                 // ✅ Khớp với schema: IsGroupMessage = 1, GroupId có giá trị
                 string query = @"INSERT INTO Messages 
                     (SenderUsername, MessageContent, IsGroupMessage, GroupId, CreatedAt) 
@@ -72,6 +84,20 @@ namespace TimeFlow.Data.Repositories
                     cmd.Parameters.AddWithValue("@g", groupId);
                     cmd.ExecuteNonQuery();
                 }
+            }
+        }
+
+        private string GetServerFromConnectionString(string? connStr)
+        {
+            if (string.IsNullOrEmpty(connStr)) return "unknown";
+            try
+            {
+                var builder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connStr);
+                return builder.DataSource ?? "unknown";
+            }
+            catch
+            {
+                return "invalid";
             }
         }
 

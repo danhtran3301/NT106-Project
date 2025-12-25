@@ -569,12 +569,34 @@ namespace TimeFlowServer.ServerCore
 
         private async Task HandleChatAsync(JsonElement root)
         {
-            if (string.IsNullOrEmpty(_currentUsername) || !_currentUserId.HasValue) return;
+            if (string.IsNullOrEmpty(_currentUsername) || !_currentUserId.HasValue)
+            {
+                Log.Warning($"[{_clientId}] Chat request rejected: User not authenticated (Username: {_currentUsername}, UserId: {_currentUserId})");
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    type = "chat_response",
+                    status = "error", 
+                    message = "Not authenticated. Please login first." 
+                }));
+                return;
+            }
 
             try
             {
                 string content = root.GetProperty("content").GetString() ?? "";
                 string receiver = root.GetProperty("receiver").GetString() ?? "";
+
+                if (string.IsNullOrEmpty(content))
+                {
+                    Log.Warning($"[{_clientId}] Empty message content from {_currentUsername}");
+                    await SendResponseAsync(JsonSerializer.Serialize(new { 
+                        type = "chat_response",
+                        status = "error", 
+                        message = "Message content cannot be empty" 
+                    }));
+                    return;
+                }
+
+                Log.Information($"[{_clientId}] Chat request from {_currentUsername} to '{receiver}' (Content length: {content.Length})");
 
                 // Kiểm tra xem có phải chat nhóm không (Client gửi cờ isGroup = true)
                 bool isGroup = false;
@@ -607,74 +629,163 @@ namespace TimeFlowServer.ServerCore
                         return;
                     }
 
-                    // 1. Lưu vào Database
-                    _messageRepo.AddGroupMessage(_currentUsername, groupId, content);
-                    Log.Information($"[GROUP CHAT] {_currentUsername} sent to Group {groupId}: {content}");
+                    // 1. Lưu vào Database (với error handling)
+                    bool dbSaved = false;
+                    try
+                    {
+                        _messageRepo.AddGroupMessage(_currentUsername, groupId, content);
+                        dbSaved = true;
+                        Log.Information($"[GROUP CHAT] {_currentUsername} sent to Group {groupId}: {content} (saved to DB)");
+                    }
+                    catch (Exception dbEx)
+                    {
+                        Log.Error(dbEx, $"[GROUP CHAT] Failed to save message to database. Will still broadcast to online users.");
+                        // Vẫn tiếp tục broadcast ngay cả khi DB fail
+                    }
 
-                    // 2. Lấy danh sách thành viên trong nhóm
+                    // 2. Gửi response về cho người gửi
+                    await SendResponseAsync(JsonSerializer.Serialize(new 
+                    { 
+                        type = "chat_response",
+                        status = dbSaved ? "success" : "warning", 
+                        message = dbSaved ? "Message sent successfully" : "Message sent but not saved to database",
+                        isGroup = true,
+                        groupId = groupId
+                    }));
+
+                    // 3. Lấy danh sách thành viên trong nhóm
                     var members = _groupMemberRepo.GetByGroupId(groupId);
+                    Log.Information($"[GROUP CHAT] Group {groupId} has {members.Count} members. Sender: {_currentUsername}");
 
-                    // 3. Gửi cho từng thành viên đang online (KHÔNG gửi lại cho người gửi)
+                    // 4. Gửi cho từng thành viên đang online (KHÔNG gửi lại cho người gửi)
                     int sentCount = 0;
+                    int offlineCount = 0;
+                    int errorCount = 0;
+                    
+                    var packet = new
+                    {
+                        type = "receive_group_message",
+                        groupId = groupId,
+                        sender = _currentUsername,
+                        content = content,
+                        timestamp = DateTime.Now.ToString("HH:mm")
+                    };
+                    string json = JsonSerializer.Serialize(packet);
+                    byte[] bytes = Encoding.UTF8.GetBytes(json);
+
                     foreach (var member in members)
                     {
                         var user = _userRepo.GetById(member.UserId);
-                        if (user == null) continue;
+                        if (user == null)
+                        {
+                            Log.Warning($"[GROUP CHAT] Member UserId={member.UserId} not found in database");
+                            continue;
+                        }
 
                         string memberUsername = user.Username;
                         
                         // ✅ KHÔNG gửi lại cho người gửi - client đã tự hiển thị rồi
-                        if (memberUsername == _currentUsername) continue;
+                        if (memberUsername == _currentUsername)
+                        {
+                            Log.Information($"[GROUP CHAT] Skipping sender: {memberUsername}");
+                            continue;
+                        }
 
                         TcpClient? clientToSend = null;
+                        bool foundInDictionary = false;
+                        
                         lock (_clientsLock)
                         {
-                            if (_onlineClients.TryGetValue(memberUsername, out var c))
+                            foundInDictionary = _onlineClients.TryGetValue(memberUsername, out var c);
+                            if (foundInDictionary && c != null)
                             {
                                 clientToSend = c;
                             }
                         }
 
-                        if (clientToSend != null && clientToSend.Connected)
+                        if (clientToSend == null)
                         {
+                            offlineCount++;
+                            Log.Information($"[GROUP CHAT] {memberUsername} is offline (not in onlineClients dictionary)");
+                            continue;
+                        }
+
+                        if (!clientToSend.Connected)
+                        {
+                            offlineCount++;
+                            Log.Warning($"[GROUP CHAT] {memberUsername} client exists but not connected");
+                            
+                            // Cleanup: Remove disconnected client
+                            lock (_clientsLock)
+                            {
+                                if (_onlineClients.TryGetValue(memberUsername, out var c) && c == clientToSend)
+                                {
+                                    _onlineClients.Remove(memberUsername);
+                                    Log.Information($"[GROUP CHAT] Removed disconnected client: {memberUsername}");
+                                }
+                            }
+                            continue;
+                        }
+
+                        try
+                        {
+                            var stream = clientToSend.GetStream();
+                            await stream.WriteAsync(bytes, 0, bytes.Length);
+                            sentCount++;
+                            Log.Information($"[GROUP CHAT] ✓ Delivered to {memberUsername} (UserId: {member.UserId})");
+                        }
+                        catch (Exception ex)
+                        {
+                            errorCount++;
+                            Log.Warning(ex, $"[GROUP CHAT] Failed to send to {memberUsername}: {ex.Message}");
+                            
+                            // Cleanup: Remove failed client
                             try
                             {
-                                var packet = new
+                                lock (_clientsLock)
                                 {
-                                    type = "receive_group_message",
-                                    groupId = groupId,
-                                    sender = _currentUsername,
-                                    content = content,
-                                    timestamp = DateTime.Now.ToString("HH:mm")
-                                };
-                                string json = JsonSerializer.Serialize(packet);
-                                byte[] bytes = Encoding.UTF8.GetBytes(json);
-                                await clientToSend.GetStream().WriteAsync(bytes, 0, bytes.Length);
-                                sentCount++;
-                                Log.Information($"[GROUP CHAT] Delivered to {memberUsername}");
+                                    if (_onlineClients.TryGetValue(memberUsername, out var c) && c == clientToSend)
+                                    {
+                                        _onlineClients.Remove(memberUsername);
+                                        Log.Information($"[GROUP CHAT] Removed failed client: {memberUsername}");
+                                    }
+                                }
                             }
-                            catch (Exception ex)
-                            {
-                                Log.Warning(ex, $"Failed to send group message to {memberUsername}");
-                            }
-                        }
-                        else
-                        {
-                            Log.Information($"[GROUP CHAT] {memberUsername} is offline, message saved to DB");
+                            catch { }
                         }
                     }
                     
-                    Log.Information($"[GROUP CHAT] Message delivered to {sentCount}/{members.Count - 1} online members");
+                    Log.Information($"[GROUP CHAT] Broadcast complete: {sentCount} delivered, {offlineCount} offline, {errorCount} errors (Total members: {members.Count})");
                 }
                 else
                 {
                     // --- XỬ LÝ CHAT 1-1 ---
 
-                    // 1. Lưu vào DB
-                    _messageRepo.AddMessage(_currentUsername, receiver, content);
-                    Log.Information($"[CHAT 1-1] {_currentUsername} -> {receiver}: {content}");
+                    // 1. Lưu vào DB (với error handling)
+                    bool dbSaved = false;
+                    try
+                    {
+                        _messageRepo.AddMessage(_currentUsername, receiver, content);
+                        dbSaved = true;
+                        Log.Information($"[CHAT 1-1] {_currentUsername} -> {receiver}: {content} (saved to DB)");
+                    }
+                    catch (Exception dbEx)
+                    {
+                        Log.Error(dbEx, $"[CHAT 1-1] Failed to save message to database. Will still send to receiver if online.");
+                        // Vẫn tiếp tục gửi ngay cả khi DB fail
+                    }
 
-                    // 2. Gửi cho người nhận nếu đang online
+                    // 2. Gửi response về cho người gửi
+                    await SendResponseAsync(JsonSerializer.Serialize(new 
+                    { 
+                        type = "chat_response",
+                        status = dbSaved ? "success" : "warning", 
+                        message = dbSaved ? "Message sent successfully" : "Message sent but not saved to database",
+                        isGroup = false,
+                        receiver = receiver
+                    }));
+
+                    // 3. Gửi cho người nhận nếu đang online
                     TcpClient? receiverClient = null;
                     lock (_clientsLock)
                     {
