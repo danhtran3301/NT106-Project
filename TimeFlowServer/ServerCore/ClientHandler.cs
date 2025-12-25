@@ -5,18 +5,14 @@ using Serilog;
 using TimeFlow.Data.Repositories;
 using TimeFlow.Models;
 using TimeFlowServer.Security;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace TimeFlowServer.ServerCore
 {
+    // Xu ly tung ket noi client va xu ly cac message
     public class ClientHandler
     {
         private readonly TcpClient _client;
         private readonly NetworkStream _stream;
-        private readonly string _clientId;
-
-        // --- Repositories của Staging (Task & User) ---
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityLogRepo;
         private readonly TaskRepository _taskRepo;
@@ -28,13 +24,12 @@ namespace TimeFlowServer.ServerCore
         private readonly JwtManager _jwtManager;
         private readonly Dictionary<string, TcpClient> _onlineClients;
         private readonly object _clientsLock;
-
+        
         private string? _currentUsername;
         private int? _currentUserId;
         private readonly string _clientId;
         private readonly GroupTaskRepository _groupTaskRepo;
 
-        // Constructor tổng hợp (Phải tiêm đủ Dependency từ Program.cs)
         public ClientHandler(
             TcpClient client,
             UserRepository userRepo,
@@ -52,9 +47,6 @@ namespace TimeFlowServer.ServerCore
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _stream = client.GetStream();
-            _clientId = client.Client.RemoteEndPoint?.ToString() ?? Guid.NewGuid().ToString();
-
-            // Gán dependencies
             _userRepo = userRepo;
             _activityLogRepo = activityLogRepo;
             _taskRepo = taskRepo;
@@ -67,17 +59,19 @@ namespace TimeFlowServer.ServerCore
             _jwtManager = jwtManager;
             _onlineClients = onlineClients;
             _clientsLock = clientsLock;
+            _clientId = client.Client.RemoteEndPoint?.ToString() ?? Guid.NewGuid().ToString();
         }
 
         public async Task HandleAsync(CancellationToken cancellationToken)
         {
-            byte[] buffer = new byte[8192]; // Buffer lớn hơn cho tin nhắn dài
+            byte[] buffer = new byte[4096];
 
             try
             {
                 while (_client.Connected && !cancellationToken.IsCancellationRequested)
                 {
                     int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    
                     if (bytesRead == 0)
                     {
                         Log.Information($"[{_clientId}] Client disconnected (zero bytes)");
@@ -115,35 +109,25 @@ namespace TimeFlowServer.ServerCore
 
                 switch (type)
                 {
-                    // --- Authentication (Staging) ---
-                    case "login": await HandleLoginAsync(root); break;
-                    case "register": await HandleRegisterAsync(root); break;
-                    case "autologin": await HandleAutoLoginAsync(root); break;
+                    case "login":
+                        await HandleLoginAsync(root);
+                        break;
 
-                    // --- Chat Features (Chatbox) ---
-                    case "chat": await HandleChatAsync(root); break;
-                    case "get_history": await HandleGetHistoryAsync(root); break;
-                    case "add_contact": await HandleAddContactAsync(root); break;
+                    case "register":
+                        await HandleRegisterAsync(root);
+                        break;
 
-                    // --- Task Management (Staging) ---
-                    case "get_tasks": await HandleGetTasksAsync(root); break;
-                    case "get_task_detail": await HandleGetTaskDetailAsync(root); break;
-                    case "get_task_detail_full": await HandleGetTaskDetailFullAsync(root); break;
-                    case "create_task": await HandleCreateTaskAsync(root); break;
-                    case "update_task": await HandleUpdateTaskAsync(root); break;
-                    case "delete_task": await HandleDeleteTaskAsync(root); break;
-                    case "update_task_status": await HandleUpdateTaskStatusAsync(root); break;
+                    case "autologin":
+                        await HandleAutoLoginAsync(root);
+                        break;
 
-                    // --- Group Assign (Chatbox) ---
-                    case "assign_group_task": await HandleAssignGroupTaskAsync(root); break;
+                    case "chat":
+                        await HandleChatAsync(root);
+                        break;
 
-                    // --- Metadata (Staging) ---
-                    case "get_categories": await HandleGetCategoriesAsync(root); break;
-                    case "get_groups":
-                        int uId = root.GetProperty("userId").GetInt32();
-                        var groups = _groupRepo.GetByUserId(uId);
-                        var resp = new { status = "success", data = groups };
-                        await SendResponseAsync(JsonSerializer.Serialize(resp));
+                    // Task operations
+                    case "get_tasks":
+                        await HandleGetTasksAsync(root);
                         break;
 
                     case "get_task_detail":
@@ -200,10 +184,13 @@ namespace TimeFlowServer.ServerCore
                         break;
                 }
             }
+            catch (JsonException ex)
+            {
+                Log.Warning(ex, $"[{_clientId}] Invalid JSON received");
+            }
             catch (Exception ex)
             {
                 Log.Error(ex, $"[{_clientId}] Error processing message");
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Internal server error" }));
             }
         }
 
@@ -213,14 +200,9 @@ namespace TimeFlowServer.ServerCore
             try
             {
                 // Authenticate từ token
-                string? token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
-                if (string.IsNullOrEmpty(token))
-                {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "Not authenticated" }));
-                    return;
-                }
-
-                if (!_jwtManager.ValidateToken(token, out string username) || string.IsNullOrEmpty(username))
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "Not authenticated" }));
                     return;
@@ -356,8 +338,10 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                string? token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
-                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username) || string.IsNullOrEmpty(username))
+                // Authenticate từ token (giống các handler khác)
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
                     return;
@@ -372,8 +356,10 @@ namespace TimeFlowServer.ServerCore
 
                 Log.Information($"[{_clientId}] Getting groups for UserID: {user.UserId} ({username})");
 
+                // Gọi Repo lấy danh sách nhóm
                 var groups = _groupRepo.GetByUserId(user.UserId);
 
+                // Tạo response JSON
                 var response = new
                 {
                     type = "my_groups_list",
@@ -412,41 +398,48 @@ namespace TimeFlowServer.ServerCore
                 {
                     _currentUsername = user.Username;
                     _currentUserId = user.UserId;
+
+                    // Cap nhat last login
                     _userRepo.UpdateLastLogin(user.UserId);
 
+                    // Them vao danh sach online clients
                     lock (_clientsLock)
                     {
                         if (_onlineClients.ContainsKey(_currentUsername))
+                        {
+                            Log.Information($"[{_clientId}] User {_currentUsername} already online, replacing connection");
                             try { _onlineClients[_currentUsername].Close(); } catch { }
+                        }
                         _onlineClients[_currentUsername] = _client;
                     }
 
+                    // Tao JWT token
                     string token = _jwtManager.CreateToken(_currentUsername);
 
-                    // --- Logic Merge: Lấy thêm Groups & Contacts ---
-                    var userGroups = _groupRepo.GetByUserId(user.UserId);
-                    var contacts = _contactRepo.GetContactUsernames(user.UserId);
-
-                    // Gửi response Login chuẩn
+                    // Gui response thanh cong
                     var response = new
                     {
                         status = "success",
                         token = token,
-                        user = new { user.UserId, user.Username, user.Email, user.FullName },
-                        groups = userGroups // Trả về nhóm ngay khi login
+                        user = new
+                        {
+                            userId = user.UserId,
+                            username = user.Username,
+                            email = user.Email,
+                            fullName = user.FullName
+                        }
                     };
+
                     await SendResponseAsync(JsonSerializer.Serialize(response));
 
-                    // Gửi danh sách bạn bè (gói tin riêng)
-                    var contactResponse = new { type = "user_list", users = contacts };
-                    await SendResponseAsync(JsonSerializer.Serialize(contactResponse));
-
                     Log.Information($"[{_clientId}] ✓ User '{_currentUsername}' logged in successfully");
+
+                    // Log activity
                     _activityLogRepo.LogActivity(user.UserId, null, "Login", "User logged in via TCP");
                 }
                 else
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "fail", message = "Invalid credentials" }));
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "fail" }));
                     Log.Warning($"[{_clientId}] ✗ Login failed for user: {username}");
                 }
             }
@@ -468,12 +461,15 @@ namespace TimeFlowServer.ServerCore
 
                 Log.Information($"[{_clientId}] Register attempt for user: {username}");
 
+                // Kiem tra username hoac email da ton tai
                 if (_userRepo.UsernameOrEmailExists(username, email))
                 {
                     await SendResponseAsync("exists");
+                    Log.Warning($"[{_clientId}] ✗ Registration failed: Username or email already exists");
                     return;
                 }
 
+                // Tao user moi
                 var newUser = new User
                 {
                     Username = username,
@@ -487,12 +483,15 @@ namespace TimeFlowServer.ServerCore
                 if (userId > 0)
                 {
                     await SendResponseAsync("registered");
-                    Log.Information($"[{_clientId}] ✓ User '{username}' registered successfully");
+                    Log.Information($"[{_clientId}] ✓ User '{username}' registered successfully (ID: {userId})");
+
+                    // Log activity
                     _activityLogRepo.LogActivity(userId, null, "Register", "New user registered via TCP");
                 }
                 else
                 {
                     await SendResponseAsync("error");
+                    Log.Error($"[{_clientId}] ✗ Registration failed for user: {username}");
                 }
             }
             catch (Exception ex)
@@ -520,33 +519,46 @@ namespace TimeFlowServer.ServerCore
                         // Cap nhat last login
                         _userRepo.UpdateLastLogin(user.UserId);
 
+                        // Them vao danh sach online clients
                         lock (_clientsLock)
                         {
                             if (_onlineClients.ContainsKey(_currentUsername))
+                            {
                                 try { _onlineClients[_currentUsername].Close(); } catch { }
+                            }
                             _onlineClients[_currentUsername] = _client;
                         }
-
-                        // --- Logic Merge: Lấy Groups & Contacts ---
-                        var userGroups = _groupRepo.GetByUserId(user.UserId);
-                        var contacts = _contactRepo.GetContactUsernames(user.UserId);
 
                         var response = new
                         {
                             status = "autologin_success",
-                            user = new { user.UserId, user.Username, user.Email, user.FullName },
-                            groups = userGroups
+                            user = new
+                            {
+                                userId = user.UserId,
+                                username = user.Username,
+                                email = user.Email,
+                                fullName = user.FullName
+                            }
                         };
+
                         await SendResponseAsync(JsonSerializer.Serialize(response));
 
                         Log.Information($"[{_clientId}] ✓ User '{username}' (ID: {user.UserId}) auto-logged in successfully");
 
-                        Log.Information($"[{_clientId}] ✓ User '{username}' auto-logged in");
+                        // Log activity
                         _activityLogRepo.LogActivity(user.UserId, null, "AutoLogin", "User auto-logged in via token");
-                        return;
+                    }
+                    else
+                    {
+                        await SendResponseAsync(JsonSerializer.Serialize(new { status = "autologin_fail" }));
+                        Log.Warning($"[{_clientId}] ✗ Auto-login failed: User not found or inactive");
                     }
                 }
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = "autologin_fail" }));
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "autologin_fail" }));
+                    Log.Warning($"[{_clientId}] ✗ Auto-login failed: Invalid token");
+                }
             }
             catch (Exception ex)
             {
@@ -554,10 +566,6 @@ namespace TimeFlowServer.ServerCore
                 await SendResponseAsync(JsonSerializer.Serialize(new { status = "autologin_fail" }));
             }
         }
-
-        // =================================================================
-        // 2. CHAT HANDLERS (Từ Chatbox)
-        // =================================================================
 
         private async Task HandleChatAsync(JsonElement root)
         {
@@ -702,75 +710,44 @@ namespace TimeFlowServer.ServerCore
                     }
                 }
             }
-                }
-            }
-                }
-            }
             catch (Exception ex)
             {
                 Log.Error(ex, "Chat error");
             }
         }
 
-        private async Task HandleGetHistoryAsync(JsonElement root)
-        {
-            if (string.IsNullOrEmpty(_currentUsername)) return;
-
-            if (root.TryGetProperty("groupId", out JsonElement gElem))
-            {
-                int gId = gElem.GetInt32();
-                var history = _messageRepo.GetGroupHistory(gId);
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_history_response", groupId = gId, messages = history }));
-            }
-            else
-            {
-                string targetUser = root.GetProperty("target_user").GetString() ?? "";
-                var history = _messageRepo.GetHistory(_currentUsername, targetUser);
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "history_data", data = history }));
-            }
-        }
-
-        private async Task HandleAddContactAsync(JsonElement root)
-        {
-            string targetUsername = root.GetProperty("target_user").GetString() ?? "";
-            var targetUser = _userRepo.GetByUsername(targetUsername);
-            var currentUser = _userRepo.GetByUsername(_currentUsername);
-
-            if (targetUser == null)
-            {
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "receive_message", sender = "System", content = "Người dùng không tồn tại!", timestamp = DateTime.Now.ToString("HH:mm") }));
-                return;
-            }
-
-            bool success = _contactRepo.AddContact(currentUser.UserId, targetUser.UserId);
-            if (success)
-            {
-                var contacts = _contactRepo.GetContactUsernames(currentUser.UserId);
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "user_list", users = contacts }));
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "receive_message", sender = "System", content = $"Đã thêm {targetUsername} vào danh bạ!", timestamp = DateTime.Now.ToString("HH:mm") }));
-            }
-            else
-            {
-                await SendResponseAsync(JsonSerializer.Serialize(new { type = "receive_message", sender = "System", content = "Người này đã có trong danh bạ!", timestamp = DateTime.Now.ToString("HH:mm") }));
-            }
-        }
-
-        // =================================================================
-        // 3. TASK HANDLERS (Từ Staging - giữ nguyên vì code rất tốt)
-        // =================================================================
+        // ================== TASK HANDLERS ==================
 
         private async Task HandleGetTasksAsync(JsonElement root)
         {
             try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                // Lấy user info từ username
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int userId = user.UserId;
+
+                Log.Information($"[{_clientId}] Get tasks for user: {userId} ({username})");
+
                 var tasks = _taskRepo.GetByUserId(userId);
 
                 // ✅ Build response với GroupTask info
                 var taskDataList = new List<object>();
                 foreach (var t in tasks)
-
-                var response = new
-
-                var response = new
                 {
                     // Lấy GroupTask info nếu là group task
                     object groupTaskInfo = null;
@@ -820,6 +797,10 @@ namespace TimeFlowServer.ServerCore
                         title = t.Title,
                         description = t.Description,
                         dueDate = t.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)t.Priority,
+                        status = (int)t.Status,
+                        categoryId = t.CategoryId,
+                        isGroupTask = t.IsGroupTask,
                         createdAt = t.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
                         updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
                         groupTask = groupTaskInfo
@@ -830,16 +811,15 @@ namespace TimeFlowServer.ServerCore
                 {
                     status = "success",
                     data = taskDataList
-                        updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
-                    })
-                        updatedAt = t.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
-                    })
                 };
+
                 await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {tasks.Count} tasks for {username}");
             }
             catch (Exception ex)
             {
-                await SendErrorAsync(ex.Message);
+                Log.Error(ex, $"[{_clientId}] Error getting tasks");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
         }
 
@@ -847,14 +827,39 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                if (!ValidateAuth(root, out string username)) return;
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
                 var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
 
                 int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Get task detail: {taskId}");
+
                 var task = _taskRepo.GetById(taskId);
 
-                if (task == null) { await SendErrorAsync("Task not found"); return; }
-                if (task.CreatedBy != user.UserId && !task.IsGroupTask) { await SendErrorAsync("Access denied"); return; }
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
 
                 var response = new
                 {
@@ -868,69 +873,48 @@ namespace TimeFlowServer.ServerCore
                         priority = (int)task.Priority,
                         status = (int)task.Status,
                         categoryId = task.CategoryId,
-                        isGroupTask = task.IsGroupTask
+                        isGroupTask = task.IsGroupTask,
+                        createdBy = task.CreatedBy,
+                        completedAt = task.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        createdAt = task.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                        updatedAt = task.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss")
                     }
                 };
-                await SendResponseAsync(JsonSerializer.Serialize(response));
-            }
-            catch (Exception ex) { await SendErrorAsync(ex.Message); }
-        }
 
-        private async Task HandleGetTaskDetailFullAsync(JsonElement root)
-        {
-            try
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned task detail for TaskId={taskId}");
+            }
+            catch (Exception ex)
             {
-                if (!ValidateAuth(root, out string username)) return;
-                var user = _userRepo.GetByUsername(username);
-
-                int taskId = root.GetProperty("taskId").GetInt32();
-                var task = _taskRepo.GetById(taskId);
-
-                if (task == null) { await SendErrorAsync("Task not found"); return; }
-                if (task.CreatedBy != user.UserId && !task.IsGroupTask) { await SendErrorAsync("Access denied"); return; }
-
-                var category = task.CategoryId.HasValue ? _categoryRepo.GetById(task.CategoryId.Value) : null;
-                var comments = _commentRepo.GetByTaskId(taskId);
-                var activities = _activityLogRepo.GetByTaskId(taskId);
-                var assignees = task.IsGroupTask ? GetAssigneeNames(taskId) : new List<string>();
-
-                var response = new
-                {
-                    status = "success",
-                    data = new
-                    {
-                        taskId = task.TaskId,
-                        title = task.Title,
-                        description = task.Description,
-                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
-                        priority = (int)task.Priority,
-                        status = (int)task.Status,
-                        categoryName = category?.CategoryName ?? "Other",
-                        categoryColor = category?.Color ?? "#6B7280",
-                        assignees = assignees,
-                        comments = comments.Select(c => new {
-                            commentId = c.CommentId,
-                            username = c.Username,
-                            content = c.CommentText,
-                            createdAt = c.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-                        }),
-                        activities = activities.Select(a => new {
-                            description = a.ActivityDescription,
-                            createdAt = a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-                        })
-                    }
-                };
-                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Error(ex, $"[{_clientId}] Error getting task detail");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
-            catch (Exception ex) { await SendErrorAsync(ex.Message); }
         }
 
         private async Task HandleCreateTaskAsync(JsonElement root)
         {
             try
+            {
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                var data = root.GetProperty("data");
                 
                 // Parse categoryId
-                
+                int? categoryId = null;
                 if (data.TryGetProperty("categoryId", out var catIdElem) && 
                     catIdElem.ValueKind != JsonValueKind.Null && 
                     catIdElem.ValueKind == JsonValueKind.Number)
@@ -956,25 +940,22 @@ namespace TimeFlowServer.ServerCore
 
                 bool isGroupTask = data.TryGetProperty("isGroupTask", out var isGroup) && isGroup.GetBoolean();
                 
-                }
-                
-                }
-                
                 var newTask = new TaskItem
                 {
+                    Title = data.GetProperty("title").GetString() ?? "",
+                    Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : null,
+                    DueDate = data.TryGetProperty("dueDate", out var dueDate) && !string.IsNullOrEmpty(dueDate.GetString()) 
+                        ? DateTime.Parse(dueDate.GetString()!) : null,
+                    Priority = (TaskPriority)data.GetProperty("priority").GetInt32(),
                     Status = data.TryGetProperty("status", out var statusProp) ? (TimeFlow.Models.TaskStatus)statusProp.GetInt32() : TimeFlow.Models.TaskStatus.Pending,
                     CategoryId = categoryId,
                     CreatedBy = user.UserId,
                     IsGroupTask = isGroupTask
-                    CreatedBy = user.UserId, // ✅ Always use authenticated user's ID
-                    IsGroupTask = data.TryGetProperty("isGroupTask", out var isGroup) && isGroup.GetBoolean()
+                };
+
                 Log.Information($"[{_clientId}] Creating task: {newTask.Title} for user {username} (IsGroupTask: {isGroupTask}, GroupId: {groupId}, AssignedTo: {assignedTo})");
 
                 // Create task
-
-                // ✅ Create task (validation + activity logging done inside transaction)
-
-                // ✅ Create task (validation + activity logging done inside transaction)
                 int taskId = _taskRepo.Create(newTask);
 
                 if (taskId > 0)
@@ -999,7 +980,12 @@ namespace TimeFlowServer.ServerCore
                 }
                 else
                 {
-                    await SendErrorAsync("Failed to create task");
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to create task" }));
+                    Log.Warning($"[{_clientId}] ✗ Task creation returned 0");
+                }
+            }
+            catch (TimeFlow.Data.Exceptions.ValidationException ex)
+            {
                 await SendResponseAsync(JsonSerializer.Serialize(new { 
                     status = "validation_error",
                     field = ex.Field,
@@ -1014,19 +1000,9 @@ namespace TimeFlowServer.ServerCore
                     message = ex.Message 
                 }));
                 Log.Warning($"[{_clientId}] Unauthorized task creation: {ex.Message}");
-                    status = "unauthorized",
-                    message = ex.Message 
-                }));
-                Log.Error(ex, $"[{_clientId}] Error creating task");
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
-                    message = ex.Message 
-                }));
-                // Generic errors
-                Log.Error(ex, $"[{_clientId}] Error creating task");
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
             catch (Exception ex)
             {
-                // Generic errors
                 Log.Error(ex, $"[{_clientId}] Error creating task");
                 await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
@@ -1036,19 +1012,26 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                if (!ValidateAuth(root, out string username)) return;
-                var user = _userRepo.GetByUsername(username);
                 var data = root.GetProperty("data");
                 int taskId = data.GetProperty("taskId").GetInt32();
+
+                string token = root.GetProperty("token").GetString();
+                if (!_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "unauthorized", message = "Session expired" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null) return;
 
                 var existingTask = _taskRepo.GetById(taskId);
                 if (existingTask == null || existingTask.CreatedBy != user.UserId)
                 {
-                    await SendErrorAsync("No permission or task not found");
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "No permission or task not found" }));
                     return;
                 }
 
-                // Update fields
                 existingTask.Title = data.GetProperty("title").GetString();
                 existingTask.Description = data.TryGetProperty("description", out var desc) ? desc.GetString() : null;
                 if (data.TryGetProperty("dueDate", out var due) && !string.IsNullOrEmpty(due.GetString()))
@@ -1060,124 +1043,299 @@ namespace TimeFlowServer.ServerCore
                 existingTask.UpdatedAt = DateTime.Now;
 
                 bool success = _taskRepo.Update(existingTask, user.UserId);
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = success ? "success" : "error" }));
+
+                if (success)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Database update failed" }));
+                }
             }
-            catch (Exception ex) { await SendErrorAsync(ex.Message); }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error in HandleUpdateTaskAsync");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
         }
 
         private async Task HandleDeleteTaskAsync(JsonElement root)
         {
             try
             {
-                if (!ValidateAuth(root, out string username)) return;
-                var user = _userRepo.GetByUsername(username);
-                int taskId = root.GetProperty("taskId").GetInt32();
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
 
-                // Sử dụng DeleteWithCascade từ Staging
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Deleting task: {taskId}");
+
+                // ✅ Use DeleteWithCascade (handles authorization, cascade delete, activity logging)
                 bool success = _taskRepo.DeleteWithCascade(taskId, user.UserId);
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = success ? "success" : "error" }));
+
+                if (success)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                    Log.Information($"[{_clientId}] ✓ Task deleted with cascade: {taskId}");
+                    
+                    // ✅ REMOVED: Activity log (already logged in DeleteWithCascade)
+                }
+                else
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to delete task" }));
+                    Log.Warning($"[{_clientId}] ✗ Task deletion failed: {taskId}");
+                }
             }
-            catch (Exception ex) { await SendErrorAsync(ex.Message); }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized task deletion: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error deleting task");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
         }
 
         private async Task HandleUpdateTaskStatusAsync(JsonElement root)
         {
             try
             {
-                if (!ValidateAuth(root, out string username)) return;
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
                 var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
 
                 int taskId = root.GetProperty("taskId").GetInt32();
                 int statusValue = root.GetProperty("status").GetInt32();
                 var newStatus = (TimeFlow.Models.TaskStatus)statusValue;
 
+                Log.Information($"[{_clientId}] Updating task status: TaskId={taskId}, Status={newStatus}");
+
+                // ✅ Use UpdateStatus with authorization (validation + activity logging done inside)
                 bool success = _taskRepo.UpdateStatus(taskId, newStatus, user.UserId);
-                await SendResponseAsync(JsonSerializer.Serialize(new { status = success ? "success" : "error" }));
-            }
-            catch (Exception ex) { await SendErrorAsync(ex.Message); }
-        }
-
-        // =================================================================
-        // 4. GROUP TASK ASSIGNMENT (Từ Chatbox)
-        // =================================================================
-
-        private async Task HandleAssignGroupTaskAsync(JsonElement root)
-        {
-            try
-            {
-                if (_currentUsername == null) return;
-                int taskId = root.GetProperty("taskId").GetInt32();
-                int groupId = root.GetProperty("groupId").GetInt32();
-                string targetUsername = root.GetProperty("assignedToUsername").GetString() ?? "";
-
-                var currentUser = _userRepo.GetByUsername(_currentUsername);
-                var targetUser = _userRepo.GetByUsername(targetUsername);
-
-                if (targetUser == null)
-                {
-                    await SendErrorAsync("Người dùng không tồn tại.");
-                    return;
-                }
-
-                bool success = _groupTaskRepo.AssignTask(taskId, groupId, targetUser.UserId, currentUser.UserId);
 
                 if (success)
                 {
-                    await SendResponseAsync(JsonSerializer.Serialize(new
-                    {
-                        type = "notification",
-                        message = $"Đã giao task cho {targetUsername} thành công!"
-                    }));
-
-                    lock (_clientsLock)
-                    {
-                        if (_onlineClients.TryGetValue(targetUsername, out TcpClient? targetClient))
-                        {
-                            var notif = new { type = "notification", message = $"Bạn vừa được giao việc bởi {_currentUsername}." };
-                            _ = SendToClientAsync(targetClient, JsonSerializer.Serialize(notif));
-                        }
-                    }
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "success" }));
+                    Log.Information($"[{_clientId}] ✓ Task status updated: {taskId} -> {newStatus}");
                 }
                 else
                 {
-                    await SendErrorAsync("Giao việc thất bại.");
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Failed to update status" }));
                 }
+            }
+            catch (TimeFlow.Data.Exceptions.ValidationException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "validation_error",
+                    field = ex.Field,
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Validation error updating status: {ex.Message}");
+            }
+            catch (TimeFlow.Data.Exceptions.UnauthorizedException ex)
+            {
+                await SendResponseAsync(JsonSerializer.Serialize(new { 
+                    status = "unauthorized",
+                    message = ex.Message 
+                }));
+                Log.Warning($"[{_clientId}] Unauthorized status update: {ex.Message}");
             }
             catch (Exception ex)
             {
-                await SendErrorAsync("Lỗi server khi giao việc.");
+                Log.Error(ex, $"[{_clientId}] Error updating task status");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
             }
         }
-
-        // =================================================================
-        // 5. HELPER METHODS
-        // =================================================================
 
         private async Task HandleGetCategoriesAsync(JsonElement root)
         {
-            var categories = _categoryRepo.GetAll();
-            await SendResponseAsync(JsonSerializer.Serialize(new { status = "success", data = categories }));
+            try
+            {
+                Log.Information($"[{_clientId}] Get categories");
+
+                var categories = _categoryRepo.GetAll();
+
+                var response = new
+                {
+                    status = "success",
+                    data = categories.Select(c => new
+                    {
+                        categoryId = c.CategoryId,
+                        categoryName = c.CategoryName,
+                        color = c.Color,
+                        iconName = c.IconName,
+                        isDefault = c.IsDefault
+                    })
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned {categories.Count} categories");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting categories");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
         }
 
-        private bool ValidateAuth(JsonElement root, out string username)
+        private async Task HandleGetTaskDetailFullAsync(JsonElement root)
         {
-            username = "";
-            string token = root.TryGetProperty("token", out var t) ? t.GetString() : null;
-            if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out username))
+            try
             {
-                SendErrorAsync("Not authenticated").Wait();
-                return false;
+                // Authenticate từ token
+                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                var user = _userRepo.GetByUsername(username);
+                if (user == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "User not found" }));
+                    return;
+                }
+
+                int taskId = root.GetProperty("taskId").GetInt32();
+                Log.Information($"[{_clientId}] Get full task detail: {taskId}");
+
+                var task = _taskRepo.GetById(taskId);
+
+                if (task == null)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Task not found" }));
+                    return;
+                }
+
+                // Check ownership
+                if (task.CreatedBy != user.UserId && !task.IsGroupTask)
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Access denied" }));
+                    return;
+                }
+
+                // Get category info
+                var category = task.CategoryId.HasValue ? _categoryRepo.GetById(task.CategoryId.Value) : null;
+
+                // Get comments
+                var comments = _commentRepo.GetByTaskId(taskId);
+
+                // Get activities
+                var activities = _activityLogRepo.GetByTaskId(taskId);
+
+                // Get assignees (nếu là group task)
+                var assignees = new List<string>();
+                if (task.IsGroupTask)
+                {
+                    assignees = GetAssigneeNames(taskId);
+                }
+
+                // Calculate progress based on status
+                int progress = task.Status switch
+                {
+                    TimeFlow.Models.TaskStatus.Pending => 0,
+                    TimeFlow.Models.TaskStatus.InProgress => 50,
+                    TimeFlow.Models.TaskStatus.Completed => 100,
+                    TimeFlow.Models.TaskStatus.Cancelled => 0,
+                    _ => 0
+                };
+
+                var response = new
+                {
+                    status = "success",
+                    data = new
+                    {
+                        // Basic task info
+                        taskId = task.TaskId,
+                        title = task.Title,
+                        description = task.Description,
+                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)task.Priority,
+                        status = (int)task.Status,
+                        isGroupTask = task.IsGroupTask,
+                        createdBy = task.CreatedBy,
+                        completedAt = task.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        createdAt = task.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                        updatedAt = task.UpdatedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        
+                        // Extended info
+                        categoryName = category?.CategoryName ?? "Other",
+                        categoryColor = category?.Color ?? "#6B7280",
+                        assignees = assignees,
+                        progress = progress,
+                        
+                        // Comments
+                        comments = comments.Select(c => new
+                        {
+                            commentId = c.CommentId,
+                            userId = c.UserId,
+                            username = c.Username,
+                            fullName = c.FullName,
+                            content = c.CommentText,
+                            createdAt = c.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                            isEdited = c.IsEdited
+                        }),
+                        
+                        // Activities
+                        activities = activities.Select(a => new
+                        {
+                            logId = a.LogId,
+                            userId = a.UserId,
+                            activityType = a.ActivityType,
+                            description = a.ActivityDescription,
+                            createdAt = a.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                        })
+                    }
+                };
+
+                await SendResponseAsync(JsonSerializer.Serialize(response));
+                Log.Information($"[{_clientId}] ✓ Returned full task detail for TaskId={taskId}");
             }
-            return true;
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"[{_clientId}] Error getting full task detail");
+                await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = ex.Message }));
+            }
         }
 
         private List<string> GetAssigneeNames(int taskId)
         {
             var assignees = new List<string>();
+            
             try
             {
-                // Logic truy vấn trực tiếp DB để lấy tên người được giao việc
-                // Lưu ý: Đảm bảo chuỗi kết nối chính xác trong Config
                 using (var conn = new Microsoft.Data.SqlClient.SqlConnection(TimeFlow.Data.Configuration.DbConfig.GetConnectionString()))
                 {
                     conn.Open();
@@ -1185,8 +1343,9 @@ namespace TimeFlowServer.ServerCore
                         SELECT u.Username, u.FullName
                         FROM GroupTasks gt
                         INNER JOIN Users u ON gt.AssignedTo = u.UserId
-                        WHERE gt.TaskId = @TaskId AND gt.AssignedTo IS NOT NULL";
-
+                        WHERE gt.TaskId = @TaskId AND gt.AssignedTo IS NOT NULL
+                    ";
+                    
                     using (var cmd = new Microsoft.Data.SqlClient.SqlCommand(query, conn))
                     {
                         cmd.Parameters.AddWithValue("@TaskId", taskId);
@@ -1203,14 +1362,14 @@ namespace TimeFlowServer.ServerCore
                 }
             }
             catch (Exception ex)
-                if (!response.EndsWith("\n")) response += "\n";
-                byte[] bytes = Encoding.UTF8.GetBytes(response);
+            {
                 Log.Warning(ex, "Failed to get assignee names");
             }
+            
             return assignees;
         }
-                byte[] bytes = Encoding.UTF8.GetBytes(response);
-        private async Task SendResponseAsync(string json)
+
+        private async Task SendResponseAsync(string response)
         {
             try
             {
@@ -1221,21 +1380,6 @@ namespace TimeFlowServer.ServerCore
             {
                 Log.Warning(ex, $"[{_clientId}] Failed to send response");
             }
-        }
-
-        private async Task SendErrorAsync(string message)
-        {
-            await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = message }));
-        }
-
-        private async Task SendToClientAsync(TcpClient client, string json)
-        {
-            try
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-                await client.GetStream().WriteAsync(bytes, 0, bytes.Length);
-            }
-            catch { }
         }
 
         private void Cleanup()
@@ -1249,7 +1393,27 @@ namespace TimeFlowServer.ServerCore
                         if (_onlineClients.TryGetValue(_currentUsername, out var client) && client == _client)
                         {
                             _onlineClients.Remove(_currentUsername);
+                            Log.Information($"[{_clientId}] User '{_currentUsername}' removed from online list");
                         }
+                    }
+
+                    // Log logout activity
+                    try
+                    {
+                        var user = _userRepo.GetByUsername(_currentUsername);
+                        if (user != null)
+                        {
+                            _activityLogRepo.LogActivity(user.UserId, null, "Logout", "User disconnected from TCP");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to log logout activity");
+                    }
+                }
+
+                _client.Close();
+            }
             catch (Exception ex)
             {
                 Log.Warning(ex, $"[{_clientId}] Cleanup error");
@@ -1446,15 +1610,5 @@ namespace TimeFlowServer.ServerCore
             }
         }
 
-            catch (Exception ex)
-            {
-                Log.Warning(ex, $"[{_clientId}] Cleanup error");
-            }
-        }
-            catch (Exception ex)
-            {
-                Log.Warning(ex, $"[{_clientId}] Cleanup error");
-            }
-        }
     }
 }

@@ -241,7 +241,7 @@ namespace TimeFlow.Tasks
             if (_currentTask == null) return false;
             
             // Get current user ID from SessionManager
-            int currentUserId = SessionManager.CurrentUserId ?? 0;
+            int currentUserId = SessionManager.UserId ?? 0;
             
             if (currentUserId == 0) return false;
 

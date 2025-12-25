@@ -5,8 +5,8 @@ using TimeFlow.Data.Configuration;
 
 namespace TimeFlow.Data.Repositories
 {
-    // Class DTO để chứa dữ liệu tin nhắn
-    public class MessageData
+    // Class DTO để chứa dữ liệu tin nhắn
+    public class MessageData
     {
         public string Sender { get; set; } = "";
         public string Receiver { get; set; } = "";
@@ -34,7 +34,7 @@ namespace TimeFlow.Data.Repositories
         }
 
         // 1. Gửi tin nhắn cá nhân (1-1)
-        public void AddMessage(string sender, string receiver, string content)
+        public void AddMessage(string sender, string receiver, string content)
         {
             var connStr = _connectionString ?? DbConfig.GetConnectionString();
             using (SqlConnection conn = new SqlConnection(connStr))
@@ -70,7 +70,6 @@ namespace TimeFlow.Data.Repositories
                     cmd.Parameters.AddWithValue("@s", sender);
                     cmd.Parameters.AddWithValue("@c", content);
                     cmd.Parameters.AddWithValue("@g", groupId);
-                    cmd.Parameters.AddWithValue("@c", content);
                     cmd.ExecuteNonQuery();
                 }
             }
@@ -85,7 +84,7 @@ namespace TimeFlow.Data.Repositories
             {
                 conn.Open();
                 string query = @"SELECT SenderUsername, ReceiverUsername, MessageContent, CreatedAt
-                                 FROM Messages 
+                                FROM Messages
                                 WHERE IsGroupMessage = 0 
                                     AND ((SenderUsername = @u1 AND ReceiverUsername = @u2)
                                     OR (SenderUsername = @u2 AND ReceiverUsername = @u1))
@@ -123,7 +122,7 @@ namespace TimeFlow.Data.Repositories
             {
                 conn.Open();
                 string query = @"SELECT SenderUsername, GroupId, MessageContent, CreatedAt
-                                 FROM Messages 
+                                FROM Messages
                                 WHERE IsGroupMessage = 1 AND GroupId = @g
                                 ORDER BY CreatedAt ASC";
 

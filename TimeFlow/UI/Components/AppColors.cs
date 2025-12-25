@@ -21,7 +21,6 @@ namespace TimeFlow.UI.Components
 
         // Blue
         public static Color Blue50 = ColorTranslator.FromHtml("#EFF6FF");
-        public static readonly Color Blue100 = Color.FromArgb(225, 240, 255);
         public static Color Blue500 = ColorTranslator.FromHtml("#3B82F6");
         public static Color Blue600 = ColorTranslator.FromHtml("#2563EB");
 

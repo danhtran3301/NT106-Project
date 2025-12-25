@@ -75,7 +75,7 @@ namespace TimeFlow.Services
                 { 
                     type = "get_tasks",
                     token = SessionManager.Token,
-                    userId = SessionManager.CurrentUserId
+                    userId = SessionManager.UserId
                 };
                 string responseJson = await SendRequestAsync(request);
 

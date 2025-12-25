@@ -35,10 +35,8 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1200, 700);
-            this.MinimumSize = new System.Drawing.Size(1024, 600);
             this.Name = "FormGroupTaskList";
             this.Text = "Group Tasks";
-            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.FormGroupTaskList_Load);
             this.ResumeLayout(false);
         }
