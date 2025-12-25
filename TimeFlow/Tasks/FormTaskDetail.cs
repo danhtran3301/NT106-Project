@@ -136,6 +136,12 @@ namespace TimeFlow.Tasks
                     //Progressive rendering
                     this.Invoke((MethodInvoker)delegate
                     {
+                        // Update assignee info nếu là group task
+                        if (_currentTask.IsGroupTask)
+                        {
+                            UpdateAssigneeInfo();
+                        }
+                        
                         // Render comments nếu có
                         if (_currentTask.HasComments)
                         {
@@ -739,6 +745,111 @@ namespace TimeFlow.Tasks
             if (modernPanel == null) return null;
 
             return modernPanel.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
+        }
+
+        private void UpdateAssigneeInfo()
+        {
+            if (_currentTask == null || !_currentTask.IsGroupTask) return;
+
+            var rightSidebar = FindRightSidebarPanel();
+            if (rightSidebar == null) return;
+
+            // Tìm Label "Assigned to: ..." (label thứ 2 sau "Group Task")
+            var assigneeLabels = rightSidebar.Controls.OfType<Label>()
+                .Where(l => l.Text != null && l.Text.StartsWith("Assigned to:"))
+                .ToList();
+
+            if (assigneeLabels.Count > 0)
+            {
+                var assigneeLabel = assigneeLabels[0];
+                string assigneeText;
+                if (_currentTask.HasAssignees)
+                {
+                    assigneeText = string.Join(", ", _currentTask.Assignees.Take(3));
+                    if (_currentTask.Assignees.Count > 3)
+                    {
+                        assigneeText += $" and {_currentTask.Assignees.Count - 3} more";
+                    }
+                    assigneeLabel.Text = $"Assigned to: {assigneeText}";
+                    assigneeLabel.ForeColor = AppColors.Gray800;
+                }
+                else
+                {
+                    assigneeLabel.Text = "Assigned to: ⚠ Unassigned";
+                    assigneeLabel.ForeColor = AppColors.Red500;
+                }
+            }
+
+            // Update phần Assignees trong Details section
+            var detailsContainer = rightSidebar.Controls.OfType<TableLayoutPanel>()
+                .FirstOrDefault(t => t.ColumnCount == 2 && t.RowCount >= 1);
+            
+            if (detailsContainer != null)
+            {
+                // Tìm FlowLayoutPanel chứa assignee info (row 0, column 1)
+                if (detailsContainer.Controls.Count > 1)
+                {
+                    var assigneesPanel = detailsContainer.Controls[1] as FlowLayoutPanel;
+                    if (assigneesPanel != null && assigneesPanel.Controls.Count >= 2)
+                    {
+                        // Label thứ 2 chứa tên assignee
+                        var assigneeNameLabel = assigneesPanel.Controls[1] as Label;
+                        if (assigneeNameLabel != null)
+                        {
+                            if (_currentTask.HasAssignees)
+                            {
+                                string assigneeNames = string.Join(", ", _currentTask.Assignees.Take(2));
+                                assigneeNameLabel.Text = assigneeNames;
+                                assigneeNameLabel.ForeColor = AppColors.Gray800;
+                                
+                                // Update hoặc thêm label "(+X)" nếu có nhiều hơn 2 assignees
+                                if (_currentTask.Assignees.Count > 2)
+                                {
+                                    var countLabel = assigneesPanel.Controls.OfType<Label>()
+                                        .FirstOrDefault(l => l.Text != null && l.Text.StartsWith("(+"));
+                                    if (countLabel != null)
+                                    {
+                                        countLabel.Text = $"(+{_currentTask.Assignees.Count - 2})";
+                                    }
+                                    else
+                                    {
+                                        assigneesPanel.Controls.Add(new Label
+                                        {
+                                            Text = $"(+{_currentTask.Assignees.Count - 2})",
+                                            Font = FontRegular,
+                                            ForeColor = AppColors.Gray500,
+                                            AutoSize = true
+                                        });
+                                    }
+                                }
+                                else
+                                {
+                                    // Xóa label "(+X)" nếu không còn nhiều hơn 2
+                                    var countLabel = assigneesPanel.Controls.OfType<Label>()
+                                        .FirstOrDefault(l => l.Text != null && l.Text.StartsWith("(+"));
+                                    if (countLabel != null)
+                                    {
+                                        assigneesPanel.Controls.Remove(countLabel);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                assigneeNameLabel.Text = "Unassigned";
+                                assigneeNameLabel.ForeColor = AppColors.Gray800;
+                                
+                                // Xóa label "(+X)" nếu có
+                                var countLabel = assigneesPanel.Controls.OfType<Label>()
+                                    .FirstOrDefault(l => l.Text != null && l.Text.StartsWith("(+"));
+                                if (countLabel != null)
+                                {
+                                    assigneesPanel.Controls.Remove(countLabel);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void FormTaskDetail_Load(object sender, EventArgs e)
