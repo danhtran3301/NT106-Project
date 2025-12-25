@@ -155,7 +155,7 @@ namespace TimeFlow.UI
             }
 
             // Check authentication
-            if (!SessionManager.IsAuthenticated || !SessionManager.UserId.HasValue)
+            if (!SessionManager.IsAuthenticated || !SessionManager.CurrentUserId.HasValue)
             {
                 MessageBox.Show("Vui lòng đăng nhập để thực hiện thao tác này!", "Lỗi",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -242,7 +242,7 @@ namespace TimeFlow.UI
         private async System.Threading.Tasks.Task CreateTaskAsync(string title, string description, DateTime dueDate)
         {
             // ✅ Validate UserId
-            if (!SessionManager.UserId.HasValue || SessionManager.UserId.Value <= 0)
+            if (!SessionManager.CurrentUserId.HasValue || SessionManager.CurrentUserId.Value <= 0)
             {
                 throw new Exception("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
             }
@@ -265,7 +265,7 @@ namespace TimeFlow.UI
                 Priority = priority, // ✅ From ComboBox
                 Status = TimeFlow.Models.TaskStatus.Pending,
                 CategoryId = categoryId, // ✅ From ComboBox (can be null)
-                CreatedBy = SessionManager.UserId.Value,
+                CreatedBy = SessionManager.CurrentUserId.Value,
                 IsGroupTask = false,
                 CreatedAt = DateTime.Now
             };

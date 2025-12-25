@@ -1,7 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System;
+using System.IO;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 using TimeFlow.UI;
@@ -16,59 +17,19 @@ namespace TimeFlow.Authentication
             InitializeComponent();
             passwordTxtbox.PasswordChar = '*';
         }
+
         public class LoginResult
         {
             public bool Success { get; set; }
             public string Token { get; set; }
             public string Username { get; set; }
             public string Email { get; set; }
+            public TcpClient ConnectedClient { get; set; }
         }
 
         private void FormDangNhap_Load(object sender, EventArgs e)
         {
-            string tokenPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\token.jwt");
 
-            if (File.Exists(tokenPath))
-            {
-                string token = File.ReadAllText(tokenPath);
-
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        var result = SendAutoLoginRequest(token);
-
-                        this.Invoke((MethodInvoker)(() =>
-                        {
-                            if (result.Success)
-                            {
-                                MessageBox.Show("Tự động đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                                this.Hide();
-                                FormGiaoDien mainForm = new FormGiaoDien();
-                                mainForm.FormClosed += (s, args) => this.Close();
-                                mainForm.Show();
-                            }
-                            else
-                            {
-                                File.Delete(tokenPath); // Token sai/hết hạn → xoá đi
-                            }
-                        }));
-                    }
-                    catch (Exception ex)
-                    {
-                        // Không cần show lỗi lớn nếu token fail
-                        this.Invoke((MethodInvoker)(() =>
-                        {
-                            MessageBox.Show("Tự đăng nhập thất bại: " + ex.Message);
-                        }));
-                    }
-                });
-            }
-        }
-
-        private void CheckBoxShowPassword_CheckedChanged(object sender, EventArgs e)
-        {
-            passwordTxtbox.PasswordChar = checkBoxShowPassword.Checked ? '\0' : '*';
         }
 
         private void buttonLogin_Click(object sender, EventArgs e)
@@ -78,49 +39,54 @@ namespace TimeFlow.Authentication
 
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
-                MessageBox.Show("Vui lòng nhập đầy đủ Username và Password!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            // Chạy trong thread nền
             Task.Run(() =>
             {
                 try
                 {
                     var result = SendLoginRequest(username, password);
-
                     this.Invoke((MethodInvoker)delegate
                     {
                         if (result.Success)
                         {
+                            SetupGlobalState(result);
                             MessageBox.Show("Đăng nhập thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            this.Hide();
-                            FormGiaoDien mainForm = new FormGiaoDien();
-                            mainForm.FormClosed += (s, args) => this.Close();
-                            mainForm.Show();
+
+                            // ✅ SỬA: Chỉ báo OK và đóng form login
+                            this.DialogResult = DialogResult.OK;
+                            this.Close();
                         }
-                        else if (!result.Success)
+                        else
                         {
                             MessageBox.Show("Tên đăng nhập hoặc mật khẩu không đúng!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            usernameTxtbox.Focus();
                         }
                     });
                 }
-                catch (TimeoutException)
-                {
-                    this.Invoke((MethodInvoker)(() =>
-                    {
-                        MessageBox.Show("Timeout khi chờ phản hồi từ server.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }));
-                }
                 catch (Exception ex)
                 {
-                    this.Invoke((MethodInvoker)(() =>
-                    {
-                        MessageBox.Show("Lỗi kết nối đến server: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }));
+                    this.Invoke((MethodInvoker)(() => MessageBox.Show("Lỗi kết nối: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error)));
                 }
             });
+        }
+
+        // Hàm phụ trợ để set GlobalState (tránh lặp code)
+        private void SetupGlobalState(LoginResult result)
+        {
+            GlobalState.Client = result.ConnectedClient;
+
+            // Xử lý an toàn cho UserId
+            int userId = 0;
+            try { userId = Convert.ToInt32(SessionManager.CurrentUserId); } catch { }
+
+            GlobalState.CurrentUser = new User
+            {
+                UserId = userId,
+                Username = result.Username,
+                Email = result.Email
+            };
         }
 
         private void buttonSignup_Click(object sender, EventArgs e)
@@ -130,22 +96,28 @@ namespace TimeFlow.Authentication
             this.Hide();
         }
 
+        private void CheckBoxShowPassword_CheckedChanged(object sender, EventArgs e)
+        {
+            passwordTxtbox.PasswordChar = checkBoxShowPassword.Checked ? '\0' : '*';
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            MessageBox.Show("Chức năng đang phát triển.", "Thông báo");
+        }
         private LoginResult SendLoginRequest(string username, string password)
         {
             var loginData = new
             {
                 type = "login",
-                data = new
-                {
-                    username = username,
-                    password = password
-                }
+                data = new { username = username, password = password }
             };
 
             string json = System.Text.Json.JsonSerializer.Serialize(loginData);
             byte[] sendBytes = Encoding.UTF8.GetBytes(json);
 
-            using (TcpClient client = new TcpClient())
+            TcpClient client = new TcpClient();
+            try
             {
                 client.ReceiveTimeout = ServerConfig.Timeout;
                 client.SendTimeout = ServerConfig.Timeout;
@@ -155,14 +127,12 @@ namespace TimeFlow.Authentication
                 stream.Write(sendBytes, 0, sendBytes.Length);
                 stream.Flush();
 
-                byte[] buffer = new byte[2048];
+                byte[] buffer = new byte[4096];
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
                 string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
 
-                // Parse JSON
                 using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
                 var root = doc.RootElement;
-
                 string status = root.GetProperty("status").GetString();
 
                 if (status == "success")
@@ -172,11 +142,9 @@ namespace TimeFlow.Authentication
                     string usernameResp = root.GetProperty("user").GetProperty("username").GetString();
                     string email = root.GetProperty("user").GetProperty("email").GetString();
 
-                    // Lưu token ra file
-                    string tokenPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\token.jwt");
+                    string tokenPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "token.jwt");
                     File.WriteAllText(tokenPath, token);
 
-                    // Lưu session
                     SessionManager.SetUserSession(userId, usernameResp, email, token);
 
                     return new LoginResult
@@ -184,11 +152,13 @@ namespace TimeFlow.Authentication
                         Success = true,
                         Token = token,
                         Username = usernameResp,
-                        Email = email
+                        Email = email,
+                        ConnectedClient = client
                     };
                 }
                 else
                 {
+                    client.Close();
                     return new LoginResult { Success = false };
                 }
             }

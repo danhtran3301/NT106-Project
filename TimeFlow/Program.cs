@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Windows.Forms;
-using TimeFlow.UI;
-using TimeFlow.Server;
-using TimeFlow.Tasks;
-using TimeFlow.Server;
 using TimeFlow.Authentication;
 using TimeFlow.Configuration;
 
@@ -11,8 +7,6 @@ namespace TimeFlow
 {
     internal static class Program
     {
-        private static ApplicationContext _appContext;
-        
         [STAThread]
         static void Main()
         {
@@ -28,22 +22,20 @@ namespace TimeFlow
             Application.Run(_appContext);
         }
 
-        // ✅ Show login form và set làm main form
-        public static void ShowLoginForm()
-        {
-            var loginForm = new FormDangNhap();
-            
-            // ✅ Khi login thành công, form sẽ tự đóng và mở FormGiaoDien
-            loginForm.FormClosed += (s, e) =>
+            // Nếu người dùng bấm Đăng nhập thành công (Code ở Bước 2 trả về DialogResult.OK)
+            if (loginForm.ShowDialog() == DialogResult.OK)
             {
-                // Nếu không có form nào khác đang mở, thoát app
-                if (Application.OpenForms.Count == 0)
+                // 2. Kiểm tra GlobalState (An toàn)
+                if (GlobalState.CurrentUser != null)
                 {
-                    Application.Exit();
+                    Application.Run(new FormGiaoDien());
                 }
-            };
-            
-            loginForm.Show();
+            }
+            else
+            {
+                // Người dùng tắt form đăng nhập -> Thoát ứng dụng
+                Application.Exit();
+            }
         }
     }
 }

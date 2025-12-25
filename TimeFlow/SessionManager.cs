@@ -4,14 +4,13 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace TimeFlow
 {
     public class SessionManager
     {
-        public static int? UserId { get; set; }
+        
+        public static int? CurrentUserId { get; set; }
         public static string Username { get; set; }
         public static string Email { get; set; }
         public static string Token { get; set; }
@@ -19,7 +18,7 @@ namespace TimeFlow
 
         public static void SetUserSession(int userId, string username, string email, string token)
         {
-            UserId = userId;
+            CurrentUserId = userId;
             Username = username;
             Email = email;
             Token = token;
@@ -39,11 +38,11 @@ namespace TimeFlow
 
         public static void ClearSession()
         {
-            UserId = null;
+            CurrentUserId = 0; // Reset về 0
             Username = null;
             Email = null;
             Token = null;
-            
+
             if (TcpClient != null)
             {
                 try
