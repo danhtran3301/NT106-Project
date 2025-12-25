@@ -15,6 +15,10 @@ namespace TimeFlowServer.ServerCore
         private readonly UserRepository _userRepo;
         private readonly ActivityLogRepository _activityRepo;
         private readonly TaskRepository _taskRepo;
+        private readonly GroupRepository _groupRepo;
+        private readonly GroupMemberRepository _groupMemberRepo;
+        private readonly MessageRepository _messageRepo;
+        private readonly GroupTaskRepository _groupTaskRepo;
         private readonly CategoryRepository _categoryRepo;
         private readonly CommentRepository _commentRepo;
 
@@ -55,12 +59,17 @@ namespace TimeFlowServer.ServerCore
             _categoryRepo = categoryRepo;
             _commentRepo = commentRepo;
 
-            // Gán tham số mới
-            _messageRepo = messageRepo;
-            _groupTaskRepo = groupTaskRepo;
-            _groupRepo = groupRepo;
-            _groupMemberRepo = groupMemberRepo;
-            _contactRepo = contactRepo;
+            // Khoi tao repositories voi connection string
+            var dbHelper = new TimeFlow.Data.DatabaseHelper(connectionString);
+            _userRepo = new UserRepository(dbHelper);
+            _activityLogRepo = new ActivityLogRepository(dbHelper);
+            _taskRepo = new TaskRepository(dbHelper);
+            _groupRepo = new GroupRepository(dbHelper);
+            _groupMemberRepo = new GroupMemberRepository(dbHelper);
+            _messageRepo = new MessageRepository(dbHelper);
+            _groupTaskRepo = new GroupTaskRepository(dbHelper);
+            _categoryRepo = new CategoryRepository(dbHelper);
+            _commentRepo = new CommentRepository(dbHelper);
 
             IPAddress localAddr = IPAddress.Parse(ipAddress);
             _listener = new TcpListener(localAddr, port);
@@ -110,11 +119,10 @@ namespace TimeFlowServer.ServerCore
                 _taskRepo,
                 _categoryRepo,
                 _commentRepo,
-                _messageRepo,
-                _groupTaskRepo,
                 _groupRepo,
                 _groupMemberRepo,
-                _contactRepo,
+                _messageRepo,
+                _groupTaskRepo,  // ✅ Thêm GroupTaskRepository
                 _jwtManager,
                 _onlineClients,
                 _clientsLock

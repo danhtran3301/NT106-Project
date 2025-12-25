@@ -5,20 +5,31 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using TimeFlow.Models;
+using TimeFlow.Configuration;
 
 namespace TimeFlow.Services
 {
+    // DTO cho Group Member
+    public class GroupMemberDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; } = "";
+        public string? FullName { get; set; }
+        public string Role { get; set; } = "Member";
+    }
+
     public class TaskApiClient
     {
         private readonly string _serverHost;
         private readonly int _serverPort;
         private readonly int _timeout;
 
-        public TaskApiClient(string serverHost = "127.0.0.1", int serverPort = 1010, int timeout = 5000)
+        public TaskApiClient(string? serverHost = null, int? serverPort = null, int? timeout = null)
         {
-            _serverHost = serverHost;
-            _serverPort = serverPort;
-            _timeout = timeout;
+            // Sử dụng ServerConfig làm mặc định, cho phép override nếu cần
+            _serverHost = serverHost ?? ServerConfig.Host;
+            _serverPort = serverPort ?? ServerConfig.Port;
+            _timeout = timeout ?? ServerConfig.Timeout;
         }
 
         private async Task<string> SendRequestAsync(object request)
@@ -79,7 +90,7 @@ namespace TimeFlow.Services
 
                     foreach (var item in dataArray.EnumerateArray())
                     {
-                        tasks.Add(new TaskItem
+                        var task = new TaskItem
                         {
                             TaskId = item.GetProperty("taskId").GetInt32(),
                             Title = item.GetProperty("title").GetString() ?? "",
@@ -88,12 +99,52 @@ namespace TimeFlow.Services
                                 ? DateTime.Parse(dueDate.GetString()!) : null,
                             Priority = (TaskPriority)item.GetProperty("priority").GetInt32(),
                             Status = (TimeFlow.Models.TaskStatus)item.GetProperty("status").GetInt32(),
-                            CategoryId = item.TryGetProperty("categoryId", out var catId) ? catId.GetInt32() : null,
+                            CategoryId = item.TryGetProperty("categoryId", out var catId) && catId.ValueKind == JsonValueKind.Number 
+                                ? catId.GetInt32() : null,
                             IsGroupTask = item.GetProperty("isGroupTask").GetBoolean(),
                             CreatedAt = DateTime.Parse(item.GetProperty("createdAt").GetString()!),
                             UpdatedAt = item.TryGetProperty("updatedAt", out var updatedAt) && !string.IsNullOrEmpty(updatedAt.GetString())
                                 ? DateTime.Parse(updatedAt.GetString()!) : null
-                        });
+                        };
+
+                        // ✅ Parse GroupTask info nếu có
+                        if (item.TryGetProperty("groupTask", out var groupTaskElem) && groupTaskElem.ValueKind == JsonValueKind.Object)
+                        {
+                            task.GroupTask = new GroupTask
+                            {
+                                GroupTaskId = groupTaskElem.TryGetProperty("groupTaskId", out var gtId) ? gtId.GetInt32() : 0,
+                                GroupId = groupTaskElem.TryGetProperty("groupId", out var gId) ? gId.GetInt32() : 0,
+                                TaskId = task.TaskId,
+                                AssignedTo = groupTaskElem.TryGetProperty("assignedTo", out var assignedTo) && assignedTo.ValueKind == JsonValueKind.Number 
+                                    ? assignedTo.GetInt32() : null,
+                                AssignedBy = groupTaskElem.TryGetProperty("assignedBy", out var assignedBy) && assignedBy.ValueKind == JsonValueKind.Number 
+                                    ? assignedBy.GetInt32() : null,
+                                AssignedAt = groupTaskElem.TryGetProperty("assignedAt", out var assignedAt) && !string.IsNullOrEmpty(assignedAt.GetString())
+                                    ? DateTime.Parse(assignedAt.GetString()!) : null
+                            };
+                            
+                            // ✅ Parse additional fields
+                            if (groupTaskElem.TryGetProperty("groupName", out var groupNameElem) && groupNameElem.ValueKind == JsonValueKind.String)
+                            {
+                                // Lưu vào navigation property nếu cần
+                                task.GroupTask.Group = new Group { GroupName = groupNameElem.GetString() ?? "" };
+                            }
+                            
+                            if (groupTaskElem.TryGetProperty("assignedToUsername", out var atUsername) && atUsername.ValueKind == JsonValueKind.String)
+                            {
+                                var username = atUsername.GetString();
+                                var fullName = groupTaskElem.TryGetProperty("assignedToFullName", out var atFullName) && atFullName.ValueKind == JsonValueKind.String
+                                    ? atFullName.GetString() : null;
+                                
+                                task.GroupTask.AssignedUser = new User 
+                                { 
+                                    Username = username ?? "", 
+                                    FullName = fullName 
+                                };
+                            }
+                        }
+
+                        tasks.Add(task);
                     }
 
                     return tasks;
@@ -110,7 +161,7 @@ namespace TimeFlow.Services
             }
         }
 
-        public async Task<int> CreateTaskAsync(TaskItem task)
+        public async Task<int> CreateTaskAsync(TaskItem task, int? groupId = null)
         {
             try
             {
@@ -126,7 +177,8 @@ namespace TimeFlow.Services
                         priority = (int)task.Priority,
                         status = (int)task.Status,
                         categoryId = task.CategoryId,
-                        isGroupTask = task.IsGroupTask
+                        isGroupTask = task.IsGroupTask,
+                        groupId = groupId // ✅ Thêm groupId để server tạo GroupTask record
                     }
                 };
 
@@ -477,6 +529,266 @@ namespace TimeFlow.Services
             catch (Exception ex)
             {
                 throw new Exception("Failed to get task detail: " + ex.Message, ex);
+            }
+        }
+
+        public async Task<List<Group>> GetMyGroupsAsync()
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "get_my_groups",
+                    token = SessionManager.Token
+                };
+
+                string responseJson = await SendRequestAsync(request);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                // Support both 'type' = my_groups_list or status wrapper
+                if (root.TryGetProperty("type", out var t) && t.GetString() == "my_groups_list")
+                {
+                    if (root.GetProperty("status").GetString() == "success")
+                    {
+                        var list = new List<Group>();
+                        var data = root.GetProperty("data");
+                        foreach (var item in data.EnumerateArray())
+                        {
+                            var g = new Group
+                            {
+                                GroupId = item.GetProperty("groupId").GetInt32(),
+                                GroupName = item.GetProperty("groupName").GetString() ?? string.Empty,
+                                Description = item.TryGetProperty("description", out var d) ? d.GetString() : null
+                            };
+                            list.Add(g);
+                        }
+                        return list;
+                    }
+                }
+
+                // Fallback: check status
+                if (root.TryGetProperty("status", out var statusElem) && statusElem.GetString() == "success")
+                {
+                    var list = new List<Group>();
+                    var data = root.GetProperty("data");
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        var g = new Group
+                        {
+                            GroupId = item.GetProperty("groupId").GetInt32(),
+                            GroupName = item.GetProperty("groupName").GetString() ?? string.Empty,
+                            Description = item.TryGetProperty("description", out var d) ? d.GetString() : null
+                        };
+                        list.Add(g);
+                    }
+                    return list;
+                }
+
+                string err = GetErrorMessage(root);
+                throw new Exception("Server error: " + err);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to get groups: " + ex.Message, ex);
+            }
+        }
+
+        public async Task<int> CreateGroupAsync(string groupName, string description)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "create_group",
+                    token = SessionManager.Token,
+                    data = new
+                    {
+                        groupName = groupName,
+                        description = description
+                    }
+                };
+
+                string responseJson = await SendRequestAsync(request);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusElem))
+                {
+                    var status = statusElem.GetString();
+                    if (status == "success")
+                    {
+                        if (root.TryGetProperty("groupId", out var idElem))
+                        {
+                            return idElem.GetInt32();
+                        }
+                        // some responses embed groupId inside data
+                        if (root.TryGetProperty("data", out var data) && data.TryGetProperty("groupId", out var gElem))
+                        {
+                            return gElem.GetInt32();
+                        }
+                        return 1; // unknown but success
+                    }
+                    else if (status == "error")
+                    {
+                        string msg = GetErrorMessage(root);
+                        throw new Exception(msg);
+                    }
+                }
+
+                string errMsg = GetErrorMessage(root);
+                throw new Exception(errMsg);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to create group: " + ex.Message, ex);
+            }
+        }
+
+        public async Task<bool> AddGroupMemberAsync(int groupId, string username)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "add_group_member",
+                    token = SessionManager.Token,
+                    data = new
+                    {
+                        groupId = groupId,
+                        username = username
+                    }
+                };
+
+                string responseJson = await SendRequestAsync(request);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusElem))
+                {
+                    var status = statusElem.GetString();
+                    if (status == "success")
+                    {
+                        return true;
+                    }
+                    else if (status == "error")
+                    {
+                        string msg = GetErrorMessage(root);
+                        throw new Exception(msg);
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to add member: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Lấy danh sách thành viên của group
+        /// </summary>
+        public async Task<List<GroupMemberDto>> GetGroupMembersAsync(int groupId)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "get_group_members",
+                    token = SessionManager.Token,
+                    groupId = groupId
+                };
+
+                string responseJson = await SendRequestAsync(request);
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out var statusElem) && statusElem.GetString() == "success")
+                {
+                    var list = new List<GroupMemberDto>();
+                    var data = root.GetProperty("data");
+                    
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        list.Add(new GroupMemberDto
+                        {
+                            UserId = item.GetProperty("userId").GetInt32(),
+                            Username = item.GetProperty("username").GetString() ?? "",
+                            FullName = item.TryGetProperty("fullName", out var fn) ? fn.GetString() : null,
+                            Role = item.TryGetProperty("role", out var r) ? r.GetString() ?? "Member" : "Member"
+                        });
+                    }
+                    return list;
+                }
+
+                string err = GetErrorMessage(root);
+                throw new Exception("Server error: " + err);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to get group members: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Tạo Group Task với đầy đủ thông tin bao gồm assignee
+        /// </summary>
+        public async Task<int> CreateGroupTaskAsync(TaskItem task, int groupId, int? assignedTo = null)
+        {
+            try
+            {
+                var request = new
+                {
+                    type = "create_task",
+                    token = SessionManager.Token,
+                    data = new
+                    {
+                        title = task.Title,
+                        description = task.Description,
+                        dueDate = task.DueDate?.ToString("yyyy-MM-dd HH:mm:ss"),
+                        priority = (int)task.Priority,
+                        status = (int)task.Status,
+                        categoryId = task.CategoryId,
+                        isGroupTask = true,
+                        groupId = groupId,
+                        assignedTo = assignedTo
+                    }
+                };
+
+                string responseJson = await SendRequestAsync(request);
+
+                using var doc = JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+
+                string status = root.GetProperty("status").GetString();
+                
+                if (status == "success")
+                {
+                    return root.GetProperty("taskId").GetInt32();
+                }
+                else if (status == "validation_error")
+                {
+                    string field = root.TryGetProperty("field", out var f) ? f.GetString() : "";
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.ValidationException(field, message);
+                }
+                else if (status == "unauthorized")
+                {
+                    string message = GetErrorMessage(root);
+                    throw new Data.Exceptions.UnauthorizedException(message);
+                }
+                else
+                {
+                    string errorMsg = GetErrorMessage(root);
+                    throw new Exception("Server error: " + errorMsg);
+                }
+            }
+            catch (Data.Exceptions.ValidationException) { throw; }
+            catch (Data.Exceptions.UnauthorizedException) { throw; }
+            catch (Exception ex)
+            {
+                throw new Exception("Failed to create group task: " + ex.Message, ex);
             }
         }
     }

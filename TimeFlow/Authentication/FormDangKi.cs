@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TimeFlow.Configuration;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
@@ -40,10 +41,10 @@ namespace TimeFlow.Authentication
 
             using (TcpClient client = new TcpClient())
             {
-                client.ReceiveTimeout = 3000;
-                client.SendTimeout = 3000;
+                client.ReceiveTimeout = ServerConfig.Timeout;
+                client.SendTimeout = ServerConfig.Timeout;
 
-                client.Connect("127.0.0.1", 1010);
+                client.Connect(ServerConfig.Host, ServerConfig.Port);
                 using NetworkStream stream = client.GetStream();
 
                 stream.Write(sendBytes, 0, sendBytes.Length);

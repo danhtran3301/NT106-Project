@@ -1,4 +1,4 @@
--- ====================================================
+﻿-- ====================================================
 -- TimeFlow Database Schema
 -- Version: 1.0
 -- Description: Complete database schema for TimeFlow Task Management System
@@ -253,6 +253,34 @@ GO
 CREATE INDEX IX_UserTokens_UserId ON UserTokens(UserId);
 CREATE INDEX IX_UserTokens_Token ON UserTokens(Token);
 CREATE INDEX IX_UserTokens_ExpiresAt ON UserTokens(ExpiresAt);
+GO
+
+-- ====================================================
+-- 10. MESSAGES TABLE (For Chat functionality)
+-- ====================================================
+CREATE TABLE Messages (
+    MessageId INT PRIMARY KEY IDENTITY(1,1),
+    SenderUsername NVARCHAR(50) NOT NULL,
+    ReceiverUsername NVARCHAR(50) NULL, -- NULL for group messages
+    MessageContent NVARCHAR(MAX) NOT NULL,
+    IsGroupMessage BIT NOT NULL DEFAULT 0,
+    GroupId INT NULL,
+    CreatedAt DATETIME NOT NULL DEFAULT GETDATE(),
+    IsRead BIT NOT NULL DEFAULT 0,
+    
+    CONSTRAINT FK_Messages_Groups FOREIGN KEY (GroupId) 
+        REFERENCES Groups(GroupId) ON DELETE SET NULL,
+    CONSTRAINT CK_Messages_Receiver CHECK (
+        (IsGroupMessage = 0 AND ReceiverUsername IS NOT NULL) OR 
+        (IsGroupMessage = 1 AND GroupId IS NOT NULL)
+    )
+);
+GO
+
+CREATE INDEX IX_Messages_SenderUsername ON Messages(SenderUsername);
+CREATE INDEX IX_Messages_ReceiverUsername ON Messages(ReceiverUsername);
+CREATE INDEX IX_Messages_GroupId ON Messages(GroupId);
+CREATE INDEX IX_Messages_CreatedAt ON Messages(CreatedAt);
 GO
 
 -- ====================================================
@@ -552,7 +580,7 @@ PRINT '=================================================';
 PRINT 'TimeFlow Database Schema Created Successfully!';
 PRINT '=================================================';
 PRINT 'Database Name: TimeFlowDB';
-PRINT 'Tables Created: 9';
+PRINT 'Tables Created: 10';
 PRINT 'Views Created: 3';
 PRINT 'Stored Procedures Created: 4';
 PRINT 'Functions Created: 1';

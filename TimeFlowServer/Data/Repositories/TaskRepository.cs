@@ -218,12 +218,27 @@ namespace TimeFlow.Data.Repositories
             return task;
         }
 
-        // Lay tat ca tasks cua user
+        // ✅ SỬA: Lay tat ca tasks cua user (bao gom personal tasks + group tasks trong các group user là member)
         public List<TaskItem> GetByUserId(int userId)
         {
-            var query = @"SELECT * FROM Tasks 
-                         WHERE CreatedBy = @userId 
-                         ORDER BY DueDate ASC, Priority DESC";
+            // Query lấy:
+            // 1. Personal tasks do user tạo (IsGroupTask = 0)
+            // 2. Group tasks do user tạo (IsGroupTask = 1 AND CreatedBy = userId)
+            // 3. Group tasks trong các group mà user là member
+            var query = @"
+                SELECT DISTINCT t.* FROM Tasks t
+                LEFT JOIN GroupTasks gt ON t.TaskId = gt.TaskId
+                LEFT JOIN GroupMembers gm ON gt.GroupId = gm.GroupId AND gm.IsActive = 1
+                WHERE 
+                    -- Personal tasks của user
+                    (t.IsGroupTask = 0 AND t.CreatedBy = @userId)
+                    OR
+                    -- Group tasks do user tạo
+                    (t.IsGroupTask = 1 AND t.CreatedBy = @userId)
+                    OR
+                    -- Group tasks trong group mà user là member
+                    (t.IsGroupTask = 1 AND gm.UserId = @userId)
+                ORDER BY t.DueDate ASC, t.Priority DESC";
             
             var parameters = CreateParameters(("@userId", userId));
             var rows = GetRows(query, parameters);

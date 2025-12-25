@@ -35,8 +35,7 @@ namespace TimeFlow.Server
         {
             InitializeComponent();
 
-            // Khởi tạo tất cả Repositories tại đây
-            // Lưu ý: Nếu UserRepository cần connectionString, bạn hãy sửa thành new UserRepository(connectionString)
+            // Khoi tao Repositories
             _userRepo = new UserRepository();
             _activityLogRepo = new ActivityLogRepository();
             _messageRepo = new MessageRepository(connectionString);
@@ -299,6 +298,7 @@ namespace TimeFlow.Server
                     }
                 }
             }
+            
             catch (Exception ex)
             {
                 AppendLog($"Client lỗi/ngắt kết nối: {ex.Message}");
@@ -369,6 +369,8 @@ namespace TimeFlow.Server
                 // 3. NẾU OFFLINE -> CHỈ CẦN LOG VÌ ĐÃ LƯU DB Ở BƯỚC 1 RỒI
                 AppendLog($"[Chat] {sender} -> {receiver} (Offline) - Đã lưu tin nhắn.");
             }
+
+
         }
 
         private void SendResponse(TcpClient client, string response)
@@ -409,13 +411,14 @@ namespace TimeFlow.Server
         {
             try
             {
-                using SqlConnection conn = new SqlConnection(connectionString);
-                conn.Open();
-                string query = "SELECT TOP 1 UserId, Username, Email, FullName, IsActive FROM Users WHERE Username = @u AND Password = @p";
-                using SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@u", username);
-                cmd.Parameters.AddWithValue("@p", HashPassword(password));
-                using (var reader = cmd.ExecuteReader())
+                string passwordHash = HashPassword(password);
+                AppendLog($"[DEBUG] Đang check login: User={username}");
+                AppendLog($"[DEBUG] Hash từ Client: {passwordHash}");
+
+                // Dung UserRepository de validate login
+                var user = _userRepo.ValidateLogin(username, passwordHash);
+
+                if (user != null)
                 {
                     if (reader.Read())
                     {
@@ -541,6 +544,11 @@ namespace TimeFlow.Server
             {
                 return Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(data))).Replace("=", "").Replace('+', '-').Replace('/', '_');
             }
+        }
+
+        private void FormTCPServer_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }

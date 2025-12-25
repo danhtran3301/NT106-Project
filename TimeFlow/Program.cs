@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Forms;
 using TimeFlow.Authentication;
-using TimeFlow.Tasks;
+using TimeFlow.Configuration;
 
 namespace TimeFlow
 {
@@ -12,6 +12,15 @@ namespace TimeFlow
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            
+            // ✅ Load cấu hình Server từ appsettings.json
+            ServerConfig.Load();
+            
+            // ✅ FIX: Sử dụng ApplicationContext để quản lý app lifecycle
+            _appContext = new ApplicationContext();
+            ShowLoginForm();
+            Application.Run(_appContext);
+        }
 
             // 1. Chạy Form Đăng Nhập trước
             FormDangNhap loginForm = new FormDangNhap();

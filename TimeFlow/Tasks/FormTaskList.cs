@@ -782,5 +782,19 @@ namespace TimeFlow.Tasks
         {
 
         }
+
+        public event EventHandler TasksChanged;
+
+        private async void DeleteTask(int taskId)
+        {
+            var result = await _taskApi.DeleteTaskAsync(taskId);
+            if (result)
+            {
+                _currentTasks.RemoveAll(t => t.TaskId == taskId);
+                RefreshTaskList();
+                TasksChanged?.Invoke(this, EventArgs.Empty); // Gọi ở đây!
+            }
+        }
+
     }
 }

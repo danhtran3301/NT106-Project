@@ -4,7 +4,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using TimeFlow.Models;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
+using TimeFlow.UI;
+using TimeFlow.Configuration;
 
 namespace TimeFlow.Authentication
 {
@@ -117,11 +119,11 @@ namespace TimeFlow.Authentication
             TcpClient client = new TcpClient();
             try
             {
-                client.ReceiveTimeout = 3000;
-                client.SendTimeout = 3000;
-                client.Connect("127.0.0.1", 1010);
-
-                NetworkStream stream = client.GetStream();
+                client.ReceiveTimeout = ServerConfig.Timeout;
+                client.SendTimeout = ServerConfig.Timeout;
+                client.Connect(ServerConfig.Host, ServerConfig.Port);
+                
+                using NetworkStream stream = client.GetStream();
                 stream.Write(sendBytes, 0, sendBytes.Length);
                 stream.Flush();
 
@@ -162,8 +164,51 @@ namespace TimeFlow.Authentication
             }
             catch
             {
-                client.Close();
-                throw;
+                type = "autologin",
+                token = token
+            };
+
+            string json = System.Text.Json.JsonSerializer.Serialize(request);
+            byte[] sendBytes = Encoding.UTF8.GetBytes(json);
+
+            using (TcpClient client = new TcpClient())
+            {
+                client.ReceiveTimeout = ServerConfig.Timeout;
+                client.SendTimeout = ServerConfig.Timeout;
+                client.Connect(ServerConfig.Host, ServerConfig.Port);
+
+                using NetworkStream stream = client.GetStream();
+                stream.Write(sendBytes, 0, sendBytes.Length);
+                stream.Flush();
+
+                byte[] buffer = new byte[1024];
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+
+                using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
+                var root = doc.RootElement;
+                string status = root.GetProperty("status").GetString();
+
+                if (status == "autologin_success")
+                {
+                    int userId = root.GetProperty("user").GetProperty("userId").GetInt32();
+                    string username = root.GetProperty("user").GetProperty("username").GetString();
+                    string email = root.GetProperty("user").GetProperty("email").GetString();
+
+                    // Lưu session
+                    SessionManager.SetUserSession(userId, username, email, token);
+
+                    return new LoginResult
+                    {
+                        Success = true,
+                        Username = username,
+                        Email = email
+                    };
+                }
+                else
+                {
+                    return new LoginResult { Success = false };
+                }
             }
         }
     }
