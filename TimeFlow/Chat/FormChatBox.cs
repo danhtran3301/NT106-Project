@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Globalization;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
@@ -36,6 +38,9 @@ namespace TimeFlow
         private int? _currentGroupId = null; // ID nhóm đang chọn
         private string _currentReceiver = ""; // Tên người/nhóm nhận
         private bool _isGroupChat = false;    // Cờ đánh dấu đang chat nhóm
+
+        // Attachment limits
+        private const long MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024; // 5 MB
 
         // --- CONSTRUCTOR MẶC ĐỊNH ---
         public FormChatBox()
@@ -142,7 +147,7 @@ namespace TimeFlow
             if (!_isConnected) return;
             try
             {
-                byte[] bytes = Encoding.UTF8.GetBytes(data);
+                byte[] bytes = Encoding.UTF8.GetBytes(data + "\n"); // ensure server receives line
                 _stream.Write(bytes, 0, bytes.Length);
             }
             catch { _isConnected = false; }
@@ -152,22 +157,26 @@ namespace TimeFlow
         {
             _listenThread = new Thread(() =>
             {
-                byte[] buffer = new byte[40960]; // Tăng buffer để nhận list nhóm lớn
-                while (_isConnected)
+                try
                 {
-                    try
+                    // Dùng StreamReader để đọc từng dòng
+                    using (var reader = new System.IO.StreamReader(_stream, Encoding.UTF8))
                     {
-                        int bytesRead = _stream.Read(buffer, 0, buffer.Length);
-                        if (bytesRead == 0) break; // Ngắt kết nối
-
-                        string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        ProcessIncomingMessage(json);
+                        while (_isConnected)
+                        {
+                            string line = reader.ReadLine(); // Đọc đến khi gặp \n
+                            if (line == null) break;
+                            if (!string.IsNullOrWhiteSpace(line))
+                            {
+                                ProcessIncomingMessage(line);
+                            }
+                        }
                     }
-                    catch
-                    {
-                        _isConnected = false;
-                        break;
-                    }
+                }
+                catch
+                {
+                    _isConnected = false;
+                    // Handle disconnect UI update here
                 }
             });
             _listenThread.IsBackground = true;
@@ -231,15 +240,36 @@ namespace TimeFlow
                         if (type == "receive_group_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
-                            string content = root.GetProperty("content").GetString();
                             int groupId = root.GetProperty("groupId").GetInt32();
+
+                            // parse timestamp if provided
+                            DateTime timestamp = DateTime.UtcNow;
+                            if (root.TryGetProperty("timestamp", out var tsElem) && tsElem.ValueKind == JsonValueKind.String)
+                            {
+                                if (!DateTime.TryParse(tsElem.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out timestamp))
+                                {
+                                    timestamp = DateTime.UtcNow;
+                                }
+                            }
 
                             // Chỉ hiện tin nhắn nếu đúng group đang chat
                             if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
                             {
                                 bool isMe = sender == _myUsername;
                                 this.Invoke((MethodInvoker)delegate {
-                                    AddMessageBubble(content, isMe ? "Me" : sender, isMe);
+                                    // Check if this message contains a file
+                                    if (root.TryGetProperty("fileName", out var fileNameElem) && root.TryGetProperty("fileData", out var fileDataElem))
+                                    {
+                                        string fileName = fileNameElem.GetString() ?? "attachment";
+                                        string fileBase64 = fileDataElem.GetString() ?? "";
+                                        byte[] bytes = Convert.FromBase64String(fileBase64);
+                                        AddAttachmentBubble(fileName, bytes, isMe, timestamp);
+                                    }
+                                    else
+                                    {
+                                        string content = root.GetProperty("content").GetString();
+                                        AddMessageBubble(content, isMe ? "Me" : sender, isMe, timestamp);
+                                    }
                                 });
                             }
                         }
@@ -248,13 +278,33 @@ namespace TimeFlow
                         if (type == "receive_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
-                            string content = root.GetProperty("content").GetString();
+
+                            // parse timestamp if provided
+                            DateTime timestamp = DateTime.UtcNow;
+                            if (root.TryGetProperty("timestamp", out var tsElem) && tsElem.ValueKind == JsonValueKind.String)
+                            {
+                                if (!DateTime.TryParse(tsElem.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out timestamp))
+                                {
+                                    timestamp = DateTime.UtcNow;
+                                }
+                            }
 
                             // Chat 1-1: hiện nếu đúng người đang chat
                             if (!_isGroupChat && sender == _currentReceiver)
                             {
                                 this.Invoke((MethodInvoker)delegate {
-                                    AddMessageBubble(content, sender, false);
+                                    if (root.TryGetProperty("fileName", out var fileNameElem) && root.TryGetProperty("fileData", out var fileDataElem))
+                                    {
+                                        string fileName = fileNameElem.GetString() ?? "attachment";
+                                        string fileBase64 = fileDataElem.GetString() ?? "";
+                                        byte[] bytes = Convert.FromBase64String(fileBase64);
+                                        AddAttachmentBubble(fileName, bytes, false, timestamp);
+                                    }
+                                    else
+                                    {
+                                        string content = root.GetProperty("content").GetString();
+                                        AddMessageBubble(content, sender, false, timestamp);
+                                    }
                                 });
                             }
                         }
@@ -274,12 +324,43 @@ namespace TimeFlow
                                         
                                         if (root.TryGetProperty("messages", out JsonElement messagesElem))
                                         {
+                                            // Build a sortable list by timestamp
+                                            var temp = new List<(DateTime Timestamp, JsonElement Message)>();
                                             foreach (var msg in messagesElem.EnumerateArray())
                                             {
+                                                DateTime ts = DateTime.UtcNow;
+                                                if (msg.TryGetProperty("timestamp", out var mTs) && mTs.ValueKind == JsonValueKind.String)
+                                                {
+                                                    if (!DateTime.TryParse(mTs.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out ts))
+                                                    {
+                                                        ts = DateTime.UtcNow;
+                                                    }
+                                                }
+                                                temp.Add((ts, msg));
+                                            }
+
+                                            // Sort ascending (oldest first)
+                                            temp.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+
+                                            foreach (var pair in temp)
+                                            {
+                                                var msg = pair.Message;
+                                                DateTime msgTs = pair.Timestamp;
                                                 string sender = msg.GetProperty("sender").GetString();
-                                                string content = msg.GetProperty("content").GetString();
                                                 bool isMe = sender == _myUsername;
-                                                AddMessageBubble(content, isMe ? "Me" : sender, isMe);
+
+                                                if (msg.TryGetProperty("fileName", out var fnElem) && msg.TryGetProperty("fileData", out var fdElem))
+                                                {
+                                                    string fileName = fnElem.GetString() ?? "attachment";
+                                                    string fileBase64 = fdElem.GetString() ?? "";
+                                                    byte[] bytes = Convert.FromBase64String(fileBase64);
+                                                    AddAttachmentBubble(fileName, bytes, isMe, msgTs);
+                                                }
+                                                else
+                                                {
+                                                    string content = msg.GetProperty("content").GetString();
+                                                    AddMessageBubble(content, isMe ? "Me" : sender, isMe, msgTs);
+                                                }
                                             }
                                         }
                                         
@@ -422,7 +503,8 @@ namespace TimeFlow
                         type = "chat",
                         receiver = _currentGroupId.ToString(), 
                         isGroup = true,
-                        content = content
+                        content = content,
+                        timestamp = DateTime.UtcNow.ToString("o")
                     };
                 }
                 else
@@ -431,12 +513,13 @@ namespace TimeFlow
                     {
                         type = "chat",
                         receiver = string.IsNullOrEmpty(_currentReceiver) ? "UserB" : _currentReceiver,
-                        content = content
+                        content = content,
+                        timestamp = DateTime.UtcNow.ToString("o")
                     };
                 }
 
                 SendString(JsonSerializer.Serialize(packet));
-                AddMessageBubble(content, "Me", true);
+                AddMessageBubble(content, "Me", true, DateTime.UtcNow);
                 txtMessage.Clear();
             }
             catch (Exception ex)
@@ -447,6 +530,87 @@ namespace TimeFlow
 
         private void btnClose_Click(object sender, EventArgs e) => this.Close();
         private void btnBack_Click(object sender, EventArgs e) => this.Close();
+
+        // Attachment button - opens file picker and sends file as Base64 inside a chat_file packet
+        private void btnAddFile_Click(object sender, EventArgs e)
+        {
+            if (!_isConnected)
+            {
+                MessageBox.Show("Mất kết nối server!");
+                return;
+            }
+
+            // Must choose a receiver or group
+            if (string.IsNullOrEmpty(_currentReceiver) && _currentGroupId == null)
+            {
+                MessageBox.Show("Vui lòng chọn một nhóm hoặc user để gửi tệp!");
+                return;
+            }
+
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Title = "Select file to attach";
+                ofd.Filter = "All files (*.*)|*.*";
+                if (ofd.ShowDialog() != DialogResult.OK) return;
+
+                try
+                {
+                    FileInfo fi = new FileInfo(ofd.FileName);
+                    if (fi.Length > MAX_ATTACHMENT_SIZE)
+                    {
+                        MessageBox.Show($"File too large. Maximum allowed is {MAX_ATTACHMENT_SIZE / (1024 * 1024)} MB.", "File too large", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+
+                    byte[] bytes = File.ReadAllBytes(ofd.FileName);
+                    string base64 = Convert.ToBase64String(bytes);
+
+                    object packet;
+                    if (_isGroupChat && _currentGroupId != null)
+                    {
+                        packet = new
+                        {
+                            type = "chat_file",
+                            receiver = _currentGroupId.ToString(),
+                            isGroup = true,
+                            fileName = fi.Name,
+                            fileSize = fi.Length,
+                            fileData = base64,
+                            timestamp = DateTime.UtcNow.ToString("o")
+                        };
+                    }
+                    else
+                    {
+                        packet = new
+                        {
+                            type = "chat_file",
+                            receiver = _currentReceiver,
+                            fileName = fi.Name,
+                            fileSize = fi.Length,
+                            fileData = base64,
+                            timestamp = DateTime.UtcNow.ToString("o")
+                        };
+                    }
+
+                    SendString(JsonSerializer.Serialize(packet));
+                    AddAttachmentBubble(fi.Name, bytes, true, DateTime.UtcNow);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Failed to attach/send file: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void btnCreateGroup_Click(object sender, EventArgs e) { MessageBox.Show("Tính năng tạo nhóm đang phát triển!"); }
+        
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            _isConnected = false;
+            try { _stream?.Close(); } catch { }
+            try { _client?.Close(); } catch { }
+            base.OnFormClosing(e);
+        }
 
         // Sự kiện vẽ khung input cho đẹp
         private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
@@ -481,12 +645,21 @@ namespace TimeFlow
             flowChatMessages.ScrollControlIntoView(lbl);
         }
 
-        private void AddMessageBubble(string message, string senderName, bool isMe)
+        private void AddMessageBubble(string message, string senderName, bool isMe, DateTime? timestamp = null)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action<string, string, bool, DateTime?>(AddMessageBubble), message, senderName, isMe, timestamp);
+                return;
+            }
+
+            DateTime ts = timestamp ?? DateTime.UtcNow;
+
             Panel pnlRow = new Panel();
             pnlRow.Width = flowChatMessages.ClientSize.Width - 25;
             pnlRow.BackColor = Color.Transparent;
             pnlRow.Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5);
+            pnlRow.Tag = ts; // store timestamp for ordering
 
             Panel pnlBubble = new Panel();
             pnlBubble.BackColor = Color.Transparent;
@@ -517,7 +690,7 @@ namespace TimeFlow
 
             // Time
             Label lblTime = new Label();
-            lblTime.Text = DateTime.Now.ToString("HH:mm");
+            lblTime.Text = ts.ToString("HH:mm");
             lblTime.Font = new Font("Arial", 8, FontStyle.Italic);
             lblTime.ForeColor = isMe ? Color.FromArgb(220, 220, 220) : Color.Gray;
             lblTime.AutoSize = true;
@@ -549,8 +722,181 @@ namespace TimeFlow
             pnlBubble.Dock = isMe ? DockStyle.Right : DockStyle.Left;
             pnlRow.Controls.Add(pnlBubble);
 
-            flowChatMessages.Controls.Add(pnlRow);
-            flowChatMessages.ScrollControlIntoView(pnlRow);
+            // Insert in chronological order
+            InsertMessageControl(pnlRow);
+        }
+
+        // New: render attachment bubble with clickable link to save
+        private void AddAttachmentBubble(string fileName, byte[] fileBytes, bool isMe, DateTime? timestamp = null)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action<string, byte[], bool, DateTime?>(AddAttachmentBubble), fileName, fileBytes, isMe, timestamp);
+                return;
+            }
+
+            DateTime ts = timestamp ?? DateTime.UtcNow;
+
+            Panel pnlRow = new Panel();
+            pnlRow.Width = flowChatMessages.ClientSize.Width - 25;
+            pnlRow.BackColor = Color.Transparent;
+            pnlRow.Padding = new Padding(isMe ? 80 : 10, 5, isMe ? 10 : 80, 5);
+            pnlRow.Tag = ts; // store timestamp for ordering
+
+            Panel pnlBubble = new Panel();
+            pnlBubble.BackColor = Color.Transparent;
+
+            // Sender Name
+            int nameHeight = 0;
+            if (!isMe)
+            {
+                Label lblSender = new Label();
+                lblSender.Text = isMe ? "Me" : ""; // actual sender displayed elsewhere if needed
+                lblSender.Font = new Font("Segoe UI", 8, FontStyle.Bold);
+                lblSender.ForeColor = Color.DimGray;
+                lblSender.AutoSize = true;
+                lblSender.Location = new Point(15, 2);
+                pnlBubble.Controls.Add(lblSender);
+                nameHeight = 15;
+            }
+
+            // File link
+            LinkLabel link = new LinkLabel();
+            link.Text = fileName;
+            link.Font = new Font("Segoe UI", 11, FontStyle.Underline);
+            link.LinkColor = isMe ? Color.White : Color.Blue;
+            link.ActiveLinkColor = isMe ? Color.WhiteSmoke : Color.DarkBlue;
+            link.AutoSize = true;
+            link.Location = new Point(isMe ? 12 : 18, 5 + nameHeight);
+            link.BackColor = Color.Transparent;
+
+            // Save file bytes in Tag
+            link.Tag = Tuple.Create(fileName, fileBytes);
+
+            link.LinkClicked += (s, e) =>
+            {
+                try
+                {
+                    var info = (Tuple<string, byte[]>)((LinkLabel)s).Tag;
+                    using SaveFileDialog sfd = new SaveFileDialog();
+                    sfd.FileName = info.Item1;
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        File.WriteAllBytes(sfd.FileName, info.Item2);
+                        MessageBox.Show($"File saved to {sfd.FileName}", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Failed to save file: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            // File size label
+            Label lblSize = new Label();
+            lblSize.Text = $"{(fileBytes.Length / 1024.0):F1} KB";
+            lblSize.Font = new Font("Arial", 8, FontStyle.Italic);
+            lblSize.ForeColor = isMe ? Color.FromArgb(220, 220, 220) : Color.Gray;
+            lblSize.AutoSize = true;
+            lblSize.Location = new Point(link.Left, link.Top + link.Height + 4);
+
+            // Time
+            Label lblTime = new Label();
+            lblTime.Text = ts.ToString("HH:mm");
+            lblTime.Font = new Font("Arial", 8, FontStyle.Italic);
+            lblTime.ForeColor = isMe ? Color.FromArgb(220, 220, 220) : Color.Gray;
+            lblTime.AutoSize = true;
+            lblTime.BackColor = Color.Transparent;
+            lblTime.Location = new Point(link.Left, link.Top + link.Height + 20);
+
+            pnlBubble.Controls.Add(link);
+            pnlBubble.Controls.Add(lblSize);
+            pnlBubble.Controls.Add(lblTime);
+
+            // Calculate size
+            Size textSize = link.GetPreferredSize(new Size(pnlRow.Width - 140, 0));
+            pnlBubble.Size = new Size(textSize.Width + 40, textSize.Height + 50 + nameHeight);
+
+            // Paint Event
+            pnlBubble.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                Color color = isMe ? Color.FromArgb(0, 132, 255) : Color.FromArgb(240, 242, 245);
+                using (var brush = new SolidBrush(color))
+                {
+                    Rectangle r = new Rectangle(0, nameHeight, pnlBubble.Width, pnlBubble.Height - nameHeight);
+                    var path = GetRoundedPath(r, 15);
+                    g.FillPath(brush, path);
+                }
+            };
+
+            pnlRow.Height = pnlBubble.Height + 10;
+            pnlBubble.Dock = isMe ? DockStyle.Right : DockStyle.Left;
+            pnlRow.Controls.Add(pnlBubble);
+
+            // Insert in chronological order
+            InsertMessageControl(pnlRow);
+        }
+
+        // Insert a message control into flowChatMessages according to its DateTime Tag (ascending)
+        private void InsertMessageControl(Control messageControl)
+        {
+            // assume Tag is DateTime
+            if (!(messageControl.Tag is DateTime newTs))
+            {
+                newTs = DateTime.UtcNow;
+            }
+
+            bool wasAtBottom = IsScrolledToBottom();
+
+            int insertIndex = flowChatMessages.Controls.Count;
+            for (int i = 0; i < flowChatMessages.Controls.Count; i++)
+            {
+                var existing = flowChatMessages.Controls[i];
+                if (existing.Tag is DateTime existingTs)
+                {
+                    // insert before the first control that has a timestamp greater than newTs
+                    if (existingTs > newTs)
+                    {
+                        insertIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (insertIndex >= flowChatMessages.Controls.Count)
+            {
+                flowChatMessages.Controls.Add(messageControl);
+            }
+            else
+            {
+                flowChatMessages.Controls.Add(messageControl);
+                flowChatMessages.Controls.SetChildIndex(messageControl, insertIndex);
+            }
+
+            // Scroll behaviour: if user was at bottom, keep view at bottom (show newest). If user was reading older history, do not force scroll.
+            if (wasAtBottom)
+            {
+                flowChatMessages.ScrollControlIntoView(messageControl);
+            }
+        }
+
+        // Determine if user is currently scrolled to the bottom of the FlowLayoutPanel
+        private bool IsScrolledToBottom()
+        {
+            try
+            {
+                var vs = flowChatMessages.VerticalScroll;
+                // If content fits without scrolling, treat as bottom
+                if (vs.Visible == false) return true;
+                int tolerance = 5;
+                return vs.Value >= vs.Maximum - vs.LargeChange - tolerance;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         private GraphicsPath GetRoundedPath(Rectangle r, int radius)
@@ -564,17 +910,6 @@ namespace TimeFlow
             path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
             path.CloseFigure();
             return path;
-        }
-
-        private void btnAddFile_Click(object sender, EventArgs e) { }
-        private void btnCreateGroup_Click(object sender, EventArgs e) { MessageBox.Show("Tính năng tạo nhóm đang phát triển!"); }
-        
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            _isConnected = false;
-            try { _stream?.Close(); } catch { }
-            try { _client?.Close(); } catch { }
-            base.OnFormClosing(e);
         }
     }
 }

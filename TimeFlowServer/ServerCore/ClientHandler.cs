@@ -200,9 +200,14 @@ namespace TimeFlowServer.ServerCore
             try
             {
                 // Authenticate từ token
-                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
-                
-                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                string? token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                if (string.IsNullOrEmpty(token))
+                {
+                    await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "Not authenticated" }));
+                    return;
+                }
+
+                if (!_jwtManager.ValidateToken(token, out string username) || string.IsNullOrEmpty(username))
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { type = "group_chat_history", status = "error", message = "Not authenticated" }));
                     return;
@@ -338,10 +343,8 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
-                // Authenticate từ token (giống các handler khác)
-                string token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
-                
-                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username))
+                string? token = root.TryGetProperty("token", out var tokenElem) ? tokenElem.GetString() : null;
+                if (string.IsNullOrEmpty(token) || !_jwtManager.ValidateToken(token, out string username) || string.IsNullOrEmpty(username))
                 {
                     await SendResponseAsync(JsonSerializer.Serialize(new { status = "error", message = "Not authenticated" }));
                     return;
@@ -356,10 +359,8 @@ namespace TimeFlowServer.ServerCore
 
                 Log.Information($"[{_clientId}] Getting groups for UserID: {user.UserId} ({username})");
 
-                // Gọi Repo lấy danh sách nhóm
                 var groups = _groupRepo.GetByUserId(user.UserId);
 
-                // Tạo response JSON
                 var response = new
                 {
                     type = "my_groups_list",
@@ -1373,6 +1374,7 @@ namespace TimeFlowServer.ServerCore
         {
             try
             {
+                if (!response.EndsWith("\n")) response += "\n";
                 byte[] bytes = Encoding.UTF8.GetBytes(response);
                 await _stream.WriteAsync(bytes, 0, bytes.Length);
             }
