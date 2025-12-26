@@ -56,8 +56,6 @@ namespace TimeFlow
 
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.WindowState = FormWindowState.Maximized;
-            
-            // Đảm bảo các nút điều hướng nằm trên cùng để có thể click được
             pictureBox2.BringToFront();
             pictureBox3.BringToFront();
         }
@@ -216,8 +214,6 @@ namespace TimeFlow
             for (int col = 0; col < 7; col++)
             {
                 DateTime columnDate = startDate.AddDays(col);
-
-            // Tạo header cho mỗi cột ngày
             Label lblHeader = new Label
             {
                 Text = columnDate.ToString("dd/MM/yyyy") + Environment.NewLine + 
@@ -241,7 +237,6 @@ namespace TimeFlow
             }
             else if (columnDate.DayOfWeek == DayOfWeek.Saturday || columnDate.DayOfWeek == DayOfWeek.Sunday)
             {
-                // Làm nổi bật cuối tuần
                 lblHeader.BackColor = Color.FromArgb(240, 240, 245);
             }
 
@@ -254,8 +249,8 @@ namespace TimeFlow
                    .OrderBy(t => t.TaskId)
                    .ToList();
 
-                // Hiển thị tất cả các ô task (mỗi ngày có 11 rows task từ row 1-11)
-                // Nếu có task thì hiển thị task, không có thì hiển thị "+ Click to add"
+                // hien thi tat ca cac o task 
+                // neu co task thi hien thi, khong co thi "+ Click to add"
                 for (int row = 1; row < tableLayoutPanel2.RowCount; row++)
                 {
                     int taskIndex = row - 1;
@@ -264,7 +259,6 @@ namespace TimeFlow
                     {
                         taskToShow = dailyTasks[taskIndex];
                     }
-                    // Nếu không có task ở index này, taskToShow = null → hiển thị "+ Click to add"
                     AddDayCell(columnDate, col, row, taskToShow);
                 }
             }
@@ -295,11 +289,7 @@ namespace TimeFlow
                 lblContent.Font = new Font("Segoe UI", 9, FontStyle.Bold);
                 Color statusColor = GetStatusColor(task.Status);
                 lblContent.BackColor = statusColor;
-
-                // Tất cả status đều có nền sáng → dùng chữ đen đậm để contrast tốt
                 lblContent.ForeColor = Color.FromArgb(25, 25, 25);
-                
-                // Thêm padding cho text
                 lblContent.Padding = new Padding(5, 3, 5, 3);
 
                 if (currentSelectedTask != null && task.TaskId == currentSelectedTask.TaskId)
@@ -412,14 +402,13 @@ namespace TimeFlow
 
         private void UpdateTimelineHeaderLabel()
         {
-            // Hiển thị khoảng thời gian 7 ngày: "DD/MM/YYYY - DD/MM/YYYY"
+            //hien thi khoang thoi gian 7 nga7: "DD/MM/YYYY - DD/MM/YYYY"
             DateTime endDate = currentSelectedDate.AddDays(6);
             label10.Text = $"{currentSelectedDate.ToString("dd/MM/yyyy")} - {endDate.ToString("dd/MM/yyyy")}";
         }
 
         private void pictureBox2_Click(object sender, EventArgs e)
         {
-            // Điều hướng về trước 1 tuần (7 ngày) thay vì 1 tháng
             currentSelectedDate = currentSelectedDate.AddDays(-7);
             monthCalendar1.SetDate(currentSelectedDate);
             UpdateCalendarView();
@@ -427,7 +416,6 @@ namespace TimeFlow
 
         private void pictureBox3_Click(object sender, EventArgs e)
         {
-            // Điều hướng về sau 1 tuần (7 ngày) thay vì 1 tháng
             currentSelectedDate = currentSelectedDate.AddDays(7);
             monthCalendar1.SetDate(currentSelectedDate);
             UpdateCalendarView();

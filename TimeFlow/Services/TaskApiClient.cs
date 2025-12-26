@@ -26,7 +26,6 @@ namespace TimeFlow.Services
 
         public TaskApiClient(string? serverHost = null, int? serverPort = null, int? timeout = null)
         {
-            // Sử dụng ServerConfig làm mặc định, cho phép override nếu cần
             _serverHost = serverHost ?? ServerConfig.Host;
             _serverPort = serverPort ?? ServerConfig.Port;
             _timeout = timeout ?? ServerConfig.Timeout;
@@ -43,34 +42,29 @@ namespace TimeFlow.Services
 
                 using (NetworkStream stream = client.GetStream())
                 {
-                    // ✅ Gửi request
                     string json = JsonSerializer.Serialize(request);
                     byte[] sendBytes = Encoding.UTF8.GetBytes(json);
                     await stream.WriteAsync(sendBytes, 0, sendBytes.Length);
                     await stream.FlushAsync();
 
-                    // ✅ Đọc response - xử lý responses lớn có thể bị split thành nhiều packets
-                    // Với network delay, cần đảm bảo đọc đầy đủ response trước khi đóng connection
-                    const int bufferSize = 65536; // 64KB buffer để xử lý responses lớn (đủ lớn cho hầu hết responses)
+                   
+                    const int bufferSize = 65536; 
                     byte[] buffer = new byte[bufferSize];
                     using (var memoryStream = new System.IO.MemoryStream())
                     {
                         int bytesRead;
                         
-                        // ✅ Đọc response - server có thể gửi trong một hoặc nhiều packets
-                        // Đọc liên tục cho đến khi không còn dữ liệu
-                        // Với TCP, ReadAsync sẽ block cho đến khi có dữ liệu hoặc connection đóng
+                       
                         bytesRead = await stream.ReadAsync(buffer, 0, bufferSize);
                         
                         if (bytesRead > 0)
                         {
                             await memoryStream.WriteAsync(buffer, 0, bytesRead);
                             
-                            // ✅ Nếu đọc được đủ buffer size, có thể còn dữ liệu - tiếp tục đọc
-                            // Đọc cho đến khi không còn dữ liệu (bytesRead == 0)
+                            
                             while (bytesRead == bufferSize)
                             {
-                                // Đọc thêm để chắc chắn không còn dữ liệu
+                               
                                 bytesRead = await stream.ReadAsync(buffer, 0, bufferSize);
                                 if (bytesRead > 0)
                                 {
@@ -78,16 +72,15 @@ namespace TimeFlow.Services
                                 }
                                 else
                                 {
-                                    break; // Không còn dữ liệu - stream đã đóng hoặc hết dữ liệu
+                                    break; 
                                 }
                             }
                             
-                            // ✅ Đợi một chút để đảm bảo server đã gửi xong response (xử lý network delay)
-                            // Điều này giúp tránh trường hợp client đóng connection trước khi server gửi xong
+                            
                             await System.Threading.Tasks.Task.Delay(150);
                         }
                         
-                        // ✅ Chuyển đổi toàn bộ dữ liệu đã đọc thành string
+                     
                         if (memoryStream.Length == 0)
                         {
                             throw new Exception("No response received from server");
@@ -113,7 +106,7 @@ namespace TimeFlow.Services
         {
             try
             {
-                // Gửi token để authenticate
+                
                 var request = new 
                 { 
                     type = "get_tasks",
@@ -150,7 +143,7 @@ namespace TimeFlow.Services
                                 ? DateTime.Parse(updatedAt.GetString()!) : null
                         };
 
-                        // ✅ Parse GroupTask info nếu có
+                     
                         if (item.TryGetProperty("groupTask", out var groupTaskElem) && groupTaskElem.ValueKind == JsonValueKind.Object)
                         {
                             task.GroupTask = new GroupTask
@@ -166,10 +159,10 @@ namespace TimeFlow.Services
                                     ? DateTime.Parse(assignedAt.GetString()!) : null
                             };
                             
-                            // ✅ Parse additional fields
+                           
                             if (groupTaskElem.TryGetProperty("groupName", out var groupNameElem) && groupNameElem.ValueKind == JsonValueKind.String)
                             {
-                                // Lưu vào navigation property nếu cần
+                               
                                 task.GroupTask.Group = new Group { GroupName = groupNameElem.GetString() ?? "" };
                             }
                             
@@ -221,7 +214,7 @@ namespace TimeFlow.Services
                         status = (int)task.Status,
                         categoryId = task.CategoryId,
                         isGroupTask = task.IsGroupTask,
-                        groupId = groupId // ✅ Thêm groupId để server tạo GroupTask record
+                        groupId = groupId 
                     }
                 };
 
@@ -255,11 +248,11 @@ namespace TimeFlow.Services
             }
             catch (Data.Exceptions.ValidationException)
             {
-                throw; // Re-throw to preserve exception type
+                throw; 
             }
             catch (Data.Exceptions.UnauthorizedException)
             {
-                throw; // Re-throw to preserve exception type
+                throw; 
             }
             catch (Exception ex)
             {
@@ -512,13 +505,13 @@ namespace TimeFlow.Services
                         UpdatedAt = data.TryGetProperty("updatedAt", out var updatedAt) && !string.IsNullOrEmpty(updatedAt.GetString())
                             ? DateTime.Parse(updatedAt.GetString()!) : null,
                         
-                        // Extended info
+                      
                         CategoryName = data.GetProperty("categoryName").GetString() ?? "Other",
                         CategoryColor = data.GetProperty("categoryColor").GetString() ?? "#6B7280",
                         Progress = data.GetProperty("progress").GetInt32()
                     };
 
-                    // Parse assignees
+                
                     if (data.TryGetProperty("assignees", out var assignees))
                     {
                         foreach (var assignee in assignees.EnumerateArray())
@@ -527,7 +520,7 @@ namespace TimeFlow.Services
                         }
                     }
 
-                    // Parse comments
+                   
                     if (data.TryGetProperty("comments", out var comments))
                     {
                         foreach (var comment in comments.EnumerateArray())
@@ -545,7 +538,7 @@ namespace TimeFlow.Services
                         }
                     }
 
-                    // Parse activities
+                  
                     if (data.TryGetProperty("activities", out var activities))
                     {
                         foreach (var activity in activities.EnumerateArray())
@@ -589,7 +582,7 @@ namespace TimeFlow.Services
                 using var doc = JsonDocument.Parse(responseJson);
                 var root = doc.RootElement;
 
-                // Support both 'type' = my_groups_list or status wrapper
+               
                 if (root.TryGetProperty("type", out var t) && t.GetString() == "my_groups_list")
                 {
                     if (root.GetProperty("status").GetString() == "success")
@@ -610,7 +603,6 @@ namespace TimeFlow.Services
                     }
                 }
 
-                // Fallback: check status
                 if (root.TryGetProperty("status", out var statusElem) && statusElem.GetString() == "success")
                 {
                     var list = new List<Group>();
@@ -665,12 +657,11 @@ namespace TimeFlow.Services
                         {
                             return idElem.GetInt32();
                         }
-                        // some responses embed groupId inside data
                         if (root.TryGetProperty("data", out var data) && data.TryGetProperty("groupId", out var gElem))
                         {
                             return gElem.GetInt32();
                         }
-                        return 1; // unknown but success
+                        return 1; 
                     }
                     else if (status == "error")
                     {
@@ -730,7 +721,7 @@ namespace TimeFlow.Services
         }
 
         /// <summary>
-        /// Lấy danh sách thành viên của group
+        /// lay danh sach thanh vien cua group
         /// </summary>
         public async Task<List<GroupMemberDto>> GetGroupMembersAsync(int groupId)
         {
@@ -775,7 +766,7 @@ namespace TimeFlow.Services
         }
 
         /// <summary>
-        /// Tạo Group Task với đầy đủ thông tin bao gồm assignee
+        /// tao Group Task voi day du thong tin tin bao gom assignee
         /// </summary>
         public async Task<int> CreateGroupTaskAsync(TaskItem task, int groupId, int? assignedTo = null)
         {

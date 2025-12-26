@@ -9,10 +9,6 @@ using TimeFlow.UI.Components;
 
 namespace TimeFlow.Tasks
 {
-    /// <summary>
-    /// Form hiển thị danh sách group tasks
-    /// Kế thừa từ FormTaskList và override các methods cần thiết
-    /// </summary>
     public partial class FormGroupTaskList : Form
     {
         private readonly Font FontRegular = new Font("Segoe UI", 10F, FontStyle.Regular);
@@ -22,16 +18,14 @@ namespace TimeFlow.Tasks
         private readonly TaskApiClient _taskApi;
         private List<TaskItem> _currentTasks;
         
-        // ✅ Virtual scrolling
         private const int INITIAL_TASKS_TO_RENDER = 20;
         private int _tasksRendered = 0;
         private CustomFlowLayoutPanel _contentPanel;
-        
-        // ✅ Group-specific properties
+        //thuoc tinh danh rieng cho nhom
         private int? _selectedGroupId;
         private string _groupName = "All Groups";
         
-        // ✅ Danh sách groups và left menu panel
+        // danh sach group va left menu panel
         private List<Group> _groups = new List<Group>();
         private FlowLayoutPanel _groupsMenuPanel;
 
@@ -85,7 +79,7 @@ namespace TimeFlow.Tasks
             };
             rootPanel.Controls.Add(mainLayout);
 
-            // Left menu với group list
+            // Left menu va group list
             Control leftMenu = CreateLeftMenu();
             mainLayout.Controls.Add(leftMenu, 0, 0);
             
@@ -161,14 +155,14 @@ namespace TimeFlow.Tasks
 
             FlowLayoutPanel rightContainer = new FlowLayoutPanel
             {
-                FlowDirection = FlowDirection.LeftToRight, // ✅ Đổi sang LeftToRight để dễ kiểm soát
+                FlowDirection = FlowDirection.LeftToRight, 
                 AutoSize = true,
                 WrapContents = false,
                 Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom,
                 Margin = new Padding(0)
             };
 
-            // ✅ Nút Group Chat với text rõ ràng
+           //nut group chat
             CustomButton chatButton = new CustomButton
             {
                 Text = "💬 Group Chat",
@@ -252,7 +246,7 @@ namespace TimeFlow.Tasks
 
             int buttonHeight = 40;
 
-            // Groups section header
+            // tieu de phan nhom
             TableLayoutPanel groupsHeader = new TableLayoutPanel
             {
                 ColumnCount = 2,
@@ -298,7 +292,7 @@ namespace TimeFlow.Tasks
 
             menuPanel.Controls.Add(groupsHeader);
 
-            // Container for groups (will be populated by LoadGroupsAsync)
+            // Container chua cac nhom
             _groupsMenuPanel = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.TopDown,
@@ -309,10 +303,9 @@ namespace TimeFlow.Tasks
             };
             menuPanel.Controls.Add(_groupsMenuPanel);
 
-            // Load groups from server
+            // load nhom tu server
             LoadGroupsAsync();
 
-            // Filter section
             Label filterTitle = new Label
             {
                 Text = "FILTER",
@@ -339,7 +332,7 @@ namespace TimeFlow.Tasks
                 _groupsMenuPanel.SuspendLayout();
                 _groupsMenuPanel.Controls.Clear();
 
-                // Show loading
+                
                 Label loadingLabel = new Label
                 {
                     Text = "⏳ Loading...",
@@ -356,7 +349,7 @@ namespace TimeFlow.Tasks
                 _groupsMenuPanel.SuspendLayout();
                 _groupsMenuPanel.Controls.Remove(loadingLabel);
 
-                // All Groups button
+                
                 var allGroupsBtn = CreateMenuButton(
                     "📁 All Groups",
                     !_selectedGroupId.HasValue ? AppColors.Blue500 : Color.White,
@@ -414,13 +407,11 @@ namespace TimeFlow.Tasks
             _selectedGroupId = groupId;
             _groupName = groupName;
             
-            // Refresh groups menu
+            // refesh menu nhom
             LoadGroupsAsync();
             
-            // Refresh header title
             this.Text = $"👥 {groupName}";
             
-            // Reload tasks
             if (_contentPanel != null)
             {
                 _contentPanel.SuspendLayout();
@@ -465,7 +456,6 @@ namespace TimeFlow.Tasks
                     // Reload groups list
                     LoadGroupsAsync();
                     
-                    // Auto-select the new group
                     _selectedGroupId = args.GroupId;
                     _groupName = args.GroupName;
                     this.Text = $"👥 {args.GroupName}";
@@ -491,11 +481,10 @@ namespace TimeFlow.Tasks
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
-                Padding = new Padding(32, 70, 32, 24), // ✅ Thêm padding-top 70px để tránh bị header che
+                Padding = new Padding(32, 70, 32, 24), 
                 BackColor = AppColors.Gray100,
             };
-
-            // Load tasks from server
+            //tai task tu server
             LoadTasksAsync(contentPanel);
 
             return contentPanel;
@@ -507,7 +496,6 @@ namespace TimeFlow.Tasks
             {
                 _contentPanel = contentPanel;
                 
-                // Show loading indicator
                 Label loadingLabel = new Label
                 {
                     Text = "⏳ Loading group tasks...",
@@ -518,20 +506,16 @@ namespace TimeFlow.Tasks
                 };
                 contentPanel.Controls.Add(loadingLabel);
 
-                // Fetch tasks - filter group tasks only
                 var allTasks = await _taskApi.GetTasksAsync();
                 _currentTasks = allTasks.Where(t => t.IsGroupTask).ToList();
 
-                // Filter by selected group if specified
                 if (_selectedGroupId.HasValue)
                 {
                     _currentTasks = _currentTasks.Where(t => t.GroupTask?.GroupId == _selectedGroupId.Value).ToList();
                 }
 
-                // Remove loading label
                 contentPanel.Controls.Remove(loadingLabel);
 
-                // Render tasks
                 RenderTaskList(contentPanel, _currentTasks);
             }
             catch (Exception ex)
@@ -539,7 +523,6 @@ namespace TimeFlow.Tasks
                 MessageBox.Show($"Failed to load group tasks: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
 
-                // Show error label
                 Label errorLabel = new Label
                 {
                     Text = "Failed to load tasks. Please check server connection.",
@@ -556,11 +539,10 @@ namespace TimeFlow.Tasks
         {
             contentPanel.SuspendLayout();
             
-            // Count tasks by assignment status
+            // dem nhiem vu theo trang thai da phan cong
             int assignedCount = tasks.Count(t => t.GroupTask?.AssignedTo != null);
             int unassignedCount = tasks.Count(t => t.GroupTask?.AssignedTo == null);
 
-            // ✅ Header với title và action buttons
             TableLayoutPanel headerLayout = new TableLayoutPanel
             {
                 ColumnCount = 2,
@@ -583,7 +565,7 @@ namespace TimeFlow.Tasks
                 }
             };
 
-            // Left: Title và stats
+            
             FlowLayoutPanel leftPanel = new FlowLayoutPanel
             {
                 FlowDirection = FlowDirection.TopDown,
@@ -610,20 +592,20 @@ namespace TimeFlow.Tasks
             leftPanel.Controls.Add(stats);
             headerLayout.Controls.Add(leftPanel, 0, 0);
 
-            // Right: Action buttons - chỉ hiện khi đã chọn group cụ thể
+            // chi hien khi da chon group cu the
             if (_selectedGroupId.HasValue)
             {
                 FlowLayoutPanel actionPanel = new FlowLayoutPanel
                 {
                     FlowDirection = FlowDirection.LeftToRight,
                     AutoSize = true,
-                    WrapContents = false, // ✅ Không wrap xuống dòng
+                    WrapContents = false,
                     Anchor = AnchorStyles.Right | AnchorStyles.Top,
                     Margin = new Padding(0),
                     Height = 40
                 };
 
-                // Add Member button
+                // them button thanh vien
                 CustomButton btnAddMember = new CustomButton
                 {
                     Text = "👤 Add Member",
@@ -635,12 +617,12 @@ namespace TimeFlow.Tasks
                     Width = 130,
                     Height = 36,
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Margin = new Padding(0, 0, 10, 0) // ✅ Margin phải để cách nút kế tiếp
+                    Margin = new Padding(0, 0, 10, 0) 
                 };
                 btnAddMember.Click += BtnAddMember_Click;
                 actionPanel.Controls.Add(btnAddMember);
 
-                // Add Task button
+                // them task button
                 CustomButton btnAddTask = new CustomButton
                 {
                     Text = "📝 Add Task",
@@ -662,7 +644,6 @@ namespace TimeFlow.Tasks
 
             contentPanel.Controls.Add(headerLayout);
 
-            // Column headers
             TableLayoutPanel columnHeader = new TableLayoutPanel
             {
                 ColumnCount = 5,
@@ -708,7 +689,7 @@ namespace TimeFlow.Tasks
             AddHeaderLabel("PRIORITY", 4);
             contentPanel.Controls.Add(columnHeader);
 
-            // ✅ Nếu không có tasks, hiện empty state
+            
             if (tasks.Count == 0)
             {
                 Panel emptyState = new Panel
@@ -782,13 +763,13 @@ namespace TimeFlow.Tasks
             {
                 if (_selectedGroupId.HasValue)
                 {
-                    // Mở chat cho group đang chọn
+                    // mo chat cho group dang chon
                     FormChatBox chatForm = new FormChatBox(_selectedGroupId.Value, _groupName);
                     chatForm.Show();
                 }
                 else
                 {
-                    // Chưa chọn group - mở chat chung
+                    // chua chon group - mo chat chung
                     MessageBox.Show("Please select a group first to open group chat!", "No Group Selected", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
@@ -808,12 +789,12 @@ namespace TimeFlow.Tasks
                 return;
             }
 
-            // ✅ Mở form tạo Group Task đầy đủ
+            // mo form tao task day du
             using (var createTaskForm = new FormCreateGroupTask(_selectedGroupId.Value, _groupName))
             {
                 createTaskForm.TaskCreated += (s, args) =>
                 {
-                    // Reload task list sau khi tạo task thành công
+                    
                     if (_contentPanel != null)
                     {
                         _contentPanel.SuspendLayout();
@@ -862,7 +843,7 @@ namespace TimeFlow.Tasks
             };
             taskLayout.Click += (sender, e) => OpenTaskDetail(task);
 
-            // Task name
+            // ten task
             Label nameLabel = new Label 
             { 
                 Text = task.Title, 
@@ -874,13 +855,11 @@ namespace TimeFlow.Tasks
             nameLabel.Click += (sender, e) => OpenTaskDetail(task);
             taskLayout.Controls.Add(nameLabel, 0, 0);
 
-            // ✅ SỬA: Hiển thị tên assignee thay vì chỉ "Assigned"
             string assigneeText = "⚠ Unassigned";
             Color assigneeColor = AppColors.Red500;
             
             if (task.GroupTask?.AssignedTo != null)
             {
-                // Ưu tiên hiển thị FullName, nếu không có thì Username
                 if (task.GroupTask.AssignedUser != null)
                 {
                     string displayName = !string.IsNullOrEmpty(task.GroupTask.AssignedUser.FullName) 
@@ -943,7 +922,6 @@ namespace TimeFlow.Tasks
             return taskItemPanel;
         }
 
-        // --- SỰ KIỆN: THÊM THÀNH VIÊN ---
         private async void BtnAddMember_Click(object sender, EventArgs e)
         {
             if (!_selectedGroupId.HasValue)
@@ -958,10 +936,9 @@ namespace TimeFlow.Tasks
 
             try
             {
-                // Show progress indicator
                 this.Cursor = Cursors.WaitCursor;
 
-                // ✅ Dùng await thay vì .Wait() để không block UI thread
+                
                 bool success = await _taskApi.AddGroupMemberAsync(_selectedGroupId.Value, username);
 
                 if (success)
@@ -979,7 +956,6 @@ namespace TimeFlow.Tasks
             {
                 string errorMsg = ex.Message;
                 
-                // Extract inner exception message if available
                 if (ex.InnerException != null)
                 {
                     errorMsg = ex.InnerException.Message;

@@ -18,25 +18,17 @@ namespace TimeFlow
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            
-            // ✅ Load cấu hình Server từ appsettings.json
             ServerConfig.Load();
-            
-            // ✅ FIX: Sử dụng ApplicationContext để quản lý app lifecycle
             _appContext = new ApplicationContext();
             ShowLoginForm();
             Application.Run(_appContext);
         }
-
-        // ✅ Show login form và set làm main form
         public static void ShowLoginForm()
         {
             var loginForm = new FormDangNhap();
             
-            // ✅ Khi login thành công, form sẽ tự đóng và mở FormGiaoDien
             loginForm.FormClosed += (s, e) =>
             {
-                // Nếu không có form nào khác đang mở, thoát app
                 if (Application.OpenForms.Count == 0)
                 {
                     Application.Exit();

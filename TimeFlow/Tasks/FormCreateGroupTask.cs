@@ -9,12 +9,8 @@ using TimeFlow.UI.Components;
 
 namespace TimeFlow.Tasks
 {
-    /// <summary>
-    /// Form tạo Group Task với đầy đủ thuộc tính và cho phép chọn assignee
-    /// </summary>
     public class FormCreateGroupTask : Form
     {
-        // Controls
         private TextBox txtTitle;
         private TextBox txtDescription;
         private DateTimePicker dtpDueDate;
@@ -27,14 +23,13 @@ namespace TimeFlow.Tasks
         private Label lblError;
         private Label lblLoading;
 
-        // Data
         private readonly TaskApiClient _taskApi;
         private readonly int _groupId;
         private readonly string _groupName;
         private List<Category> _categories = new List<Category>();
         private List<GroupMemberDto> _members = new List<GroupMemberDto>();
 
-        // Event khi task được tạo thành công
+        // event khi task duoc tao thanh cong
         public event EventHandler<GroupTaskCreatedEventArgs> TaskCreated;
 
         public FormCreateGroupTask(int groupId, string groupName)
@@ -73,7 +68,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(lblHeader);
             yPos += 45;
 
-            // Title *
             Label lblTitle = new Label
             {
                 Text = "Title *",
@@ -92,7 +86,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(txtTitle);
             yPos += 40;
 
-            // Description
             Label lblDescription = new Label
             {
                 Text = "Description",
@@ -207,7 +200,7 @@ namespace TimeFlow.Tasks
             this.Controls.Add(cmbAssignee);
             yPos += 50;
 
-            // Loading label
+            // tai label
             lblLoading = new Label
             {
                 Text = "⏳ Loading members...",
@@ -219,7 +212,6 @@ namespace TimeFlow.Tasks
             };
             this.Controls.Add(lblLoading);
 
-            // Error label
             lblError = new Label
             {
                 Location = new Point(leftMargin, yPos),
@@ -231,7 +223,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(lblError);
             yPos += 30;
 
-            // Separator
             Panel separator = new Panel
             {
                 Location = new Point(leftMargin, yPos),
@@ -241,7 +232,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(separator);
             yPos += 20;
 
-            // Buttons
             btnCancel = new CustomButton
             {
                 Text = "Cancel",
@@ -272,9 +262,8 @@ namespace TimeFlow.Tasks
             btnCreate.Click += BtnCreate_Click;
             this.Controls.Add(btnCreate);
 
-            // Enter key handling
             txtTitle.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) BtnCreate_Click(s, e); };
-            this.AcceptButton = null; // Disable default accept to allow multiline
+            this.AcceptButton = null; // cho phep nhieu dong
         }
 
         private async void LoadDataAsync()
@@ -284,7 +273,7 @@ namespace TimeFlow.Tasks
                 btnCreate.Enabled = false;
                 lblLoading.Visible = true;
 
-                // Load categories và members song song
+                // load categories va members song song
                 var categoriesTask = _taskApi.GetCategoriesAsync();
                 var membersTask = _taskApi.GetGroupMembersAsync(_groupId);
 
@@ -293,7 +282,7 @@ namespace TimeFlow.Tasks
                 _categories = await categoriesTask;
                 _members = await membersTask;
 
-                // Populate categories
+                
                 cmbCategory.Items.Clear();
                 foreach (var cat in _categories)
                 {
@@ -302,7 +291,7 @@ namespace TimeFlow.Tasks
                 if (cmbCategory.Items.Count > 0)
                     cmbCategory.SelectedIndex = 0;
 
-                // Populate assignees
+                
                 cmbAssignee.Items.Clear();
                 cmbAssignee.Items.Add("-- Unassigned --");
                 foreach (var member in _members)
@@ -331,7 +320,7 @@ namespace TimeFlow.Tasks
 
         private async void BtnCreate_Click(object sender, EventArgs e)
         {
-            // Validation
+            
             string title = txtTitle.Text.Trim();
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -354,14 +343,14 @@ namespace TimeFlow.Tasks
                 this.Cursor = Cursors.WaitCursor;
                 HideError();
 
-                // Get selected category
+                // lay danh muc da chon
                 int? categoryId = null;
                 if (cmbCategory.SelectedIndex >= 0 && cmbCategory.SelectedIndex < _categories.Count)
                 {
                     categoryId = _categories[cmbCategory.SelectedIndex].CategoryId;
                 }
 
-                // Get selected assignee
+                // lay thanh vien da chon
                 int? assignedTo = null;
                 if (cmbAssignee.SelectedIndex > 0) // 0 = Unassigned
                 {
@@ -372,7 +361,7 @@ namespace TimeFlow.Tasks
                     }
                 }
 
-                // Get priority
+                //lay priority
                 TaskPriority priority = cmbPriority.SelectedIndex switch
                 {
                     0 => TaskPriority.Low,
@@ -380,7 +369,7 @@ namespace TimeFlow.Tasks
                     _ => TaskPriority.Medium
                 };
 
-                // Build task
+                //xay dung task
                 var newTask = new TaskItem
                 {
                     Title = title,
@@ -392,12 +381,12 @@ namespace TimeFlow.Tasks
                     IsGroupTask = true
                 };
 
-                // Create task
+                // tao task
                 int taskId = await _taskApi.CreateGroupTaskAsync(newTask, _groupId, assignedTo);
 
                 if (taskId > 0)
                 {
-                    // Get assignee name for display
+                    // lay ten nguoi dung hien thi
                     string assigneeName = "Unassigned";
                     if (assignedTo.HasValue)
                     {

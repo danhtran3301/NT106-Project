@@ -32,7 +32,6 @@ namespace TimeFlow.Data.Repositories
             };
         }
 
-        // ================== READ OPERATIONS ==================
 
         // Lay user theo ID
         public User? GetById(int userId)
@@ -114,8 +113,6 @@ namespace TimeFlow.Data.Repositories
             return users;
         }
 
-        // ================== CREATE OPERATIONS ==================
-
         // Tao user moi
         public int Create(User user)
         {
@@ -136,7 +133,7 @@ namespace TimeFlow.Data.Repositories
             return InsertAndGetId(query, parameters);
         }
 
-        // ================== UPDATE OPERATIONS ==================
+
 
         // Cap nhat thong tin user
         public bool Update(User user)
@@ -205,7 +202,7 @@ namespace TimeFlow.Data.Repositories
             return Execute(query, parameters) > 0;
         }
 
-        // ================== DELETE OPERATIONS ==================
+
 
         // Xoa user (soft delete - set IsActive = false)
         public bool SoftDelete(int userId)
@@ -248,7 +245,6 @@ namespace TimeFlow.Data.Repositories
                 ));
         }
 
-        // ================== STATISTICS ==================
 
         // Dem so luong users
         public int CountUsers(bool? activeOnly = null)

@@ -25,7 +25,7 @@ namespace TimeFlow.Tasks
         private readonly TaskApiClient _taskApi;
         private readonly List<string> _membersToAdd = new List<string>();
 
-        // Event khi group được tạo thành công
+        // Event khi group duoc tao thanh cong
         public event EventHandler<GroupCreatedEventArgs> GroupCreated;
 
         public FormCreateGroup()
@@ -48,7 +48,7 @@ namespace TimeFlow.Tasks
             int labelWidth = 100;
             int inputWidth = 300;
 
-            // Group Name
+            // ten group
             Label lblGroupName = new Label
             {
                 Text = "Group Name *",
@@ -67,7 +67,7 @@ namespace TimeFlow.Tasks
             this.Controls.Add(txtGroupName);
             yPos += 45;
 
-            // Description
+           
             Label lblDescription = new Label
             {
                 Text = "Description",
@@ -87,7 +87,7 @@ namespace TimeFlow.Tasks
             this.Controls.Add(txtDescription);
             yPos += 75;
 
-            // Separator
+         
             Panel separator = new Panel
             {
                 Location = new Point(20, yPos),
@@ -97,7 +97,7 @@ namespace TimeFlow.Tasks
             this.Controls.Add(separator);
             yPos += 20;
 
-            // Add Members Section
+           
             Label lblMembers = new Label
             {
                 Text = "Add Members (Optional)",
@@ -108,7 +108,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(lblMembers);
             yPos += 30;
 
-            // Username input
             txtMemberUsername = new TextBox
             {
                 Location = new Point(20, yPos),
@@ -133,7 +132,7 @@ namespace TimeFlow.Tasks
             this.Controls.Add(btnAddMember);
             yPos += 40;
 
-            // Members list
+           //danh sach thanh vien
             lstMembers = new ListBox
             {
                 Location = new Point(20, yPos),
@@ -158,7 +157,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(btnRemoveMember);
             yPos += 115;
 
-            // Error label
             lblError = new Label
             {
                 Location = new Point(20, yPos),
@@ -170,7 +168,6 @@ namespace TimeFlow.Tasks
             this.Controls.Add(lblError);
             yPos += 30;
 
-            // Buttons
             btnCancel = new CustomButton
             {
                 Text = "Cancel",
@@ -201,7 +198,7 @@ namespace TimeFlow.Tasks
             btnCreate.Click += BtnCreate_Click;
             this.Controls.Add(btnCreate);
 
-            // Enter key handling
+            // nhap key handling
             txtGroupName.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) BtnCreate_Click(s, e); };
             txtMemberUsername.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) BtnAddMember_Click(s, e); };
         }
@@ -222,7 +219,6 @@ namespace TimeFlow.Tasks
                 return;
             }
 
-            // TODO: Validate user exists on server
             _membersToAdd.Add(username);
             lstMembers.Items.Add(username);
             txtMemberUsername.Clear();
@@ -245,7 +241,6 @@ namespace TimeFlow.Tasks
             string groupName = txtGroupName.Text.Trim();
             string description = txtDescription.Text.Trim();
 
-            // Validation
             if (string.IsNullOrWhiteSpace(groupName))
             {
                 ShowError("Group name is required");
@@ -266,12 +261,12 @@ namespace TimeFlow.Tasks
                 btnCreate.Text = "Creating...";
                 this.Cursor = Cursors.WaitCursor;
 
-                // Create group
+                // tao nhom
                 int groupId = await _taskApi.CreateGroupAsync(groupName, description);
 
                 if (groupId > 0)
                 {
-                    // Add members if any
+                    // them thanh vien neu co
                     int addedCount = 0;
                     foreach (string username in _membersToAdd)
                     {
@@ -282,11 +277,10 @@ namespace TimeFlow.Tasks
                         }
                         catch
                         {
-                            // Ignore failed member adds, can add later
                         }
                     }
 
-                    // Raise event
+                    // raise su kien
                     GroupCreated?.Invoke(this, new GroupCreatedEventArgs
                     {
                         GroupId = groupId,

@@ -674,18 +674,17 @@ namespace TimeFlow.Tasks
 
             FormTaskDetail detailForm = new FormTaskDetail(task);
 
-            // Khi nhận được tín hiệu TaskUpdated từ Form Chi Tiết
+            // Khi nhan duoc tin hieu TaskUpdated tu Form chi tiet
             detailForm.TaskUpdated += (s, e) => {
                 var taskInList = _currentTasks.FirstOrDefault(t => t.TaskId == e.TaskId);
                 if (taskInList != null)
                 {
-                    // Cập nhật dữ liệu vào List local
+                    // cap nhat du lieu vao list local
                     taskInList.Title = e.Title;
                     taskInList.Status = e.Status;
                     taskInList.Priority = e.Priority;
                     taskInList.DueDate = e.DueDate;
 
-                    // Vẽ lại giao diện danh sách
                     RefreshTaskList();
                 }
             };
@@ -792,7 +791,7 @@ namespace TimeFlow.Tasks
             {
                 _currentTasks.RemoveAll(t => t.TaskId == taskId);
                 RefreshTaskList();
-                TasksChanged?.Invoke(this, EventArgs.Empty); // Gọi ở đây!
+                TasksChanged?.Invoke(this, EventArgs.Empty); 
             }
         }
 
