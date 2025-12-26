@@ -43,16 +43,59 @@ namespace TimeFlow.Services
 
                 using (NetworkStream stream = client.GetStream())
                 {
+                    // ✅ Gửi request
                     string json = JsonSerializer.Serialize(request);
                     byte[] sendBytes = Encoding.UTF8.GetBytes(json);
                     await stream.WriteAsync(sendBytes, 0, sendBytes.Length);
                     await stream.FlushAsync();
 
-                    byte[] buffer = new byte[8192];
-                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
-
-                    return responseJson;
+                    // ✅ Đọc response - xử lý responses lớn có thể bị split thành nhiều packets
+                    // Với network delay, cần đảm bảo đọc đầy đủ response trước khi đóng connection
+                    const int bufferSize = 65536; // 64KB buffer để xử lý responses lớn (đủ lớn cho hầu hết responses)
+                    byte[] buffer = new byte[bufferSize];
+                    using (var memoryStream = new System.IO.MemoryStream())
+                    {
+                        int bytesRead;
+                        
+                        // ✅ Đọc response - server có thể gửi trong một hoặc nhiều packets
+                        // Đọc liên tục cho đến khi không còn dữ liệu
+                        // Với TCP, ReadAsync sẽ block cho đến khi có dữ liệu hoặc connection đóng
+                        bytesRead = await stream.ReadAsync(buffer, 0, bufferSize);
+                        
+                        if (bytesRead > 0)
+                        {
+                            await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                            
+                            // ✅ Nếu đọc được đủ buffer size, có thể còn dữ liệu - tiếp tục đọc
+                            // Đọc cho đến khi không còn dữ liệu (bytesRead == 0)
+                            while (bytesRead == bufferSize)
+                            {
+                                // Đọc thêm để chắc chắn không còn dữ liệu
+                                bytesRead = await stream.ReadAsync(buffer, 0, bufferSize);
+                                if (bytesRead > 0)
+                                {
+                                    await memoryStream.WriteAsync(buffer, 0, bytesRead);
+                                }
+                                else
+                                {
+                                    break; // Không còn dữ liệu - stream đã đóng hoặc hết dữ liệu
+                                }
+                            }
+                            
+                            // ✅ Đợi một chút để đảm bảo server đã gửi xong response (xử lý network delay)
+                            // Điều này giúp tránh trường hợp client đóng connection trước khi server gửi xong
+                            await System.Threading.Tasks.Task.Delay(150);
+                        }
+                        
+                        // ✅ Chuyển đổi toàn bộ dữ liệu đã đọc thành string
+                        if (memoryStream.Length == 0)
+                        {
+                            throw new Exception("No response received from server");
+                        }
+                        
+                        string responseJson = Encoding.UTF8.GetString(memoryStream.GetBuffer(), 0, (int)memoryStream.Length).Trim();
+                        return responseJson;
+                    }
                 }
             }
         }

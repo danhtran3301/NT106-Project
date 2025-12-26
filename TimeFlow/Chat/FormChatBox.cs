@@ -148,6 +148,7 @@ namespace TimeFlow
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(data);
                 _stream.Write(bytes, 0, bytes.Length);
+                _stream.Flush(); // ✅ Đảm bảo dữ liệu được gửi ngay
                 System.Diagnostics.Debug.WriteLine($"[CLIENT] Sent: {data.Substring(0, Math.Min(100, data.Length))}...");
             }
             catch (Exception ex)
@@ -164,36 +165,63 @@ namespace TimeFlow
         {
             _listenThread = new Thread(() =>
             {
-                byte[] buffer = new byte[40960]; // Tăng buffer để nhận list nhóm lớn
-                while (_isConnected)
+                byte[] buffer = new byte[81920]; // ✅ Tăng buffer để nhận dữ liệu lớn (80KB)
+                while (_isConnected && _client != null && _client.Connected)
                 {
                     try
                     {
+                        // ✅ Blocking read - sẽ đợi cho đến khi có dữ liệu hoặc connection đóng
                         int bytesRead = _stream.Read(buffer, 0, buffer.Length);
                         if (bytesRead == 0)
                         {
-                            // Ngắt kết nối
+                            // Connection đã đóng một cách graceful
                             _isConnected = false;
                             this.Invoke((MethodInvoker)delegate {
-                                AppendSystemMessage("⚠ Connection lost. Please reconnect.");
+                                AppendSystemMessage("⚠ Connection closed by server.");
                             });
                             break;
                         }
 
                         string json = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        System.Diagnostics.Debug.WriteLine($"[CLIENT] Received: {json}");
+                        System.Diagnostics.Debug.WriteLine($"[CLIENT] Received {bytesRead} bytes");
                         ProcessIncomingMessage(json);
+                    }
+                    catch (System.IO.IOException ioEx)
+                    {
+                        // ✅ Xử lý riêng IOException (có thể do connection reset khi đang đợi response)
+                        // Không log lỗi nếu đang trong quá trình đóng connection
+                        if (_isConnected)
+                        {
+                            _isConnected = false;
+                            System.Diagnostics.Debug.WriteLine($"[CLIENT] IO error (connection may be reset): {ioEx.Message}");
+                            this.Invoke((MethodInvoker)delegate {
+                                AppendSystemMessage("⚠ Connection error. Please reconnect.");
+                            });
+                        }
+                        break;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Stream đã bị dispose - connection đã đóng
+                        _isConnected = false;
+                        break;
                     }
                     catch (Exception ex)
                     {
-                        _isConnected = false;
-                        this.Invoke((MethodInvoker)delegate {
-                            AppendSystemMessage($"⚠ Connection error: {ex.Message}");
-                        });
-                        System.Diagnostics.Debug.WriteLine($"[CLIENT] Listen error: {ex.Message}");
+                        if (_isConnected)
+                        {
+                            _isConnected = false;
+                            System.Diagnostics.Debug.WriteLine($"[CLIENT] Listen error: {ex.Message}");
+                            this.Invoke((MethodInvoker)delegate {
+                                AppendSystemMessage($"⚠ Connection error: {ex.Message}");
+                            });
+                        }
                         break;
                     }
                 }
+                
+                // Đảm bảo flag được set khi thread kết thúc
+                _isConnected = false;
             });
             _listenThread.IsBackground = true;
             _listenThread.Start();
@@ -647,9 +675,31 @@ namespace TimeFlow
         
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
+            // ✅ Đánh dấu không còn connected để dừng listening thread
             _isConnected = false;
-            try { _stream?.Close(); } catch { }
-            try { _client?.Close(); } catch { }
+            
+            // ✅ Đợi một chút để đảm bảo các response đang được gửi từ server được nhận
+            // Điều này giúp tránh "Connection reset by peer" khi có độ trễ mạng
+            try
+            {
+                Thread.Sleep(200); // Đợi 200ms để server gửi xong response đang pending
+            }
+            catch { }
+            
+            // ✅ Đóng stream và client một cách graceful
+            try 
+            { 
+                _stream?.Close(); 
+                _stream?.Dispose();
+            } 
+            catch { }
+            try 
+            { 
+                _client?.Close(); 
+                _client?.Dispose();
+            } 
+            catch { }
+            
             base.OnFormClosing(e);
         }
     }
