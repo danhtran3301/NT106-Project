@@ -51,11 +51,15 @@ namespace TimeFlow
                 label1.Text = SessionManager.Username;
             }
 
-            label10.Text = currentSelectedDate.ToString("MMMM yyyy");
+            UpdateTimelineHeaderLabel();
             monthCalendar1.DateChanged += monthCalendar1_DateChanged;
 
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.WindowState = FormWindowState.Maximized;
+            
+            // Đảm bảo các nút điều hướng nằm trên cùng để có thể click được
+            pictureBox2.BringToFront();
+            pictureBox3.BringToFront();
         }
 
         private async void GiaoDien_Load(object sender, EventArgs e)
@@ -213,23 +217,33 @@ namespace TimeFlow
             {
                 DateTime columnDate = startDate.AddDays(col);
 
-                Label lblHeader = new Label
-                {
-                    Text = columnDate.ToString("dd/MM/yyyy"),
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    BackColor = Color.LightGray,
-                    ForeColor = Color.Black,
-                    BorderStyle = BorderStyle.FixedSingle
-                };
+            // Tạo header cho mỗi cột ngày
+            Label lblHeader = new Label
+            {
+                Text = columnDate.ToString("dd/MM/yyyy") + Environment.NewLine + 
+                       columnDate.ToString("ddd", new System.Globalization.CultureInfo("en-US")), // Thêm thứ trong tuần
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                BackColor = Color.FromArgb(245, 245, 250),
+                ForeColor = Color.Black,
+                BorderStyle = BorderStyle.FixedSingle,
+                Padding = new Padding(2)
+            };
 
-                if (columnDate.Date == DateTime.Today)
-                {
-                    lblHeader.BackColor = Color.Orange;
-                    lblHeader.ForeColor = Color.White;
-                    lblHeader.Text += "\n(Today)";
-                }
+            if (columnDate.Date == DateTime.Today)
+            {
+                lblHeader.BackColor = Color.FromArgb(255, 165, 0); // Màu cam cho hôm nay
+                lblHeader.ForeColor = Color.White;
+                lblHeader.Text = columnDate.ToString("dd/MM/yyyy") + Environment.NewLine + 
+                                columnDate.ToString("ddd", new System.Globalization.CultureInfo("en-US")) + 
+                                Environment.NewLine + "(Today)";
+            }
+            else if (columnDate.DayOfWeek == DayOfWeek.Saturday || columnDate.DayOfWeek == DayOfWeek.Sunday)
+            {
+                // Làm nổi bật cuối tuần
+                lblHeader.BackColor = Color.FromArgb(240, 240, 245);
+            }
 
                 tableLayoutPanel2.Controls.Add(lblHeader, col, 0);
 
@@ -240,6 +254,8 @@ namespace TimeFlow
                    .OrderBy(t => t.TaskId)
                    .ToList();
 
+                // Hiển thị tất cả các ô task (mỗi ngày có 11 rows task từ row 1-11)
+                // Nếu có task thì hiển thị task, không có thì hiển thị "+ Click to add"
                 for (int row = 1; row < tableLayoutPanel2.RowCount; row++)
                 {
                     int taskIndex = row - 1;
@@ -248,6 +264,7 @@ namespace TimeFlow
                     {
                         taskToShow = dailyTasks[taskIndex];
                     }
+                    // Nếu không có task ở index này, taskToShow = null → hiển thị "+ Click to add"
                     AddDayCell(columnDate, col, row, taskToShow);
                 }
             }
@@ -275,39 +292,33 @@ namespace TimeFlow
             if (task != null)
             {
                 lblContent.Text = task.Title;
-                lblContent.Font = new Font("Segoe UI", 9, FontStyle.Regular);
+                lblContent.Font = new Font("Segoe UI", 9, FontStyle.Bold);
                 Color statusColor = GetStatusColor(task.Status);
                 lblContent.BackColor = statusColor;
 
-
-                if (statusColor == AppColors.Yellow500)
-                {
-                    lblContent.ForeColor = AppColors.Gray800; // Màu vàng dùng text đen
-                }
-                else
-                {
-                    lblContent.ForeColor = Color.White; // Các màu khác dùng text trắng
-                }
+                // Tất cả status đều có nền sáng → dùng chữ đen đậm để contrast tốt
+                lblContent.ForeColor = Color.FromArgb(25, 25, 25);
+                
+                // Thêm padding cho text
+                lblContent.Padding = new Padding(5, 3, 5, 3);
 
                 if (currentSelectedTask != null && task.TaskId == currentSelectedTask.TaskId)
                 {
                     lblContent.BorderStyle = BorderStyle.FixedSingle;
-
-                    dayCell.BackColor = Color.DarkGray;
+                    dayCell.BackColor = Color.LightGray;
                 }
                 else
                 {
                     lblContent.BorderStyle = BorderStyle.None;
                     dayCell.BackColor = Color.White;
-
                 }
             }
             else
             {
                 lblContent.Text = "+ Click to add";
-                lblContent.ForeColor = Color.Gray;
-                lblContent.Font = new Font("Segoe UI", 8, FontStyle.Italic);
-                lblContent.BackColor = Color.White;
+                lblContent.ForeColor = Color.FromArgb(128, 128, 128); // Màu xám đẹp hơn
+                lblContent.Font = new Font("Segoe UI", 9, FontStyle.Italic);
+                lblContent.BackColor = Color.FromArgb(250, 250, 250); // Nền hơi xám nhẹ để dễ nhận biết
             }
 
             lblContent.Click += (s, e) => OnCalendarCellClick(date, task);
@@ -358,12 +369,20 @@ namespace TimeFlow
         {
             return status switch
             {
-                TimeFlow.Models.TaskStatus.Pending => Color.LightBlue,        
-                TimeFlow.Models.TaskStatus.InProgress => Color.Yellow,        
-                TimeFlow.Models.TaskStatus.Completed => Color.LightGreen,     
-                TimeFlow.Models.TaskStatus.Cancelled => Color.LightCoral,     
-                _ => Color.LightGray                                          
+                TimeFlow.Models.TaskStatus.Pending => Color.FromArgb(173, 216, 230),        // LightBlue - nền sáng, chữ đen
+                TimeFlow.Models.TaskStatus.InProgress => Color.FromArgb(255, 255, 180),     // Yellow nhạt hơn - nền sáng, chữ đen
+                TimeFlow.Models.TaskStatus.Completed => Color.FromArgb(144, 238, 144),      // LightGreen - nền sáng, chữ đen
+                TimeFlow.Models.TaskStatus.Cancelled => Color.FromArgb(255, 200, 200),      // LightPink - nền sáng, chữ đen
+                _ => Color.FromArgb(220, 220, 220)                                          // LightGray - nền sáng, chữ đen
             };
+        }
+
+        private bool IsLightColor(Color color)
+        {
+            // Tính độ sáng của màu (luminance)
+            // Nếu > 0.5 thì là màu sáng
+            double luminance = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255.0;
+            return luminance > 0.5;
         }
 
         private void OpenNewTaskFormForDate(DateTime selectedDate)
@@ -387,19 +406,30 @@ namespace TimeFlow
         private void monthCalendar1_DateChanged(object sender, DateRangeEventArgs e)
         {
             currentSelectedDate = e.Start;
-            label10.Text = currentSelectedDate.ToString("dd/MM/yyyy");
+            UpdateTimelineHeaderLabel();
             UpdateCalendarView();
+        }
+
+        private void UpdateTimelineHeaderLabel()
+        {
+            // Hiển thị khoảng thời gian 7 ngày: "DD/MM/YYYY - DD/MM/YYYY"
+            DateTime endDate = currentSelectedDate.AddDays(6);
+            label10.Text = $"{currentSelectedDate.ToString("dd/MM/yyyy")} - {endDate.ToString("dd/MM/yyyy")}";
         }
 
         private void pictureBox2_Click(object sender, EventArgs e)
         {
-            monthCalendar1.SetDate(monthCalendar1.SelectionStart.AddMonths(-1));
+            // Điều hướng về trước 1 tuần (7 ngày) thay vì 1 tháng
+            currentSelectedDate = currentSelectedDate.AddDays(-7);
+            monthCalendar1.SetDate(currentSelectedDate);
             UpdateCalendarView();
         }
 
         private void pictureBox3_Click(object sender, EventArgs e)
         {
-            monthCalendar1.SetDate(monthCalendar1.SelectionStart.AddMonths(1));
+            // Điều hướng về sau 1 tuần (7 ngày) thay vì 1 tháng
+            currentSelectedDate = currentSelectedDate.AddDays(7);
+            monthCalendar1.SetDate(currentSelectedDate);
             UpdateCalendarView();
         }
 
