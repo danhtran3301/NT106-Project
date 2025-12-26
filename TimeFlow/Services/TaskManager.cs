@@ -5,29 +5,22 @@ using TimeFlow.Models;
 
 namespace TimeFlow.Services
 {
-    /// <summary>
-    /// Service quản lý tasks - hiện tại dùng in-memory data
-    /// TODO: Tích hợp với database/API
-    /// </summary>
     public static class TaskManager
     {
         private static List<TaskModel> _tasks;
         private static int _nextId = 11;
         private static List<Group> _groups;
         private static List<GroupTask> _groupTasks;
-
-        // Event để notify khi task thay đổi
+        // Event de notify khi task thay doi
         public static event EventHandler<TaskModel> TaskCreated;
         public static event EventHandler<TaskModel> TaskUpdated;
         public static event EventHandler<int> TaskDeleted;
-
         static TaskManager()
         {
             InitializeMockData();
         }
-
         /// <summary>
-        /// Khởi tạo dữ liệu task giả
+        /// Khoi tao du lieu task gia
         /// </summary>
         private static void InitializeMockData()
         {
@@ -235,21 +228,19 @@ namespace TimeFlow.Services
         }
 
         /// <summary>
-        /// Lấy tất cả tasks
+        /// lay tat ca tasks
         /// </summary>
         public static List<TaskModel> GetAllTasks()
         {
             return _tasks.ToList();
         }
-
         /// <summary>
-        /// Lấy task theo ID
+        /// lay task theo ID
         /// </summary>
         public static TaskModel GetTaskById(int id)
         {
             return _tasks.FirstOrDefault(t => t.Id == id);
         }
-
         /// <summary>
         /// Lấy tasks theo status
         /// </summary>
@@ -257,17 +248,15 @@ namespace TimeFlow.Services
         {
             return _tasks.Where(t => t.Status == status).ToList();
         }
-
         /// <summary>
-        /// Lấy tasks theo priority
+        /// lay tasks theo priority
         /// </summary>
         public static List<TaskModel> GetTasksByPriority(TaskPriorityLevel priority)
         {
             return _tasks.Where(t => t.Priority == priority).ToList();
         }
-
         /// <summary>
-        /// Tạo task mới
+        /// tao task moi
         /// </summary>
         public static TaskModel CreateTask(TaskModel task)
         {
@@ -277,9 +266,8 @@ namespace TimeFlow.Services
             TaskCreated?.Invoke(null, task);
             return task;
         }
-
         /// <summary>
-        /// Cập nhật task
+        /// cap nhat task
         /// </summary>
         public static bool UpdateTask(TaskModel task)
         {
@@ -291,9 +279,8 @@ namespace TimeFlow.Services
             TaskUpdated?.Invoke(null, task);
             return true;
         }
-
         /// <summary>
-        /// Xóa task
+        /// xoa task
         /// </summary>
         public static bool DeleteTask(int id)
         {
@@ -304,9 +291,8 @@ namespace TimeFlow.Services
             TaskDeleted?.Invoke(null, id);
             return true;
         }
-
         /// <summary>
-        /// Thêm comment vào task
+        /// them comment vao task
         /// </summary>
         public static bool AddComment(int taskId, string username, string content)
         {
@@ -325,9 +311,8 @@ namespace TimeFlow.Services
             TaskUpdated?.Invoke(null, task);
             return true;
         }
-
         /// <summary>
-        /// Thêm activity vào task
+        /// them activity vao task
         /// </summary>
         public static bool AddActivity(int taskId, string description)
         {
@@ -346,7 +331,6 @@ namespace TimeFlow.Services
             return true;
         }
 
-
             public static GroupTask GetGroupTaskByTaskId(int taskId)
         {
             var gt = _groupTasks.FirstOrDefault(gt => gt.TaskId == taskId);
@@ -360,7 +344,7 @@ namespace TimeFlow.Services
 
         }
         /// <summary>
-        /// Lấy thông tin Group theo ID
+        ///lay thong tin group the ID
         /// </summary>
         public static Group GetGroupById(int groupId)
         {

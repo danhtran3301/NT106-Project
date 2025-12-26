@@ -2,7 +2,7 @@
 
 namespace TimeFlow.Models
 {
-    // Event args để truyền dữ liệu cập nhật giữa các Form
+    // Event args de truyen du lieu cap nhat giua cac form
     public class TaskUpdateEventArgs : EventArgs
     {
         public int TaskId { get; set; }

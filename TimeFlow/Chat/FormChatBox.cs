@@ -13,7 +13,6 @@ using TimeFlow.Configuration;
 
 namespace TimeFlow
 {
-    // Class hứng dữ liệu nhóm từ Server
     public class GroupDto
     {
         public int groupId { get; set; }
@@ -23,47 +22,37 @@ namespace TimeFlow
 
     public partial class FormChatBox : Form
     {
-        // --- CẤU HÌNH MẠNG ---
+     
         private TcpClient _client;
         private NetworkStream _stream;
         private Thread _listenThread;
-        private bool _isConnected = false;
-
-        // Thông tin User
+        private bool _isConnected = false;   
         private string _myUsername;
+        private int? _currentGroupId = null; 
+        private string _currentReceiver = ""; 
+        private bool _isGroupChat = false;   
 
-        // Trạng thái Chat hiện tại
-        private int? _currentGroupId = null; // ID nhóm đang chọn
-        private string _currentReceiver = ""; // Tên người/nhóm nhận
-        private bool _isGroupChat = false;    // Cờ đánh dấu đang chat nhóm
-
-        // --- CONSTRUCTOR MẶC ĐỊNH ---
         public FormChatBox()
         {
             InitializeComponent();
             _myUsername = SessionManager.Username ?? "Guest";
             ConnectToServer();
         }
-
-        // --- CONSTRUCTOR VỚI GROUP ID (Mở chat cho group cụ thể) ---
         public FormChatBox(int groupId, string groupName) : this()
         {
             // Set ngay group đang chat
             _currentGroupId = groupId;
             _currentReceiver = groupName;
             _isGroupChat = true;
-            
-            // Cập nhật UI
+                     
             lblChatTitle.Text = $"💬 {groupName}";
-            this.Text = $"TimeFlow Chat - {groupName}";
-            
-            // Load lịch sử chat cho group này sau khi connected
+            this.Text = $"TimeFlow Chat - {groupName}";          
+            // Load lich su chat cho group nay sau khi connected
             if (_isConnected)
             {
                 LoadGroupChatHistory(groupId);
             }
         }
-
         private void ConnectToServer()
         {
             try
@@ -73,7 +62,6 @@ namespace TimeFlow
                 _stream = _client.GetStream();
                 _isConnected = true;
 
-                // ✅ SỬA: Dùng autologin với token từ SessionManager thay vì login với password hardcoded
                 if (!string.IsNullOrEmpty(SessionManager.Token))
                 {
                     var autoLoginPacket = new { type = "autologin", token = SessionManager.Token };
@@ -82,19 +70,18 @@ namespace TimeFlow
                 }
                 else
                 {
-                    // Fallback: Nếu không có token, thông báo lỗi
+                    
                     MessageBox.Show("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "Lỗi", 
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     this.Close();
                     return;
                 }
-
-                // 2. Gửi yêu cầu lấy danh sách nhóm (Đợi 0.5s để server xử lý login xong)
+                // gui yeu cau lay danh sach nhom
                 Thread.Sleep(500);
                 var getGroupsPacket = new { type = "get_my_groups", token = SessionManager.Token };
                 SendString(JsonSerializer.Serialize(getGroupsPacket));
 
-                // Bắt đầu luồng lắng nghe tin nhắn
+          
                 StartListening();
 
                 if (!_isGroupChat)
@@ -102,8 +89,7 @@ namespace TimeFlow
                     this.Text = $"TimeFlow Chat - Logged in as: {_myUsername}";
                 }
                 AppendSystemMessage($"Connected to server as {_myUsername}");
-                
-                // ✅ Load lịch sử chat nếu đã chọn group
+         
                 if (_currentGroupId.HasValue)
                 {
                     LoadGroupChatHistory(_currentGroupId.Value);
@@ -115,8 +101,6 @@ namespace TimeFlow
                 this.Text = "TimeFlow Chat - Disconnected";
             }
         }
-
-        // ✅ MỚI: Load lịch sử chat cho group
         private void LoadGroupChatHistory(int groupId)
         {
             try
@@ -134,9 +118,6 @@ namespace TimeFlow
                 AppendSystemMessage($"Failed to load chat history: {ex.Message}");
             }
         }
-
-        // --- XỬ LÝ GỬI NHẬN ---
-
         private void SendString(string data)
         {
             if (!_isConnected)
@@ -148,7 +129,7 @@ namespace TimeFlow
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(data);
                 _stream.Write(bytes, 0, bytes.Length);
-                _stream.Flush(); // ✅ Đảm bảo dữ liệu được gửi ngay
+                _stream.Flush(); 
                 System.Diagnostics.Debug.WriteLine($"[CLIENT] Sent: {data.Substring(0, Math.Min(100, data.Length))}...");
             }
             catch (Exception ex)
@@ -160,21 +141,20 @@ namespace TimeFlow
                 });
             }
         }
-
         private void StartListening()
         {
             _listenThread = new Thread(() =>
             {
-                byte[] buffer = new byte[81920]; // ✅ Tăng buffer để nhận dữ liệu lớn (80KB)
+                byte[] buffer = new byte[81920]; 
                 while (_isConnected && _client != null && _client.Connected)
                 {
                     try
                     {
-                        // ✅ Blocking read - sẽ đợi cho đến khi có dữ liệu hoặc connection đóng
+                        
                         int bytesRead = _stream.Read(buffer, 0, buffer.Length);
                         if (bytesRead == 0)
                         {
-                            // Connection đã đóng một cách graceful
+                          
                             _isConnected = false;
                             this.Invoke((MethodInvoker)delegate {
                                 AppendSystemMessage("⚠ Connection closed by server.");
@@ -188,8 +168,7 @@ namespace TimeFlow
                     }
                     catch (System.IO.IOException ioEx)
                     {
-                        // ✅ Xử lý riêng IOException (có thể do connection reset khi đang đợi response)
-                        // Không log lỗi nếu đang trong quá trình đóng connection
+                        
                         if (_isConnected)
                         {
                             _isConnected = false;
@@ -202,7 +181,6 @@ namespace TimeFlow
                     }
                     catch (ObjectDisposedException)
                     {
-                        // Stream đã bị dispose - connection đã đóng
                         _isConnected = false;
                         break;
                     }
@@ -220,7 +198,6 @@ namespace TimeFlow
                     }
                 }
                 
-                // Đảm bảo flag được set khi thread kết thúc
                 _isConnected = false;
             });
             _listenThread.IsBackground = true;
@@ -231,7 +208,7 @@ namespace TimeFlow
         {
             try
             {
-                // Xử lý gói tin JSON từ server
+                // xu ly goi tin json tu server
                 using (JsonDocument doc = JsonDocument.Parse(json))
                 {
                     JsonElement root = doc.RootElement;
@@ -239,7 +216,7 @@ namespace TimeFlow
                     {
                         string type = typeElem.GetString();
 
-                        // ✅ CASE: Autologin response
+                        
                         if (root.TryGetProperty("status", out JsonElement statusElem))
                         {
                             string status = statusElem.GetString();
@@ -259,7 +236,7 @@ namespace TimeFlow
                             }
                         }
 
-                        // CASE 1: Nhận danh sách nhóm
+                        // nhan danh sach nhom
                         if (type == "my_groups_list")
                         {
                             if (root.GetProperty("status").GetString() == "success")
@@ -267,11 +244,10 @@ namespace TimeFlow
                                 var dataStr = root.GetProperty("data").ToString();
                                 var groups = JsonSerializer.Deserialize<List<GroupDto>>(dataStr);
 
-                                // Vẽ lên giao diện (Thread safe)
                                 this.Invoke((MethodInvoker)delegate {
                                     RenderGroupsToSidebar(groups);
                                     
-                                    // Nếu đã có group được chọn sẵn, highlight nó
+                                    
                                     if (_currentGroupId.HasValue)
                                     {
                                         HighlightSelectedGroup(_currentGroupId.Value);
@@ -280,7 +256,7 @@ namespace TimeFlow
                             }
                         }
 
-                        // CASE 2: Nhận tin nhắn chat nhóm
+                        //nhan tin nhan tu task nhom
                         if (type == "receive_group_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
@@ -289,7 +265,7 @@ namespace TimeFlow
 
                             System.Diagnostics.Debug.WriteLine($"[CLIENT] Received group message from {sender} in group {groupId}");
 
-                            // Chỉ hiện tin nhắn nếu đúng group đang chat
+                            // chi hien tin nhan neu dung group dang chat
                             if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
                             {
                                 bool isMe = sender == _myUsername;
@@ -300,17 +276,14 @@ namespace TimeFlow
                             else
                             {
                                 System.Diagnostics.Debug.WriteLine($"[CLIENT] Message ignored: Current group={_currentGroupId}, Message group={groupId}");
-                                // TODO: Có thể thêm notification cho tin nhắn từ group khác
                             }
                         }
 
-                        // CASE 3: Nhận tin nhắn chat 1-1
                         if (type == "receive_message")
                         {
                             string sender = root.GetProperty("sender").GetString();
                             string content = root.GetProperty("content").GetString();
 
-                            // Chat 1-1: hiện nếu đúng người đang chat
                             if (!_isGroupChat && sender == _currentReceiver)
                             {
                                 this.Invoke((MethodInvoker)delegate {
@@ -319,14 +292,12 @@ namespace TimeFlow
                             }
                         }
                         
-                        // ✅ CASE 4: Nhận lịch sử chat nhóm
                         if (type == "group_chat_history")
                         {
                             if (root.GetProperty("status").GetString() == "success")
                             {
                                 int groupId = root.GetProperty("groupId").GetInt32();
                                 
-                                // Chỉ render nếu đúng group đang xem
                                 if (_currentGroupId.HasValue && groupId == _currentGroupId.Value)
                                 {
                                     this.Invoke((MethodInvoker)delegate {
@@ -352,15 +323,12 @@ namespace TimeFlow
                             }
                         }
 
-                        // ✅ CASE 5: Response từ server sau khi gửi tin nhắn
                         if (type == "chat_response")
                         {
                             string status = root.GetProperty("status").GetString();
                             if (status == "success")
                             {
-                                // Tin nhắn đã gửi thành công - không cần làm gì vì đã hiển thị rồi
                                 this.Invoke((MethodInvoker)delegate {
-                                    // Có thể thêm visual feedback nếu cần
                                 });
                             }
                             else if (status == "error" || status == "unauthorized")
@@ -371,7 +339,6 @@ namespace TimeFlow
                                 
                                 this.Invoke((MethodInvoker)delegate {
                                     MessageBox.Show(errorMsg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                    // Xóa tin nhắn đã hiển thị nếu gửi thất bại
                                     if (flowChatMessages.Controls.Count > 0)
                                     {
                                         flowChatMessages.Controls.RemoveAt(flowChatMessages.Controls.Count - 1);
@@ -385,7 +352,6 @@ namespace TimeFlow
             catch { }
         }
 
-        // --- UI LOGIC: VẼ DANH SÁCH NHÓM ---
 
         private void RenderGroupsToSidebar(List<GroupDto> groups)
         {
@@ -393,15 +359,13 @@ namespace TimeFlow
 
             foreach (var group in groups)
             {
-                // Panel chứa 1 item group
                 Panel pnlItem = new Panel();
                 pnlItem.Size = new Size(flowSidebar.Width - 25, 70);
                 pnlItem.BackColor = Color.White;
                 pnlItem.Cursor = Cursors.Hand;
                 pnlItem.Margin = new Padding(10, 5, 10, 5);
-                pnlItem.Tag = group.groupId; // Lưu groupId để highlight sau
+                pnlItem.Tag = group.groupId; 
 
-                // Avatar chữ cái đầu
                 Label lblAvatar = new Label();
                 lblAvatar.Text = group.groupName.Substring(0, 1).ToUpper();
                 lblAvatar.Size = new Size(45, 45);
@@ -410,19 +374,16 @@ namespace TimeFlow
                 lblAvatar.BackColor = Color.DodgerBlue;
                 lblAvatar.ForeColor = Color.White;
                 lblAvatar.Font = new Font("Segoe UI", 12, FontStyle.Bold);
-                // Bo tròn avatar
                 GraphicsPath path = new GraphicsPath();
                 path.AddEllipse(0, 0, 45, 45);
                 lblAvatar.Region = new Region(path);
 
-                // Tên nhóm
                 Label lblName = new Label();
                 lblName.Text = group.groupName;
                 lblName.Font = new Font("Segoe UI", 10, FontStyle.Bold);
                 lblName.Location = new Point(65, 15);
                 lblName.AutoSize = true;
 
-                // Mô tả ngắn
                 Label lblDesc = new Label();
                 lblDesc.Text = group.description ?? "Group Chat";
                 lblDesc.Font = new Font("Segoe UI", 8, FontStyle.Regular);
@@ -430,22 +391,20 @@ namespace TimeFlow
                 lblDesc.Location = new Point(65, 40);
                 lblDesc.AutoSize = true;
 
-                // Sự kiện Click chọn nhóm
+                // su kien Click chon nhom
                 EventHandler clickEvent = (s, e) =>
                 {
-                    // Reset màu các item khác
+                    
                     foreach (Control c in flowSidebar.Controls) c.BackColor = Color.White;
-                    pnlItem.BackColor = Color.FromArgb(230, 240, 255); // Highlight màu xanh nhạt
+                    pnlItem.BackColor = Color.FromArgb(230, 240, 255); 
 
-                    // Cập nhật trạng thái
                     _currentGroupId = group.groupId;
                     _currentReceiver = group.groupName;
                     _isGroupChat = true;
 
                     lblChatTitle.Text = $"💬 {group.groupName}";
-                    flowChatMessages.Controls.Clear(); // Xóa chat cũ
+                    flowChatMessages.Controls.Clear(); 
                     
-                    // ✅ Load lịch sử chat từ server
                     LoadGroupChatHistory(group.groupId);
                     
                     AppendSystemMessage($"Now chatting in: {group.groupName}");
@@ -479,7 +438,6 @@ namespace TimeFlow
             }
         }
 
-        // --- UI EVENTS ---
 
         private void btnSend_Click(object sender, EventArgs e)
         {
@@ -493,7 +451,7 @@ namespace TimeFlow
                 return;
             }
 
-            // Kiểm tra xem đã chọn ai để chat chưa
+            // kiem tra da chon ai de chat chua
             if (string.IsNullOrEmpty(_currentReceiver) && _currentGroupId == null)
             {
                 MessageBox.Show("Vui lòng chọn một nhóm hoặc user để chat!", "Chưa chọn người nhận", 
@@ -525,15 +483,14 @@ namespace TimeFlow
                     };
                 }
 
-                // Hiển thị tin nhắn ngay (optimistic UI)
                 string messageToShow = content;
                 AddMessageBubble(messageToShow, "Me", true);
                 txtMessage.Clear();
 
-                // Gửi đến server
+                // gui den server
                 SendString(JsonSerializer.Serialize(packet));
                 
-                // Log để debug
+                // Log de debug
                 System.Diagnostics.Debug.WriteLine($"[CLIENT] Sent message: {content} to {( _isGroupChat ? $"Group {_currentGroupId}" : _currentReceiver)}");
             }
             catch (Exception ex)
@@ -541,7 +498,7 @@ namespace TimeFlow
                 MessageBox.Show($"Lỗi gửi tin: {ex.Message}\n\nChi tiết: {ex.StackTrace}", "Lỗi", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 
-                // Xóa tin nhắn đã hiển thị nếu gửi thất bại
+                // xoa tin nhan da gui neu that bai
                 if (flowChatMessages.Controls.Count > 0)
                 {
                     flowChatMessages.Controls.RemoveAt(flowChatMessages.Controls.Count - 1);
@@ -552,7 +509,6 @@ namespace TimeFlow
         private void btnClose_Click(object sender, EventArgs e) => this.Close();
         private void btnBack_Click(object sender, EventArgs e) => this.Close();
 
-        // Sự kiện vẽ khung input cho đẹp
         private void pnlInputBackground_Paint(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
@@ -565,7 +521,7 @@ namespace TimeFlow
             }
         }
 
-        // --- HELPERS UI ---
+
 
         private void AppendSystemMessage(string msg)
         {
@@ -675,18 +631,14 @@ namespace TimeFlow
         
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // ✅ Đánh dấu không còn connected để dừng listening thread
             _isConnected = false;
             
-            // ✅ Đợi một chút để đảm bảo các response đang được gửi từ server được nhận
-            // Điều này giúp tránh "Connection reset by peer" khi có độ trễ mạng
             try
             {
-                Thread.Sleep(200); // Đợi 200ms để server gửi xong response đang pending
+                Thread.Sleep(200); 
             }
             catch { }
             
-            // ✅ Đóng stream và client một cách graceful
             try 
             { 
                 _stream?.Close(); 

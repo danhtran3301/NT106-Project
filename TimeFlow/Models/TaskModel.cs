@@ -3,9 +3,7 @@ using System.Collections.Generic;
 
 namespace TimeFlow.Models
 {
-    /// <summary>
-    /// Model ??i di?n cho m?t Task trong h? th?ng
-    /// </summary>
+
     public class TaskModel
     {
         public int Id { get; set; }
