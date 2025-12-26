@@ -1500,6 +1500,7 @@ namespace TimeFlowServer.ServerCore
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(response);
                 await _stream.WriteAsync(bytes, 0, bytes.Length);
+                await _stream.FlushAsync(); // ✅ Đảm bảo dữ liệu được gửi ngay, không bị giữ trong buffer
             }
             catch (Exception ex)
             {
